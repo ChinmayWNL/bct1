@@ -59,13 +59,17 @@ This document details all technical, security, protocol, and performance improve
   - Included gas fee buffer check against `userBalance`.
   - Returns optimistic broadcast hash with `status: 'pending'`, followed by background `tx.wait(1)` tracking to emit `status: 'confirmed'`.
 
-### 2.5 [CallModal.js](file:///s:/blockchain/web/src/components/CallModal.js) — Media Stream Capture & Track Lifecycle
-- **Previous behavior**: `getUserMedia` was only invoked if `callType === 'video'`. Voice calls acquired no audio stream at all. Toggle mute inverted `isMuted` inconsistently.
+### 2.5 [CallModal.js](file:///s:/blockchain/web/src/components/CallModal.js) & [IncomingCallModal.js](file:///s:/blockchain/web/src/components/IncomingCallModal.js) — Peer-to-Peer WebRTC Voice & Video Calling
+- **Previous behavior**: Simulated calls locally with a static `setTimeout` after 2.6s. No signaling channel existed; calling a peer transmitted nothing, the receiver was never alerted, and no audio or video tracks flowed between devices.
 - **Fix**:
-  - Dynamic constraints: `{ audio: true, video: callType === 'video' }`.
-  - Voice calls now acquire microphone input properly.
-  - Track enabled states use calculated boolean flags (`t.enabled = !nextMuted`), preventing closure race conditions.
-  - Safe media track stopping and reference cleanup on unmount.
+  - **Decentralized XMTP Signaling Pipeline**: Exchanged WebRTC signaling payloads (`call_signal`) end-to-end encrypted over XMTP:
+    - `offer`: Caller captures local camera/mic, sets local SDP offer, and transmits offer to receiver.
+    - `answer`: Receiver sets remote SDP offer, generates local SDP answer, and returns answer to caller.
+    - `candidate`: Gathers and exchanges network ICE candidates via Google STUN servers (`stun:stun.l.google.com:19302`).
+    - `reject` / `end`: Synchronously terminates media tracks and closes peer connections on both ends.
+  - **Incoming Call Dialog ([IncomingCallModal.js](file:///s:/blockchain/web/src/components/IncomingCallModal.js))**: Receiver gets an incoming ringing modal showing Caller ID, animated pulsing rings, ringtone chime, and circular Accept (📞) and Decline (✕) buttons.
+  - **Bidirectional Media Streams**: Full remote video display with Picture-in-Picture (PiP) local preview, dedicated remote `<audio>` playback element, dynamic microphone mute toggles, and camera video toggles.
+  - **BlockBot Companion Simulation**: When testing with BlockBot (`isDemoBot`), automatically simulates response after 2.2s so users can verify their camera and mic without a second device.
 
 ### 2.6 [ContactInfoDrawer.js](file:///s:/blockchain/web/src/components/ContactInfoDrawer.js) — Memoized Gallery & Audio Playback
 - **Previous behavior**: Iterated through all messages and parsed JSON strings on every render without memoization. Voice notes in the media drawer could not be played.

@@ -10,6 +10,7 @@ import EmojiPicker from '@/components/EmojiPicker';
 import ProfileModal from '@/components/ProfileModal';
 import CryptoReceipt from '@/components/CryptoReceipt';
 import CallModal from '@/components/CallModal';
+import IncomingCallModal from '@/components/IncomingCallModal';
 import ContactInfoDrawer from '@/components/ContactInfoDrawer';
 
 export default function Home() {
@@ -58,7 +59,8 @@ export default function Home() {
   });
 
   // WhatsApp-Inspired Features State
-  const [activeCall, setActiveCall] = useState(null); // null | { type: 'voice' | 'video' }
+  const [activeCall, setActiveCall] = useState(null); // null | { type: 'voice' | 'video', callId, isOutgoing }
+  const [incomingCall, setIncomingCall] = useState(null); // null | { callType, callId, offer, callerAddress }
   const [showContactDrawer, setShowContactDrawer] = useState(false);
   const [peerTyping, setPeerTyping] = useState(false);
   const [starredMessages, setStarredMessages] = useState(() => {
@@ -475,6 +477,26 @@ export default function Home() {
       }
       return false;
     }
+    if (data.type === 'call_signal') {
+      if (data.subType === 'offer') {
+        const callerPeerAddr = activeConversation?.peerAddress || message.senderInboxId;
+        const callerProfile = callerPeerAddr ? addressProfiles[callerPeerAddr.toLowerCase()] : null;
+        setIncomingCall({
+          callType: data.callType || 'voice',
+          callId: data.callId,
+          offer: data.sdp,
+          callerAddress: callerPeerAddr,
+          callerName: callerProfile?.username,
+          callerAvatar: callerProfile?.profilePictureCID
+        });
+      } else if (data.subType === 'end' || data.subType === 'reject') {
+        setIncomingCall(prev => (prev?.callId === data.callId ? null : prev));
+        window.dispatchEvent(new CustomEvent('blockchat:call-signal', { detail: data }));
+      } else {
+        window.dispatchEvent(new CustomEvent('blockchat:call-signal', { detail: data }));
+      }
+      return false;
+    }
     if (data.type === 'reaction' && data.targetId && data.emoji) {
       setReactionsMap(prev => {
         const existing = prev[data.targetId] || [];
@@ -523,7 +545,9 @@ export default function Home() {
 
       for (const m of rawMsgs) {
         const d = parseMessageData(m);
-        if (d.type === 'delete' && d.targetId) {
+        if (d.type === 'call_signal') {
+          continue;
+        } else if (d.type === 'delete' && d.targetId) {
           const target = rawMsgs.find(orig => orig.id === d.targetId);
           if (!target || target.senderInboxId === m.senderInboxId) {
             newDeleted[d.targetId] = true;
@@ -1044,6 +1068,56 @@ export default function Home() {
     }
   };
 
+  // WebRTC Call Signaling over XMTP
+  const handleSendCallSignal = async (signalData) => {
+    if (!activeConversation) return;
+    try {
+      const payload = {
+        type: 'call_signal',
+        ...signalData,
+        timestamp: new Date().getTime()
+      };
+      const textPayload = `[JSON_MSG]${JSON.stringify(payload)}`;
+
+      if (activeConversation.isDemoBot) {
+        if (signalData.subType === 'offer') {
+          setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('blockchat:call-signal', {
+              detail: { subType: 'demo_connected', callId: signalData.callId }
+            }));
+          }, 2400);
+        }
+      } else {
+        await activeConversation.sendText(textPayload);
+      }
+    } catch (err) {
+      console.warn("Failed to send call signal over XMTP:", err);
+    }
+  };
+
+  const handleAcceptIncomingCall = () => {
+    if (!incomingCall) return;
+    setActiveCall({
+      type: incomingCall.callType,
+      isOutgoing: false,
+      callId: incomingCall.callId,
+      initialOffer: incomingCall.offer,
+      peerAddress: incomingCall.callerAddress,
+      peerName: incomingCall.callerName,
+      peerAvatar: incomingCall.callerAvatar
+    });
+    setIncomingCall(null);
+  };
+
+  const handleDeclineIncomingCall = () => {
+    if (!incomingCall) return;
+    handleSendCallSignal({
+      subType: 'reject',
+      callId: incomingCall.callId
+    });
+    setIncomingCall(null);
+  };
+
   // Helpers
   const formatAddress = (address) => {
     if (!address) return '';
@@ -1405,7 +1479,11 @@ export default function Home() {
                         type="button" 
                         className="header-call-btn" 
                         title="Voice Call"
-                        onClick={() => setActiveCall({ type: 'voice' })}
+                        onClick={() => setActiveCall({
+                          type: 'voice',
+                          isOutgoing: true,
+                          callId: `call_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`
+                        })}
                       >
                         📞
                       </button>
@@ -1415,7 +1493,11 @@ export default function Home() {
                         type="button" 
                         className="header-call-btn" 
                         title="Video Call"
-                        onClick={() => setActiveCall({ type: 'video' })}
+                        onClick={() => setActiveCall({
+                          type: 'video',
+                          isOutgoing: true,
+                          callId: `call_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`
+                        })}
                       >
                         📹
                       </button>
@@ -1797,14 +1879,31 @@ export default function Home() {
         )}
       </div>
 
-      {/* WhatsApp Voice / Video Calling Modal */}
-      {activeCall && activeConversation && (
+      {/* WhatsApp Voice / Video Calling Modal (WebRTC P2P) */}
+      {activeCall && (
         <CallModal 
           callType={activeCall.type}
-          peerAddress={activeConversation.peerAddress}
-          peerName={addressProfiles[activeConversation.peerAddress?.toLowerCase()]?.username || ensName}
-          peerAvatar={addressProfiles[activeConversation.peerAddress?.toLowerCase()]?.profilePictureCID}
+          callId={activeCall.callId}
+          isOutgoing={activeCall.isOutgoing}
+          initialOffer={activeCall.initialOffer}
+          peerAddress={activeCall.peerAddress || activeConversation?.peerAddress}
+          peerName={activeCall.peerName || addressProfiles[activeConversation?.peerAddress?.toLowerCase()]?.username || ensName}
+          peerAvatar={activeCall.peerAvatar || addressProfiles[activeConversation?.peerAddress?.toLowerCase()]?.profilePictureCID}
+          isDemoBot={activeConversation?.isDemoBot}
+          onSendSignal={handleSendCallSignal}
           onEndCall={() => setActiveCall(null)}
+        />
+      )}
+
+      {/* WhatsApp Incoming Call Dialog */}
+      {incomingCall && (
+        <IncomingCallModal 
+          callType={incomingCall.callType}
+          callerAddress={incomingCall.callerAddress}
+          callerName={incomingCall.callerName}
+          callerAvatar={incomingCall.callerAvatar}
+          onAccept={handleAcceptIncomingCall}
+          onDecline={handleDeclineIncomingCall}
         />
       )}
 
