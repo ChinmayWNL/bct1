@@ -71,6 +71,18 @@ This document details all technical, security, protocol, and performance improve
   - **Bidirectional Media Streams**: Full remote video display with Picture-in-Picture (PiP) local preview, dedicated remote `<audio>` playback element, dynamic microphone mute toggles, and camera video toggles.
   - **BlockBot Companion Simulation**: When testing with BlockBot (`isDemoBot`), automatically simulates response after 2.2s so users can verify their camera and mic without a second device.
 
+### 2.5.1 WebRTC Signaling State Machine & Media Pipeline Hardening
+- **Problem Identified**:
+  - **`InvalidStateError: Failed to execute 'setRemoteDescription' on 'RTCPeerConnection': Failed to set remote answer sdp: Called in wrong state: stable`**: In XMTP v3, `conversation.stream()` yields all messages including those sent by the local client. When the receiver accepted a call and dispatched an `answer` payload over XMTP, the receiver's own message stream echoed the `answer` back to itself. Because the receiver was already in `signalingState = 'stable'`, executing `pc.setRemoteDescription(answer)` violated the WebRTC state machine and crashed negotiation.
+  - **Video Appearing Black**: Remote `<video>` was placed in `display: none` until `hasRemoteVideo` flipped, causing modern Chromium/WebKit rendering engines to halt video frame decoding. Additionally, unmuted `<video>` elements triggered browser Autoplay Policy blocks without user gesture on that specific DOM node.
+  - **Voice Call Not Connecting**: Single-track arrivals (`event.streams[0] === undefined`) caused tracks to be discarded. In addition, `srcObject` assignments relied on transient synchronous refs without React state bindings, failing to attach across re-renders.
+- **Implemented Fixes**:
+  - **Loopback Filtering in `page.js`**: `processIncomingMessage` filters out any `call_signal` where `message.senderInboxId === xmtpClient?.inboxId`, `data.senderInboxId === xmtpClient?.inboxId`, or `data.senderAddress === account`.
+  - **Signaling State Guards**: In `CallModal.js`, `handleSignalEvent` strictly validates `pc.signalingState === 'have-local-offer'` before invoking `pc.setRemoteDescription(answer)`. Answers received when already `stable` are safely dropped with a console warning.
+  - **Media Stream State Hooks & Explicit Playback**: Stored `localStream` and `remoteStream` in React state (`useState`) with dedicated `useEffect` listeners binding `srcObject` and executing `.play().catch(...)`.
+  - **Autoplay Compliance & Echo Prevention**: Remote `<video>` is `muted` with smooth opacity transitions (`opacity: hasRemoteVideo ? 1 : 0`), allowing background hardware decoding while eliminating Autoplay Policy rejections. Incoming audio is routed cleanly through a dedicated `<audio ref={remoteAudioRef} autoPlay playsInline />` element for both voice and video calls.
+  - **Candidate Serialization & Fallback MediaStream**: Ensured candidates are serialized via `event.candidate.toJSON()` and tracks without container streams dynamically instantiate a fallback `new MediaStream([event.track])`. Attached `oniceconnectionstatechange` to track connection status changes immediately.
+
 ### 2.6 [ContactInfoDrawer.js](file:///s:/blockchain/web/src/components/ContactInfoDrawer.js) — Memoized Gallery & Audio Playback
 - **Previous behavior**: Iterated through all messages and parsed JSON strings on every render without memoization. Voice notes in the media drawer could not be played.
 - **Fix**:

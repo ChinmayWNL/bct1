@@ -478,8 +478,16 @@ export default function Home() {
       return false;
     }
     if (data.type === 'call_signal') {
+      // Prevent processing signals originating from self
+      const isFromSelf = (message.senderInboxId && xmtpClient?.inboxId && message.senderInboxId === xmtpClient.inboxId) ||
+                         (data.senderInboxId && xmtpClient?.inboxId && data.senderInboxId === xmtpClient.inboxId) ||
+                         (data.senderAddress && account && data.senderAddress.toLowerCase() === account.toLowerCase());
+      if (isFromSelf) {
+        return false;
+      }
+
       if (data.subType === 'offer') {
-        const callerPeerAddr = activeConversation?.peerAddress || message.senderInboxId;
+        const callerPeerAddr = data.senderAddress || activeConversation?.peerAddress || message.senderInboxId;
         const callerProfile = callerPeerAddr ? addressProfiles[callerPeerAddr.toLowerCase()] : null;
         setIncomingCall({
           callType: data.callType || 'voice',
@@ -1074,6 +1082,8 @@ export default function Home() {
     try {
       const payload = {
         type: 'call_signal',
+        senderInboxId: xmtpClient?.inboxId || account,
+        senderAddress: account,
         ...signalData,
         timestamp: new Date().getTime()
       };
