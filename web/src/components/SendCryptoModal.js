@@ -14,27 +14,52 @@ export default function SendCryptoModal({ recipientAddress, recipientName, userB
     e.preventDefault();
     setErrorMsg('');
 
-    const parsedAmt = parseFloat(amount);
-    if (!amount || isNaN(parsedAmt) || parsedAmt <= 0) {
-      setErrorMsg('Please enter a valid ETH amount.');
+    const trimmedAmt = amount.trim();
+    if (!trimmedAmt || !/^\d+(\.\d{1,18})?$/.test(trimmedAmt)) {
+      setErrorMsg('Please enter a valid ETH amount (up to 18 decimals).');
       return;
     }
 
-    if (userBalance && parsedAmt > parseFloat(userBalance)) {
-      setErrorMsg(`Insufficient funds. Your balance is ${parseFloat(userBalance).toFixed(4)} ETH.`);
+    let weiAmount;
+    try {
+      weiAmount = ethers.parseEther(trimmedAmt);
+      if (weiAmount <= 0n) {
+        setErrorMsg('Please enter an amount greater than 0.');
+        return;
+      }
+    } catch (err) {
+      setErrorMsg('Invalid amount precision.');
+      return;
+    }
+
+    if (userBalance) {
+      try {
+        const userWei = ethers.parseEther(userBalance.toString());
+        if (weiAmount >= userWei) {
+          setErrorMsg(`Insufficient balance for value + gas fee buffer. Balance: ${parseFloat(userBalance).toFixed(4)} ETH`);
+          return;
+        }
+      } catch (err) {}
+    }
+
+    // Validate recipient
+    const isBot = recipientAddress?.toLowerCase() === '0x000000000000000000000000000000000000dead';
+    if (!isBot && !ethers.isAddress(recipientAddress)) {
+      setErrorMsg('Recipient address is not a valid Ethereum address.');
       return;
     }
 
     // Check if tipping the built-in BlockBot or demo mode
-    if (recipientAddress?.toLowerCase() === '0x000000000000000000000000000000000000dead' || !signer) {
+    if (isBot || !signer) {
       setIsSending(true);
       setTimeout(() => {
         setIsSending(false);
-        const demoHash = '0x' + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+        const demoHash = '0xdemo' + Array.from({ length: 60 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
         onSuccess({
-          amount: amount,
+          amount: trimmedAmt,
           txHash: demoHash,
-          note: note.trim()
+          note: note.trim(),
+          status: 'confirmed'
         });
         onClose();
       }, 700);
@@ -45,22 +70,35 @@ export default function SendCryptoModal({ recipientAddress, recipientName, userB
       setIsSending(true);
       const tx = await signer.sendTransaction({
         to: recipientAddress,
-        value: ethers.parseEther(amount.toString())
+        value: weiAmount
       });
 
-      // Notify parent of success with tx details
+      // Optimistically inform parent with broadcast hash
       onSuccess({
-        amount: amount,
+        amount: trimmedAmt,
         txHash: tx.hash,
-        note: note.trim()
+        note: note.trim(),
+        status: 'pending'
       });
       onClose();
+
+      // Monitor confirmation asynchronously
+      tx.wait(1).then((receipt) => {
+        if (receipt && receipt.status === 1) {
+          onSuccess({
+            amount: trimmedAmt,
+            txHash: tx.hash,
+            note: note.trim(),
+            status: 'confirmed'
+          });
+        }
+      }).catch(console.warn);
     } catch (err) {
       console.error("Crypto transfer failed", err);
       if (err.code === 'ACTION_REJECTED' || err.message?.includes('user rejected')) {
         setErrorMsg('Transaction was rejected in MetaMask.');
       } else {
-        setErrorMsg(err.reason || err.message || 'Transaction failed.');
+        setErrorMsg(err.reason || err.shortMessage || err.message || 'Transaction failed.');
       }
     } finally {
       setIsSending(false);

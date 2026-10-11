@@ -1,7 +1,7 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { ethers } from 'ethers';
-import { USER_REGISTRY_ABI, DEFAULT_USER_REGISTRY_ADDRESS } from './contracts';
+import { USER_REGISTRY_ABI, DEFAULT_USER_REGISTRY_ADDRESS, getUserRegistryAddress } from './contracts';
 import VoiceNotePlayer from '@/components/VoiceNotePlayer';
 import HeroDashboard from '@/components/HeroDashboard';
 import SendCryptoModal from '@/components/SendCryptoModal';
@@ -31,6 +31,7 @@ export default function Home() {
   const [walletAddress, setWalletAddress] = useState(null);
   const [signer, setSigner] = useState(null);
   const [provider, setProvider] = useState(null);
+  const [chainId, setChainId] = useState(null);
   const [userBalance, setUserBalance] = useState('0.0000');
   const [networkName, setNetworkName] = useState('');
   const [ensName, setEnsName] = useState('');
@@ -42,6 +43,7 @@ export default function Home() {
   const [newContactAddress, setNewContactAddress] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [isConnecting, setIsConnecting] = useState(false);
+  const activeStreamIdRef = useRef(0);
 
   // Tabs & Pinning State
   const [activeTab, setActiveTab] = useState('all'); // 'all' | 'pinned'
@@ -155,12 +157,25 @@ export default function Home() {
     });
   };
 
-  // Disappearing Timer Handler
-  const handleSetDisappearingTimer = (seconds) => {
+  // Disappearing Timer Handler (Synchronizes across peers via XMTP payload)
+  const handleSetDisappearingTimer = async (seconds) => {
     setDisappearingTimer(seconds);
     try {
       localStorage.setItem('blockchat_disappearing_timer', String(seconds));
     } catch (e) {}
+
+    if (activeConversation && !activeConversation.isDemoBot) {
+      try {
+        const configPayload = {
+          type: 'disappearing_config',
+          timer: seconds,
+          timestamp: new Date().getTime()
+        };
+        await activeConversation.sendText(`[JSON_MSG]${JSON.stringify(configPayload)}`);
+      } catch (err) {
+        console.warn("Failed to broadcast disappearing timer over XMTP:", err);
+      }
+    }
   };
 
   // Clear Chat Handler
@@ -196,9 +211,14 @@ export default function Home() {
         // Fetch balance
         refreshBalance(ethProvider, address);
 
-        // Fetch Network name
+        // Fetch Network & Chain ID
+        let detectedChainId = null;
         try {
           const net = await ethProvider.getNetwork();
+          detectedChainId = Number(net.chainId);
+          setChainId(detectedChainId);
+          setProfileContractAddress(getUserRegistryAddress(detectedChainId));
+
           const netNames = {
             1: 'Ethereum Mainnet',
             11155111: 'Sepolia Testnet',
@@ -207,7 +227,7 @@ export default function Home() {
             137: 'Polygon',
             31337: 'Hardhat Local'
           };
-          setNetworkName(netNames[Number(net.chainId)] || net.name || `Chain ${net.chainId}`);
+          setNetworkName(netNames[detectedChainId] || net.name || `Chain ${detectedChainId}`);
         } catch (e) {}
 
         // Reverse ENS lookup
@@ -248,6 +268,38 @@ export default function Home() {
       alert('Please install MetaMask or a Web3 wallet to connect!');
     }
   };
+
+  // EIP-1193 Listeners for Account and Network Changes
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.ethereum) return;
+
+    const handleAccountsChanged = (accounts) => {
+      if (!accounts || accounts.length === 0) {
+        setWalletAddress(null);
+        setSigner(null);
+        setProvider(null);
+        setXmtpClient(null);
+        setActiveConversation(null);
+        setMessages([]);
+      } else if (walletAddress && accounts[0].toLowerCase() !== walletAddress.toLowerCase()) {
+        connectWallet();
+      }
+    };
+
+    const handleChainChanged = () => {
+      window.location.reload();
+    };
+
+    window.ethereum.on('accountsChanged', handleAccountsChanged);
+    window.ethereum.on('chainChanged', handleChainChanged);
+
+    return () => {
+      if (window.ethereum.removeListener) {
+        window.ethereum.removeListener('accountsChanged', handleAccountsChanged);
+        window.ethereum.removeListener('chainChanged', handleChainChanged);
+      }
+    };
+  }, [walletAddress]);
 
   // Fetch Profile (Local + On-Chain)
   const fetchOnChainProfile = async (ethSigner, address) => {
@@ -400,21 +452,51 @@ export default function Home() {
     }
   };
 
-  // Helper to apply incoming control events (delete / edit)
-  const processIncomingMessage = (message) => {
+  // Helper to apply incoming control events (delete / edit / disappearing) with sender authorization
+  const processIncomingMessage = (message, messageList = messages) => {
     const data = parseMessageData(message);
     if (data.type === 'delete' && data.targetId) {
-      setDeletedMessages(prev => ({ ...prev, [data.targetId]: true }));
+      const target = messageList.find(m => m.id === data.targetId);
+      // Ensure only the sender can delete their own message
+      if (!target || target.senderInboxId === message.senderInboxId) {
+        setDeletedMessages(prev => ({ ...prev, [data.targetId]: true }));
+      } else {
+        console.warn("Unauthorized delete attempt rejected for message", data.targetId);
+      }
       return false;
     }
     if (data.type === 'edit' && data.targetId) {
-      setEditedMessages(prev => ({ ...prev, [data.targetId]: data.newText }));
+      const target = messageList.find(m => m.id === data.targetId);
+      // Ensure only the sender can edit their own message
+      if (!target || target.senderInboxId === message.senderInboxId) {
+        setEditedMessages(prev => ({ ...prev, [data.targetId]: data.newText }));
+      } else {
+        console.warn("Unauthorized edit attempt rejected for message", data.targetId);
+      }
+      return false;
+    }
+    if (data.type === 'reaction' && data.targetId && data.emoji) {
+      setReactionsMap(prev => {
+        const existing = prev[data.targetId] || [];
+        const updated = existing.includes(data.emoji)
+          ? existing.filter(e => e !== data.emoji)
+          : [...existing, data.emoji];
+        return { ...prev, [data.targetId]: updated };
+      });
+      return false;
+    }
+    if (data.type === 'disappearing_config' && typeof data.timer === 'number') {
+      setDisappearingTimer(data.timer);
+      try {
+        localStorage.setItem('blockchat_disappearing_timer', String(data.timer));
+      } catch (e) {}
       return false;
     }
     return true;
   };
 
   const selectConversation = async (conversation) => {
+    const streamId = ++activeStreamIdRef.current;
     setActiveConversation(conversation);
     setReplyingTo(null);
     setSelectedImage(null);
@@ -432,16 +514,32 @@ export default function Home() {
 
     try {
       const rawMsgs = await conversation.messages();
+      if (activeStreamIdRef.current !== streamId) return;
+
       const displayMsgs = [];
       const newDeleted = {};
       const newEdited = {};
+      const newReactions = {};
 
       for (const m of rawMsgs) {
         const d = parseMessageData(m);
         if (d.type === 'delete' && d.targetId) {
-          newDeleted[d.targetId] = true;
+          const target = rawMsgs.find(orig => orig.id === d.targetId);
+          if (!target || target.senderInboxId === m.senderInboxId) {
+            newDeleted[d.targetId] = true;
+          }
         } else if (d.type === 'edit' && d.targetId) {
-          newEdited[d.targetId] = d.newText;
+          const target = rawMsgs.find(orig => orig.id === d.targetId);
+          if (!target || target.senderInboxId === m.senderInboxId) {
+            newEdited[d.targetId] = d.newText;
+          }
+        } else if (d.type === 'reaction' && d.targetId && d.emoji) {
+          const existing = newReactions[d.targetId] || [];
+          newReactions[d.targetId] = existing.includes(d.emoji)
+            ? existing.filter(e => e !== d.emoji)
+            : [...existing, d.emoji];
+        } else if (d.type === 'disappearing_config' && typeof d.timer === 'number') {
+          setDisappearingTimer(d.timer);
         } else {
           displayMsgs.push(m);
         }
@@ -449,11 +547,17 @@ export default function Home() {
 
       setDeletedMessages(prev => ({ ...prev, ...newDeleted }));
       setEditedMessages(prev => ({ ...prev, ...newEdited }));
+      setReactionsMap(prev => ({ ...prev, ...newReactions }));
       setMessages(displayMsgs);
       
       const stream = await conversation.stream();
       for await (const message of stream) {
-        const isDisplayable = processIncomingMessage(message);
+        // Cancel stream processing if user switched to another conversation
+        if (activeStreamIdRef.current !== streamId) {
+          break;
+        }
+
+        const isDisplayable = processIncomingMessage(message, displayMsgs);
         if (isDisplayable) {
           setMessages(prev => {
             const exists = prev.find(m => m.id === message.id);
@@ -855,16 +959,30 @@ export default function Home() {
     }
   };
 
-  // Crypto Transfer Success Handler
-  const handleCryptoTransferSuccess = async ({ amount, txHash, note }) => {
+  // Crypto Transfer Success Handler (with status & chainId tracking)
+  const handleCryptoTransferSuccess = async ({ amount, txHash, note, status = 'confirmed' }) => {
     if (!activeConversation) return;
 
     try {
+      // If already recorded and this is a confirmation update, update existing receipt status
+      if (status === 'confirmed') {
+        setMessages(prev => prev.map(m => {
+          const d = parseMessageData(m);
+          if (d.type === 'crypto_transfer' && d.txHash === txHash) {
+            const updatedData = { ...d, status: 'confirmed' };
+            return { ...m, content: `[JSON_MSG]${JSON.stringify(updatedData)}` };
+          }
+          return m;
+        }));
+      }
+
       const cryptoPayload = {
         type: 'crypto_transfer',
         amount: amount,
         txHash: txHash,
         note: note,
+        status: status,
+        chainId: chainId,
         from: walletAddress,
         to: activeConversation.peerAddress,
         timestamp: new Date().getTime()
@@ -893,7 +1011,8 @@ export default function Home() {
     }
   };
 
-  const handleAddReaction = (messageId, emoji) => {
+  const handleAddReaction = async (messageId, emoji) => {
+    // 1. Optimistically update local UI state
     setReactionsMap(prev => {
       const existing = prev[messageId] || [];
       const updated = existing.includes(emoji) 
@@ -902,6 +1021,27 @@ export default function Home() {
       return { ...prev, [messageId]: updated };
     });
     setActiveReactionPicker(null);
+
+    // 2. Broadcast reaction over XMTP network to peer
+    if (activeConversation) {
+      try {
+        const reactionPayload = {
+          type: 'reaction',
+          targetId: messageId,
+          emoji: emoji,
+          timestamp: new Date().getTime()
+        };
+        const textPayload = `[JSON_MSG]${JSON.stringify(reactionPayload)}`;
+
+        if (activeConversation.isDemoBot) {
+          triggerBotReply(emoji, 'text');
+        } else {
+          await activeConversation.sendText(textPayload);
+        }
+      } catch (err) {
+        console.error("Failed to broadcast reaction over XMTP:", err);
+      }
+    }
   };
 
   // Helpers
@@ -955,44 +1095,50 @@ export default function Home() {
     return `${m}:${s < 10 ? '0' : ''}${s}`;
   };
 
-  // Filter Conversations based on Search, Pinned, and Tabs
-  const filteredConversations = conversations
-    .filter(convo => {
-      const displayId = convo.peerAddress || convo.id || '';
-      const peerProf = addressProfiles[displayId.toLowerCase()];
-      const name = peerProf?.username || displayId;
-      const matchesSearch = name.toLowerCase().includes(searchQuery.toLowerCase());
-      if (!matchesSearch) return false;
+  // Memoized Filtered Conversations based on Search, Pinned, and Tabs
+  const filteredConversations = useMemo(() => {
+    return conversations
+      .filter(convo => {
+        const displayId = convo.peerAddress || convo.id || '';
+        const peerProf = addressProfiles[displayId.toLowerCase()];
+        const name = peerProf?.username || displayId;
+        const matchesSearch = name.toLowerCase().includes(searchQuery.toLowerCase());
+        if (!matchesSearch) return false;
 
-      if (activeTab === 'pinned') {
-        return !!pinnedConvos[convo.id];
+        if (activeTab === 'pinned') {
+          return !!pinnedConvos[convo.id];
+        }
+        return true;
+      })
+      .sort((a, b) => {
+        const aPinned = !!pinnedConvos[a.id];
+        const bPinned = !!pinnedConvos[b.id];
+        if (aPinned && !bPinned) return -1;
+        if (!aPinned && bPinned) return 1;
+        return 0;
+      });
+  }, [conversations, addressProfiles, searchQuery, activeTab, pinnedConvos]);
+
+  const pinnedCount = useMemo(() => {
+    return Object.values(pinnedConvos).filter(Boolean).length;
+  }, [pinnedConvos]);
+
+  // Memoized Filtered Messages for active in-thread search and disappearing messages
+  const visibleMessages = useMemo(() => {
+    return messages.filter(msg => {
+      // Check Disappearing timer
+      if (disappearingTimer > 0 && msg.sentAt) {
+        const ageSeconds = (new Date().getTime() - new Date(msg.sentAt).getTime()) / 1000;
+        if (ageSeconds > disappearingTimer) {
+          return false;
+        }
       }
-      return true;
-    })
-    .sort((a, b) => {
-      const aPinned = !!pinnedConvos[a.id];
-      const bPinned = !!pinnedConvos[b.id];
-      if (aPinned && !bPinned) return -1;
-      if (!aPinned && bPinned) return 1;
-      return 0;
+      if (!inChatSearchQuery.trim()) return true;
+      const data = parseMessageData(msg);
+      const text = editedMessages[msg.id] || data.text || data.note || '';
+      return text.toLowerCase().includes(inChatSearchQuery.toLowerCase());
     });
-
-  const pinnedCount = Object.values(pinnedConvos).filter(Boolean).length;
-
-  // Filter messages for active in-thread search and disappearing messages
-  const visibleMessages = messages.filter(msg => {
-    // Check Disappearing timer
-    if (disappearingTimer > 0 && msg.sentAt) {
-      const ageSeconds = (new Date().getTime() - new Date(msg.sentAt).getTime()) / 1000;
-      if (ageSeconds > disappearingTimer) {
-        return false;
-      }
-    }
-    if (!inChatSearchQuery.trim()) return true;
-    const data = parseMessageData(msg);
-    const text = editedMessages[msg.id] || data.text || data.note || '';
-    return text.toLowerCase().includes(inChatSearchQuery.toLowerCase());
-  });
+  }, [messages, disappearingTimer, inChatSearchQuery, editedMessages]);
 
   return (
     <div className="app-container">
@@ -1425,6 +1571,7 @@ export default function Home() {
                               data={msgData} 
                               isSent={isSent} 
                               networkName={networkName} 
+                              chainId={chainId}
                             />
                           )}
 

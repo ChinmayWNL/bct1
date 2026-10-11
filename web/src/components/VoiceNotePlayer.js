@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useId } from 'react';
 
 export default function VoiceNotePlayer({ audioUrl, duration }) {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -7,8 +7,11 @@ export default function VoiceNotePlayer({ audioUrl, duration }) {
   const [totalDuration, setTotalDuration] = useState(duration || 0);
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
   const audioRef = useRef(null);
+  const playerId = useId();
 
+  // Initialize and manage audio lifecycle (Only re-instantiate if audioUrl changes)
   useEffect(() => {
+    if (!audioUrl) return;
     const audio = new Audio(audioUrl);
     audioRef.current = audio;
     audio.playbackRate = playbackSpeed;
@@ -28,11 +31,27 @@ export default function VoiceNotePlayer({ audioUrl, duration }) {
       setCurrentTime(0);
     };
 
+    audio.onerror = (e) => {
+      console.warn("Audio element error", e);
+      setIsPlaying(false);
+    };
+
+    // Coordinate single-audio playback across the entire app
+    const handleOtherAudioPlay = (e) => {
+      if (e.detail?.playerId !== playerId && audioRef.current && !audioRef.current.paused) {
+        audioRef.current.pause();
+        setIsPlaying(false);
+      }
+    };
+    window.addEventListener('blockchat:audio-play', handleOtherAudioPlay);
+
     return () => {
+      window.removeEventListener('blockchat:audio-play', handleOtherAudioPlay);
       audio.pause();
       audio.src = '';
+      audioRef.current = null;
     };
-  }, [audioUrl, playbackSpeed]);
+  }, [audioUrl, playerId]);
 
   const togglePlay = () => {
     if (!audioRef.current) return;
@@ -40,7 +59,14 @@ export default function VoiceNotePlayer({ audioUrl, duration }) {
       audioRef.current.pause();
       setIsPlaying(false);
     } else {
-      audioRef.current.play().then(() => setIsPlaying(true)).catch(console.error);
+      // Notify other active players to pause
+      window.dispatchEvent(new CustomEvent('blockchat:audio-play', { detail: { playerId } }));
+      audioRef.current.play()
+        .then(() => setIsPlaying(true))
+        .catch(err => {
+          console.error("Audio playback error:", err);
+          setIsPlaying(false);
+        });
     }
   };
 
@@ -50,9 +76,20 @@ export default function VoiceNotePlayer({ audioUrl, duration }) {
     const nextIdx = (speeds.indexOf(playbackSpeed) + 1) % speeds.length;
     const nextSpeed = speeds[nextIdx];
     setPlaybackSpeed(nextSpeed);
+    // Apply speed without re-instantiating audio or interrupting currentTime
     if (audioRef.current) {
       audioRef.current.playbackRate = nextSpeed;
     }
+  };
+
+  const handleWaveformSeek = (e) => {
+    if (!audioRef.current || !totalDuration) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const ratio = Math.max(0, Math.min(1, clickX / rect.width));
+    const targetTime = ratio * totalDuration;
+    audioRef.current.currentTime = targetTime;
+    setCurrentTime(targetTime);
   };
 
   const formatTime = (secs) => {
@@ -73,12 +110,17 @@ export default function VoiceNotePlayer({ audioUrl, duration }) {
       <button type="button" className="vn-play-btn" onClick={togglePlay} aria-label={isPlaying ? "Pause voice note" : "Play voice note"}>
         {isPlaying ? '⏸' : '▶'}
       </button>
-      <div className="vn-waveform-container">
+      <div 
+        className="vn-waveform-container" 
+        onClick={handleWaveformSeek} 
+        style={{ cursor: 'pointer' }}
+        title="Click waveform to seek"
+      >
         <div className="vn-wave-bars">
           {waveHeights.map((h, i) => (
             <div 
               key={i} 
-              className={`vn-bar ${i <= playedBars && isPlaying ? 'played' : ''}`}
+              className={`vn-bar ${i <= playedBars ? 'played' : ''}`}
               style={{ height: `${h}px` }}
             />
           ))}

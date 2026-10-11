@@ -1,5 +1,6 @@
 'use client';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import VoiceNotePlayer from '@/components/VoiceNotePlayer';
 
 export default function ContactInfoDrawer({
   peerAddress,
@@ -20,42 +21,50 @@ export default function ContactInfoDrawer({
   const [activeMediaTab, setActiveMediaTab] = useState('media');
   const [copied, setCopied] = useState(false);
 
-  const handleCopy = () => {
+  const handleCopy = async () => {
     if (!peerAddress) return;
-    navigator.clipboard.writeText(peerAddress);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    try {
+      await navigator.clipboard.writeText(peerAddress);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.warn("Clipboard copy failed", err);
+    }
   };
 
   const displayName = peerName ? `@${peerName}` : `${(peerAddress || '').substring(0, 6)}...${(peerAddress || '').substring((peerAddress || '').length - 4)}`;
 
-  // Parse media and voice notes from messages
-  const photos = [];
-  const voiceNotes = [];
-  const starredList = [];
+  // Efficient memoized parsing of media, voice notes and starred messages
+  const { photos, voiceNotes, starredList } = useMemo(() => {
+    const p = [];
+    const vn = [];
+    const star = [];
 
-  messages.forEach(msg => {
-    let data = { type: 'text', text: '' };
-    if (typeof msg.content === 'string') {
-      if (msg.content.startsWith('[JSON_MSG]')) {
-        try { data = JSON.parse(msg.content.replace('[JSON_MSG]', '')); } catch (e) {}
-      } else {
-        data = { type: 'text', text: msg.content };
+    messages.forEach(msg => {
+      let data = { type: 'text', text: '' };
+      if (typeof msg.content === 'string') {
+        if (msg.content.startsWith('[JSON_MSG]')) {
+          try { data = JSON.parse(msg.content.replace('[JSON_MSG]', '')); } catch (e) {}
+        } else {
+          data = { type: 'text', text: msg.content };
+        }
+      } else if (msg.content && msg.content.text) {
+        data = { type: 'text', text: msg.content.text };
       }
-    } else if (msg.content && msg.content.text) {
-      data = { type: 'text', text: msg.content.text };
-    }
 
-    if (data.type === 'media' && data.media) {
-      photos.push({ id: msg.id, media: data.media, caption: data.text });
-    }
-    if (data.type === 'audio') {
-      voiceNotes.push({ id: msg.id, duration: data.duration, audioUrl: data.audioUrl });
-    }
-    if (starredMessages[msg.id]) {
-      starredList.push({ id: msg.id, text: data.text || data.note || (data.type === 'media' ? '📷 Photo' : '🎤 Voice Note') });
-    }
-  });
+      if (data.type === 'media' && data.media) {
+        p.push({ id: msg.id, media: data.media, caption: data.text });
+      }
+      if (data.type === 'audio' && data.audioUrl) {
+        vn.push({ id: msg.id, duration: data.duration, audioUrl: data.audioUrl });
+      }
+      if (starredMessages[msg.id]) {
+        star.push({ id: msg.id, text: data.text || data.note || (data.type === 'media' ? '📷 Photo' : '🎤 Voice Note') });
+      }
+    });
+
+    return { photos: p, voiceNotes: vn, starredList: star };
+  }, [messages, starredMessages]);
 
   return (
     <div className="contact-drawer-overlay" onClick={onClose}>
@@ -199,11 +208,10 @@ export default function ContactInfoDrawer({
             )}
 
             {activeMediaTab === 'voice' && (
-              <div className="voice-gallery-list">
+              <div className="voice-gallery-list" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {voiceNotes.map((vn, i) => (
-                  <div key={vn.id || i} className="voice-gallery-item">
-                    <span>🎙️ Voice Note</span>
-                    <span className="vn-duration-pill">{vn.duration || 1}s</span>
+                  <div key={vn.id || i} className="voice-gallery-item" style={{ padding: '6px', background: 'rgba(255,255,255,0.03)', borderRadius: '10px' }}>
+                    <VoiceNotePlayer audioUrl={vn.audioUrl} duration={vn.duration} />
                   </div>
                 ))}
                 {voiceNotes.length === 0 && <div className="empty-subtext">No voice notes recorded yet.</div>}

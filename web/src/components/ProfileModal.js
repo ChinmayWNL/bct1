@@ -1,4 +1,5 @@
 'use client';
+import { useState } from 'react';
 
 export default function ProfileModal({
   walletAddress,
@@ -11,6 +12,54 @@ export default function ProfileModal({
   onSaveProfile,
   onClose
 }) {
+  const [validationError, setValidationError] = useState('');
+
+  const validateAndSubmit = (e, mode) => {
+    e.preventDefault();
+    setValidationError('');
+
+    const cleanUsername = (profileFormUsername || '').trim();
+    if (!cleanUsername) {
+      setValidationError('Username is required.');
+      return;
+    }
+
+    if (!userProfile.isRegistered && !/^[a-zA-Z0-9_]{3,20}$/.test(cleanUsername)) {
+      setValidationError('Username must be 3-20 characters long and contain only letters, numbers, or underscores.');
+      return;
+    }
+
+    const cleanAvatar = (profileFormAvatar || '').trim();
+    if (cleanAvatar) {
+      const lower = cleanAvatar.toLowerCase();
+      const isValid = 
+        lower.startsWith('http://') || 
+        lower.startsWith('https://') || 
+        lower.startsWith('ipfs://') || 
+        lower.startsWith('qm') || 
+        lower.startsWith('bafy');
+      
+      if (!isValid) {
+        setValidationError('Avatar must be a valid HTTPS URL or IPFS CID (Qm... / bafy...).');
+        return;
+      }
+      if (lower.startsWith('javascript:') || lower.startsWith('data:text/html')) {
+        setValidationError('Unsafe avatar URL scheme detected.');
+        return;
+      }
+    }
+
+    onSaveProfile(e, mode);
+  };
+
+  const getAvatarSrc = () => {
+    const trimmed = (profileFormAvatar || '').trim();
+    if (!trimmed) return null;
+    if (trimmed.startsWith('http')) return trimmed;
+    if (trimmed.startsWith('ipfs://')) return `https://ipfs.io/ipfs/${trimmed.replace('ipfs://', '')}`;
+    return `https://ipfs.io/ipfs/${trimmed}`;
+  };
+
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-card" onClick={(e) => e.stopPropagation()}>
@@ -21,13 +70,13 @@ export default function ProfileModal({
           <button className="modal-close-btn" onClick={onClose}>✕</button>
         </div>
 
-        <form onSubmit={(e) => onSaveProfile(e, 'local')}>
+        <form onSubmit={(e) => validateAndSubmit(e, 'local')}>
           {/* Avatar Preview */}
           <div className="profile-preview-box">
             <div className="profile-preview-avatar">
               {profileFormAvatar ? (
                 <img 
-                  src={profileFormAvatar.startsWith('http') ? profileFormAvatar : `https://ipfs.io/ipfs/${profileFormAvatar}`} 
+                  src={getAvatarSrc()} 
                   alt="Avatar Preview" 
                   onError={(e) => { e.currentTarget.style.display = 'none'; }}
                 />
@@ -57,10 +106,13 @@ export default function ProfileModal({
             <input 
               type="text" 
               className="form-control" 
-              placeholder="e.g. Satoshi" 
+              placeholder="e.g. Satoshi_99" 
               value={profileFormUsername} 
               disabled={userProfile.isRegistered}
-              onChange={(e) => setProfileFormUsername(e.target.value)}
+              onChange={(e) => {
+                setProfileFormUsername(e.target.value);
+                setValidationError('');
+              }}
               required
             />
             {userProfile.isRegistered && (
@@ -71,21 +123,30 @@ export default function ProfileModal({
           </div>
 
           <div className="form-group">
-            <label>Avatar (Image URL or IPFS CID)</label>
+            <label>Avatar (Image HTTPS URL or IPFS CID)</label>
             <input 
               type="text" 
               className="form-control" 
               placeholder="https://... or Qm..." 
               value={profileFormAvatar} 
-              onChange={(e) => setProfileFormAvatar(e.target.value)}
+              onChange={(e) => {
+                setProfileFormAvatar(e.target.value);
+                setValidationError('');
+              }}
             />
           </div>
+
+          {validationError && (
+            <div className="crypto-error-banner" style={{ margin: '12px 0' }}>
+              ⚠️ {validationError}
+            </div>
+          )}
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '20px' }}>
             <button 
               type="button" 
               className="modal-btn-primary"
-              onClick={(e) => onSaveProfile(e, 'local')}
+              onClick={(e) => validateAndSubmit(e, 'local')}
             >
               ⚡ Save Profile (Instant & Free)
             </button>
@@ -93,7 +154,7 @@ export default function ProfileModal({
               type="button" 
               className="modal-btn-secondary"
               disabled={isSavingProfile}
-              onClick={(e) => onSaveProfile(e, 'contract')}
+              onClick={(e) => validateAndSubmit(e, 'contract')}
             >
               {isSavingProfile ? "Submitting Transaction..." : "⛓️ Register via Smart Contract (On-Chain)"}
             </button>

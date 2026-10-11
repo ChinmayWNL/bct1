@@ -24,15 +24,24 @@ export default function EmojiPicker({ onSelectEmoji, onClose }) {
     }
   };
 
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (popoverRef.current && !popoverRef.current.contains(e.target)) {
-        onClose();
+        if (onCloseRef.current) onCloseRef.current();
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [onClose]);
+    document.addEventListener('touchstart', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, []);
 
   return (
     <div className="composer-emoji-popover" ref={popoverRef}>

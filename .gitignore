@@ -38,3 +38,6 @@ Thumbs.db
 # Turbopack cache
 *.sst
 *.meta
+
+# Local test instances
+web2/

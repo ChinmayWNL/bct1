@@ -1,19 +1,44 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import QRCode from 'qrcode';
 
 export default function QRCodeModal({ address, username, onClose }) {
   const [copied, setCopied] = useState(false);
+  const [qrError, setQrError] = useState(false);
+  const canvasRef = useRef(null);
 
-  const handleCopy = () => {
+  useEffect(() => {
+    if (!address || !canvasRef.current) return;
+    QRCode.toCanvas(
+      canvasRef.current,
+      address,
+      {
+        width: 240,
+        margin: 2,
+        color: {
+          dark: '#60a5fa',
+          light: '#0b1120'
+        }
+      },
+      (error) => {
+        if (error) {
+          console.error('Failed to generate offline QR code:', error);
+          setQrError(true);
+        }
+      }
+    );
+  }, [address]);
+
+  const handleCopy = async () => {
     if (!address) return;
-    navigator.clipboard.writeText(address);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2200);
+    try {
+      await navigator.clipboard.writeText(address);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2200);
+    } catch (err) {
+      console.warn('Clipboard write failed:', err);
+    }
   };
-
-  const qrUrl = address 
-    ? `https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(address)}&color=60a5fa&bgcolor=0b1120&margin=10`
-    : '';
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -27,14 +52,11 @@ export default function QRCodeModal({ address, username, onClose }) {
 
         <div className="qr-content-wrapper">
           <div className="qr-frame-glow">
-            {qrUrl && (
-              <img 
-                src={qrUrl} 
-                alt="Wallet Address QR" 
-                className="qr-image"
-                width={240}
-                height={240}
-              />
+            <canvas ref={canvasRef} className="qr-image" style={{ width: 240, height: 240, display: qrError ? 'none' : 'block' }} />
+            {qrError && (
+              <div style={{ color: '#ef4444', padding: '20px', fontSize: '0.85rem' }}>
+                Failed to render QR Code offline
+              </div>
             )}
             <div className="qr-center-badge">
               <span>⚡</span>

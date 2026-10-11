@@ -84,21 +84,25 @@ export default function CallModal({
     return () => clearInterval(timer);
   }, [callStatus]);
 
-  // Video call camera setup
+  // Media stream setup for voice & video calls
   useEffect(() => {
     let activeStream = null;
-    if (callType === 'video' && navigator.mediaDevices?.getUserMedia) {
-      navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+    const constraints = callType === 'video' 
+      ? { video: true, audio: true }
+      : { audio: true, video: false };
+
+    if (navigator.mediaDevices?.getUserMedia) {
+      navigator.mediaDevices.getUserMedia(constraints)
         .then(stream => {
           activeStream = stream;
           mediaStreamRef.current = stream;
-          setHasCameraStream(true);
-          if (localVideoRef.current) {
+          setHasCameraStream(callType === 'video');
+          if (callType === 'video' && localVideoRef.current) {
             localVideoRef.current.srcObject = stream;
           }
         })
         .catch(err => {
-          console.warn("Camera access denied or unavailable; falling back to visualizer mode", err);
+          console.warn("Media stream access denied or unavailable", err);
           setHasCameraStream(false);
         });
     }
@@ -109,24 +113,27 @@ export default function CallModal({
       }
       if (mediaStreamRef.current) {
         mediaStreamRef.current.getTracks().forEach(t => t.stop());
+        mediaStreamRef.current = null;
       }
     };
   }, [callType]);
 
   const toggleMute = () => {
-    setIsMuted(!isMuted);
+    const nextMuted = !isMuted;
+    setIsMuted(nextMuted);
     if (mediaStreamRef.current) {
       mediaStreamRef.current.getAudioTracks().forEach(t => {
-        t.enabled = isMuted;
+        t.enabled = !nextMuted;
       });
     }
   };
 
   const toggleVideo = () => {
-    setIsVideoEnabled(!isVideoEnabled);
+    const nextVideo = !isVideoEnabled;
+    setIsVideoEnabled(nextVideo);
     if (mediaStreamRef.current) {
       mediaStreamRef.current.getVideoTracks().forEach(t => {
-        t.enabled = !isVideoEnabled;
+        t.enabled = nextVideo;
       });
     }
   };
