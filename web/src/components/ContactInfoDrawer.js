@@ -32,6 +32,42 @@ export default function ContactInfoDrawer({
     }
   };
 
+  const handleExportChat = () => {
+    if (!messages || messages.length === 0) {
+      alert("No messages to export.");
+      return;
+    }
+    const lines = messages.map(m => {
+      let text = '';
+      if (typeof m.content === 'string') {
+        if (m.content.startsWith('[JSON_MSG]')) {
+          try {
+            const parsed = JSON.parse(m.content.replace('[JSON_MSG]', ''));
+            text = parsed.text || `[${parsed.type || 'Attachment'}]`;
+          } catch (e) { text = m.content; }
+        } else {
+          text = m.content;
+        }
+      } else if (m.content?.text) {
+        text = m.content.text;
+      } else {
+        text = '[Encrypted Message]';
+      }
+      const time = m.sentAt ? new Date(m.sentAt).toLocaleString() : 'Recent';
+      const sender = m.senderInboxId === 'bot-inbox' ? 'BlockBot' : (peerAddress ? `${peerAddress.substring(0, 6)}...` : 'User');
+      return `[${time}] ${sender}: ${text}`;
+    });
+
+    const header = `========================================\nBlockChat Web - Exported Chat Transcript\nContact: ${displayName} (${peerAddress || 'N/A'})\nExport Date: ${new Date().toLocaleString()}\nMessages: ${messages.length}\n========================================\n\n`;
+    const blob = new Blob([header + lines.join('\n')], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `BlockChat_${displayName.replace('@', '')}_${Date.now()}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const displayName = peerName ? `@${peerName}` : `${(peerAddress || '').substring(0, 6)}...${(peerAddress || '').substring((peerAddress || '').length - 4)}`;
 
   // Efficient memoized parsing of media, voice notes and starred messages
@@ -219,8 +255,16 @@ export default function ContactInfoDrawer({
             )}
           </div>
 
-          {/* Danger Zone: Clear Chat */}
-          <div style={{ marginTop: '24px' }}>
+          {/* Chat History Actions */}
+          <div style={{ marginTop: '24px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <button 
+              type="button" 
+              className="coffee-btn-secondary"
+              style={{ width: '100%', padding: '10px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+              onClick={handleExportChat}
+            >
+              📥 Export Chat History (.txt)
+            </button>
             <button 
               type="button" 
               className="drawer-danger-btn"

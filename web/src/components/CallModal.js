@@ -41,6 +41,14 @@ export default function CallModal({
   const audioCtxRef = useRef(null);
   const pendingCandidatesRef = useRef([]);
 
+  const onSendSignalRef = useRef(onSendSignal);
+  const initialOfferRef = useRef(initialOffer);
+
+  useEffect(() => {
+    onSendSignalRef.current = onSendSignal;
+    initialOfferRef.current = initialOffer;
+  });
+
   // 1. Play synthetic telephone ringtone while caller waits for answer
   useEffect(() => {
     let ringInterval;
@@ -89,8 +97,9 @@ export default function CallModal({
 
     return () => {
       if (ringInterval) clearInterval(ringInterval);
-      if (audioCtxRef.current) {
-        try { audioCtxRef.current.close(); } catch (e) {}
+      if (audioCtxRef.current && audioCtxRef.current.state !== 'closed') {
+        audioCtxRef.current.close().catch(() => {});
+        audioCtxRef.current = null;
       }
     };
   }, [isOutgoing, callStatus]);
@@ -235,7 +244,7 @@ export default function CallModal({
 
         // ICE candidate generation with normalized JSON serialization
         pc.onicecandidate = (event) => {
-          if (event.candidate && onSendSignal) {
+          if (event.candidate && onSendSignalRef.current) {
             const rawCand = event.candidate;
             const candidateData = rawCand.toJSON ? rawCand.toJSON() : {
               candidate: rawCand.candidate,
@@ -244,7 +253,7 @@ export default function CallModal({
               usernameFragment: rawCand.usernameFragment
             };
 
-            onSendSignal({
+            onSendSignalRef.current({
               subType: 'candidate',
               candidate: candidateData,
               callId
@@ -276,8 +285,8 @@ export default function CallModal({
             offerToReceiveVideo: callType === 'video'
           });
           await pc.setLocalDescription(offer);
-          if (onSendSignal) {
-            onSendSignal({
+          if (onSendSignalRef.current) {
+            onSendSignalRef.current({
               subType: 'offer',
               sdp: offer,
               callType,
@@ -286,8 +295,8 @@ export default function CallModal({
           }
         } 
         // E. Incoming Accepted Call: Set Remote Offer & Create Answer
-        else if (initialOffer) {
-          await pc.setRemoteDescription(new RTCSessionDescription(initialOffer));
+        else if (initialOfferRef.current) {
+          await pc.setRemoteDescription(new RTCSessionDescription(initialOfferRef.current));
 
           // Drain queued candidates if any arrived before setup completed
           while (pendingCandidatesRef.current.length > 0) {
@@ -304,8 +313,8 @@ export default function CallModal({
           const answer = await pc.createAnswer();
           await pc.setLocalDescription(answer);
 
-          if (onSendSignal) {
-            onSendSignal({
+          if (onSendSignalRef.current) {
+            onSendSignalRef.current({
               subType: 'answer',
               sdp: answer,
               callId

@@ -14,7 +14,6 @@ export default function VoiceNotePlayer({ audioUrl, duration }) {
     if (!audioUrl) return;
     const audio = new Audio(audioUrl);
     audioRef.current = audio;
-    audio.playbackRate = playbackSpeed;
 
     audio.onloadedmetadata = () => {
       if (audio.duration && isFinite(audio.duration)) {
@@ -52,6 +51,13 @@ export default function VoiceNotePlayer({ audioUrl, duration }) {
       audioRef.current = null;
     };
   }, [audioUrl, playerId]);
+
+  // Synchronize playback speed without re-initializing Audio
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.playbackRate = playbackSpeed;
+    }
+  }, [playbackSpeed]);
 
   const togglePlay = () => {
     if (!audioRef.current) return;

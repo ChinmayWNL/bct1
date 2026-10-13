@@ -12,6 +12,60 @@ import CryptoReceipt from '@/components/CryptoReceipt';
 import CallModal from '@/components/CallModal';
 import IncomingCallModal from '@/components/IncomingCallModal';
 import ContactInfoDrawer from '@/components/ContactInfoDrawer';
+import CoffeeThemeModal from '@/components/CoffeeThemeModal';
+// Pure Utility Functions
+function formatAddress(address) {
+  if (!address) return '';
+  if (address.startsWith('0x') && address.length === 42) {
+    return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
+  }
+  if (address.length > 12) {
+    return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
+  }
+  return address;
+}
+
+function parseMessageData(msg) {
+  if (!msg) return { type: 'text', text: '' };
+  if (typeof msg.content === 'string') {
+    if (msg.content.startsWith('[JSON_MSG]')) {
+      try {
+        return JSON.parse(msg.content.replace('[JSON_MSG]', ''));
+      } catch (e) {
+        return { type: 'text', text: msg.content };
+      }
+    }
+    return { type: 'text', text: msg.content };
+  }
+  if (msg.content && msg.content.text) return { type: 'text', text: msg.content.text };
+  if (msg.content && msg.content.content) return { type: 'text', text: String(msg.content.content) };
+  return { type: 'system', text: 'System update' };
+}
+
+function formatMessageTime(dateObj) {
+  if (!dateObj) return '';
+  const date = new Date(dateObj);
+  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+function formatDiscordMessageTime(dateObj) {
+  if (!dateObj) return 'Today at ' + new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  const date = new Date(dateObj);
+  const now = new Date();
+  const isToday = date.toDateString() === now.toDateString();
+  const timeStr = date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  if (isToday) return `Today at ${timeStr}`;
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  if (date.toDateString() === yesterday.toDateString()) return `Yesterday at ${timeStr}`;
+  return `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()} ${timeStr}`;
+}
+
+function formatRecordingTime(secs) {
+  const m = Math.floor(secs / 60);
+  const s = Math.floor(secs % 60);
+  return `${m}:${s < 10 ? '0' : ''}${s}`;
+}
 
 export default function Home() {
   // Generate or retrieve encryption key for local XMTP DB
@@ -122,30 +176,158 @@ export default function Home() {
   const fileInputRef = useRef(null);
   const searchInputRef = useRef(null);
 
+  // Coffee Roasts Theme & Audio Preferences State
+  const [coffeeTheme, setCoffeeTheme] = useState('espresso');
+  const [wallpaperOpacity, setWallpaperOpacity] = useState('balanced');
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [showThemeModal, setShowThemeModal] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const storedTheme = localStorage.getItem('blockchat_coffee_theme');
+        if (storedTheme) {
+          setCoffeeTheme(storedTheme);
+          document.documentElement.setAttribute('data-coffee-theme', storedTheme);
+        }
+        const storedOpacity = localStorage.getItem('blockchat_wallpaper_opacity');
+        if (storedOpacity) {
+          setWallpaperOpacity(storedOpacity);
+          document.documentElement.setAttribute('data-wallpaper-opacity', storedOpacity);
+        }
+        const storedSound = localStorage.getItem('blockchat_sound_enabled');
+        if (storedSound !== null) {
+          setSoundEnabled(storedSound === 'true');
+        }
+      } catch (e) {}
+    }
+  }, []);
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Audio Notification Chime (Honors Mute Setting)
-  const playNotificationSound = () => {
-    if (isChatMuted) return;
+  // Web Audio Synthesizer (Zero Assets, Authentic WhatsApp Audio Feedback)
+  const playSendPop = () => {
+    if (!soundEnabled || isChatMuted) return;
     try {
       if (typeof window === 'undefined') return;
-      const AudioContext = window.AudioContext || window.webkitAudioContext;
-      if (!AudioContext) return;
-      const ctx = new AudioContext();
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.type = 'sine';
-      osc.frequency.setValueAtTime(587.33, ctx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.1);
-      gain.gain.setValueAtTime(0.15, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
+      // WhatsApp signature bubble pop: rapid pitch dive 750Hz -> 180Hz
+      osc.frequency.setValueAtTime(750, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(180, ctx.currentTime + 0.055);
+      gain.gain.setValueAtTime(0.22, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.055);
       osc.connect(gain);
       gain.connect(ctx.destination);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.25);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.055);
     } catch (e) {}
+  };
+
+  const playReceiveChime = () => {
+    if (!soundEnabled || isChatMuted) return;
+    try {
+      if (typeof window === 'undefined') return;
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      // Warm dual harmonic coffee chime: E5 (659Hz) and B5 (988Hz)
+      [659.25, 987.77].forEach((freq, idx) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        const startTime = ctx.currentTime + idx * 0.045;
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, startTime);
+        gain.gain.setValueAtTime(0.16, startTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.32);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(startTime);
+        osc.stop(startTime + 0.35);
+      });
+    } catch (e) {}
+  };
+
+  const playCoinClink = () => {
+    if (!soundEnabled || isChatMuted) return;
+    try {
+      if (typeof window === 'undefined') return;
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      // Metallic crystal chime for ETH tip confirmation
+      [1567.98, 2093.00, 3135.96].forEach((freq, idx) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        const startTime = ctx.currentTime + idx * 0.04;
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq, startTime);
+        gain.gain.setValueAtTime(0.18, startTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.42);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(startTime);
+        osc.stop(startTime + 0.45);
+      });
+    } catch (e) {}
+  };
+
+  const playThemePreviewSound = () => {
+    if (!soundEnabled) return;
+    try {
+      if (typeof window === 'undefined') return;
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(440, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.1);
+      gain.gain.setValueAtTime(0.15, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.15);
+    } catch (e) {}
+  };
+
+  // Backward-compatible alias for existing notification chime calls
+  const playNotificationSound = playReceiveChime;
+
+  const handleSelectTheme = (newTheme) => {
+    setCoffeeTheme(newTheme);
+    if (typeof window !== 'undefined') {
+      document.documentElement.setAttribute('data-coffee-theme', newTheme);
+      localStorage.setItem('blockchat_coffee_theme', newTheme);
+    }
+    playThemePreviewSound();
+  };
+
+  const handleSelectWallpaperOpacity = (newOpacity) => {
+    setWallpaperOpacity(newOpacity);
+    if (typeof window !== 'undefined') {
+      document.documentElement.setAttribute('data-wallpaper-opacity', newOpacity);
+      localStorage.setItem('blockchat_wallpaper_opacity', newOpacity);
+    }
+  };
+
+  const handleToggleSound = () => {
+    const next = !soundEnabled;
+    setSoundEnabled(next);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('blockchat_sound_enabled', String(next));
+    }
+    if (next) {
+      playSendPop();
+    }
   };
 
   // Star / Unstar Message Handler
@@ -196,6 +378,101 @@ export default function Home() {
     } catch (e) {}
   };
 
+  // Fetch Peer Profile
+  const fetchPeerProfile = async (peerAddr) => {
+    if (!peerAddr || addressProfiles[peerAddr.toLowerCase()]) return;
+    
+    // Check local cache
+    try {
+      const cached = localStorage.getItem(`profile_${peerAddr.toLowerCase()}`);
+      if (cached) {
+        const pData = JSON.parse(cached);
+        setAddressProfiles(prev => ({ ...prev, [peerAddr.toLowerCase()]: pData }));
+        return;
+      }
+    } catch (e) {}
+
+    // Check Reverse ENS if provider available
+    if (provider && ethers.isAddress(peerAddr)) {
+      try {
+        const peerEns = await provider.lookupAddress(peerAddr);
+        if (peerEns) {
+          const ensProf = { username: peerEns, profilePictureCID: '', isRegistered: true };
+          setAddressProfiles(prev => ({ ...prev, [peerAddr.toLowerCase()]: ensProf }));
+          return;
+        }
+      } catch (e) {}
+    }
+
+    if (!signer) return;
+    try {
+      const contract = new ethers.Contract(profileContractAddress, USER_REGISTRY_ABI, signer);
+      const profile = await contract.getProfile(peerAddr);
+      if (profile && profile.isRegistered) {
+        const pData = {
+          username: profile.username,
+          profilePictureCID: profile.profilePictureCID,
+          isRegistered: true
+        };
+        setAddressProfiles(prev => ({ ...prev, [peerAddr.toLowerCase()]: pData }));
+        localStorage.setItem(`profile_${peerAddr.toLowerCase()}`, JSON.stringify(pData));
+      }
+    } catch (e) {}
+  };
+
+  // Fetch Profile (Local + On-Chain)
+  const fetchOnChainProfile = async (ethSigner, address) => {
+    // 1. Check local storage first
+    try {
+      const cached = localStorage.getItem(`profile_${address.toLowerCase()}`);
+      if (cached) {
+        const pData = JSON.parse(cached);
+        setUserProfile(pData);
+        setProfileFormUsername(pData.username || '');
+        setProfileFormAvatar(pData.profilePictureCID || '');
+        setAddressProfiles(prev => ({ ...prev, [address.toLowerCase()]: pData }));
+      }
+    } catch (e) {}
+
+    // 2. Try fetching from On-chain contract if available
+    try {
+      const contract = new ethers.Contract(profileContractAddress, USER_REGISTRY_ABI, ethSigner);
+      const profile = await contract.getProfile(address);
+      if (profile && profile.isRegistered) {
+        const pData = {
+          username: profile.username,
+          profilePictureCID: profile.profilePictureCID,
+          isRegistered: profile.isRegistered
+        };
+        setUserProfile(pData);
+        setProfileFormUsername(pData.username);
+        setProfileFormAvatar(pData.profilePictureCID);
+        setAddressProfiles(prev => ({ ...prev, [address.toLowerCase()]: pData }));
+        localStorage.setItem(`profile_${address.toLowerCase()}`, JSON.stringify(pData));
+      }
+    } catch (err) {
+      // Contract not on current network or user not registered
+    }
+  };
+
+  // Load XMTP Conversations
+  const loadConversations = async (xmtp) => {
+    try {
+      const convos = await xmtp.conversations.list();
+      setConversations(convos);
+      
+      const stream = await xmtp.conversations.stream();
+      for await (const conversation of stream) {
+        setConversations(prev => {
+          const exists = prev.find(c => c.id === conversation.id);
+          return exists ? prev : [conversation, ...prev];
+        });
+      }
+    } catch (err) {
+      console.error("Error loading conversations", err);
+    }
+  };
+
   // Connect Wallet & Initialize XMTP
   const connectWallet = async () => {
     if (typeof window.ethereum !== 'undefined') {
@@ -243,23 +520,26 @@ export default function Home() {
         
         fetchOnChainProfile(ethSigner, address);
 
-        const { Client, IdentifierKind } = await import('@xmtp/browser-sdk');
-        const xmtpSigner = {
-          type: "EOA",
-          getIdentifier: () => ({
-            identifier: address.toLowerCase(),
-            identifierKind: IdentifierKind ? IdentifierKind.Ethereum : 'ethereum'
-          }),
-          signMessage: async (message) => {
-            const sig = await ethSigner.signMessage(message);
-            return ethers.getBytes(sig);
-          }
-        };
+        try {
+          const { Client, IdentifierKind } = await import('@xmtp/browser-sdk');
+          const xmtpSigner = {
+            type: "EOA",
+            getIdentifier: () => ({
+              identifier: address.toLowerCase(),
+              identifierKind: IdentifierKind ? IdentifierKind.Ethereum : 'ethereum'
+            }),
+            signMessage: async (message) => {
+              const sig = await ethSigner.signMessage(message);
+              return ethers.getBytes(sig);
+            }
+          };
 
-        const xmtp = await Client.create(xmtpSigner, { env: "dev", dbEncryptionKey: getDbEncryptionKey() });
-        setXmtpClient(xmtp);
-        
-        loadConversations(xmtp);
+          const xmtp = await Client.create(xmtpSigner, { env: "dev", dbEncryptionKey: getDbEncryptionKey() });
+          setXmtpClient(xmtp);
+          loadConversations(xmtp);
+        } catch (xmtpError) {
+          console.warn("XMTP client initialization notice:", xmtpError);
+        }
       } catch (error) {
         console.error("Connection failed", error);
         alert("Wallet connection failed: " + error.message);
@@ -271,20 +551,38 @@ export default function Home() {
     }
   };
 
+  // Disconnect Wallet Handler
+  const disconnectWallet = () => {
+    setWalletAddress(null);
+    setSigner(null);
+    setProvider(null);
+    setChainId(null);
+    setNetworkName('');
+    setEnsName('');
+    setUserBalance('0.0000');
+    setXmtpClient(null);
+    setActiveConversation(null);
+    setMessages([]);
+    setShowProfileModal(false);
+  };
+
   // EIP-1193 Listeners for Account and Network Changes
+  const connectWalletRef = useRef(connectWallet);
+  const disconnectWalletRef = useRef(disconnectWallet);
+
+  useEffect(() => {
+    connectWalletRef.current = connectWallet;
+    disconnectWalletRef.current = disconnectWallet;
+  });
+
   useEffect(() => {
     if (typeof window === 'undefined' || !window.ethereum) return;
 
     const handleAccountsChanged = (accounts) => {
       if (!accounts || accounts.length === 0) {
-        setWalletAddress(null);
-        setSigner(null);
-        setProvider(null);
-        setXmtpClient(null);
-        setActiveConversation(null);
-        setMessages([]);
+        disconnectWalletRef.current?.();
       } else if (walletAddress && accounts[0].toLowerCase() !== walletAddress.toLowerCase()) {
-        connectWallet();
+        connectWalletRef.current?.();
       }
     };
 
@@ -302,82 +600,6 @@ export default function Home() {
       }
     };
   }, [walletAddress]);
-
-  // Fetch Profile (Local + On-Chain)
-  const fetchOnChainProfile = async (ethSigner, address) => {
-    // 1. Check local storage first
-    try {
-      const cached = localStorage.getItem(`profile_${address.toLowerCase()}`);
-      if (cached) {
-        const pData = JSON.parse(cached);
-        setUserProfile(pData);
-        setProfileFormUsername(pData.username || '');
-        setProfileFormAvatar(pData.profilePictureCID || '');
-        setAddressProfiles(prev => ({ ...prev, [address.toLowerCase()]: pData }));
-      }
-    } catch (e) {}
-
-    // 2. Try fetching from On-chain contract if available
-    try {
-      const contract = new ethers.Contract(profileContractAddress, USER_REGISTRY_ABI, ethSigner);
-      const profile = await contract.getProfile(address);
-      if (profile && profile.isRegistered) {
-        const pData = {
-          username: profile.username,
-          profilePictureCID: profile.profilePictureCID,
-          isRegistered: profile.isRegistered
-        };
-        setUserProfile(pData);
-        setProfileFormUsername(pData.username);
-        setProfileFormAvatar(pData.profilePictureCID);
-        setAddressProfiles(prev => ({ ...prev, [address.toLowerCase()]: pData }));
-        localStorage.setItem(`profile_${address.toLowerCase()}`, JSON.stringify(pData));
-      }
-    } catch (err) {
-      // Contract not on current network or user not registered
-    }
-  };
-
-  const fetchPeerProfile = async (peerAddr) => {
-    if (!peerAddr || addressProfiles[peerAddr.toLowerCase()]) return;
-    
-    // Check local cache
-    try {
-      const cached = localStorage.getItem(`profile_${peerAddr.toLowerCase()}`);
-      if (cached) {
-        const pData = JSON.parse(cached);
-        setAddressProfiles(prev => ({ ...prev, [peerAddr.toLowerCase()]: pData }));
-        return;
-      }
-    } catch (e) {}
-
-    // Check Reverse ENS if provider available
-    if (provider && ethers.isAddress(peerAddr)) {
-      try {
-        const peerEns = await provider.lookupAddress(peerAddr);
-        if (peerEns) {
-          const ensProf = { username: peerEns, profilePictureCID: '', isRegistered: true };
-          setAddressProfiles(prev => ({ ...prev, [peerAddr.toLowerCase()]: ensProf }));
-          return;
-        }
-      } catch (e) {}
-    }
-
-    if (!signer) return;
-    try {
-      const contract = new ethers.Contract(profileContractAddress, USER_REGISTRY_ABI, signer);
-      const profile = await contract.getProfile(peerAddr);
-      if (profile && profile.isRegistered) {
-        const pData = {
-          username: profile.username,
-          profilePictureCID: profile.profilePictureCID,
-          isRegistered: true
-        };
-        setAddressProfiles(prev => ({ ...prev, [peerAddr.toLowerCase()]: pData }));
-        localStorage.setItem(`profile_${peerAddr.toLowerCase()}`, JSON.stringify(pData));
-      }
-    } catch (e) {}
-  };
 
   // Save Profile Handler (Supports Instant & Smart Contract)
   const handleSaveProfile = async (e, mode = 'local') => {
@@ -437,23 +659,6 @@ export default function Home() {
     }
   };
 
-  const loadConversations = async (xmtp) => {
-    try {
-      const convos = await xmtp.conversations.list();
-      setConversations(convos);
-      
-      const stream = await xmtp.conversations.stream();
-      for await (const conversation of stream) {
-        setConversations(prev => {
-          const exists = prev.find(c => c.id === conversation.id);
-          return exists ? prev : [conversation, ...prev];
-        });
-      }
-    } catch (err) {
-      console.error("Error loading conversations", err);
-    }
-  };
-
   // Helper to apply incoming control events (delete / edit / disappearing) with sender authorization
   const processIncomingMessage = (message, messageList = messages) => {
     const data = parseMessageData(message);
@@ -481,7 +686,10 @@ export default function Home() {
       // Prevent processing signals originating from self
       const isFromSelf = (message.senderInboxId && xmtpClient?.inboxId && message.senderInboxId === xmtpClient.inboxId) ||
                          (data.senderInboxId && xmtpClient?.inboxId && data.senderInboxId === xmtpClient.inboxId) ||
-                         (data.senderAddress && account && data.senderAddress.toLowerCase() === account.toLowerCase());
+                         (data.senderAddress && walletAddress && data.senderAddress.toLowerCase() === walletAddress.toLowerCase());
+      if (isFromSelf) {
+        return false;
+      }
       if (isFromSelf) {
         return false;
       }
@@ -719,6 +927,21 @@ export default function Home() {
     selectConversation(botConvo);
   };
 
+  const startDemoMode = () => {
+    const demoAddr = '0x71C8360537aaC1957e47192070D7C98C0B29b3B1';
+    setWalletAddress(demoAddr);
+    setUserBalance('1.854');
+    setNetworkName('Sepolia Testnet');
+    setChainId(11155111);
+    setUserProfile({
+      username: 'Web3_Explorer',
+      profilePictureCID: '',
+      isRegistered: true
+    });
+    setProfileFormUsername('Web3_Explorer');
+    startBlockBotChat();
+  };
+
   // Bot Response Simulator for BlockBot Demo (With WhatsApp "Typing..." state)
   const triggerBotReply = (userMsgText, type = 'text') => {
     setPeerTyping(true);
@@ -860,6 +1083,7 @@ export default function Home() {
           } else {
             await activeConversation.sendText(textPayload);
           }
+          playSendPop();
           setReplyingTo(null);
         } catch (err) {
           console.error("Failed to send voice note", err);
@@ -982,6 +1206,7 @@ export default function Home() {
         }
       }
 
+      playSendPop();
       setInputValue('');
       setSelectedImage(null);
       setReplyingTo(null);
@@ -996,8 +1221,14 @@ export default function Home() {
     if (!activeConversation) return;
 
     try {
-      // If already recorded and this is a confirmation update, update existing receipt status
-      if (status === 'confirmed') {
+      // Check if a receipt for this txHash is already recorded
+      const alreadyExists = messages.some(m => {
+        const d = parseMessageData(m);
+        return d.type === 'crypto_transfer' && d.txHash === txHash;
+      });
+
+      // If already recorded and this is a confirmation update, update existing receipt status and return
+      if (status === 'confirmed' && alreadyExists) {
         setMessages(prev => prev.map(m => {
           const d = parseMessageData(m);
           if (d.type === 'crypto_transfer' && d.txHash === txHash) {
@@ -1006,6 +1237,12 @@ export default function Home() {
           }
           return m;
         }));
+
+        if (provider && walletAddress) {
+          refreshBalance(provider, walletAddress);
+        }
+        playCoinClink();
+        return;
       }
 
       const cryptoPayload = {
@@ -1033,6 +1270,8 @@ export default function Home() {
       } else {
         await activeConversation.sendText(textPayload);
       }
+
+      playCoinClink();
 
       // Refresh balance
       if (provider && walletAddress) {
@@ -1082,8 +1321,8 @@ export default function Home() {
     try {
       const payload = {
         type: 'call_signal',
-        senderInboxId: xmtpClient?.inboxId || account,
-        senderAddress: account,
+        senderInboxId: xmtpClient?.inboxId || walletAddress,
+        senderAddress: walletAddress,
         ...signalData,
         timestamp: new Date().getTime()
       };
@@ -1129,34 +1368,6 @@ export default function Home() {
   };
 
   // Helpers
-  const formatAddress = (address) => {
-    if (!address) return '';
-    if (address.startsWith('0x') && address.length === 42) {
-      return `${address.substring(0,6)}...${address.substring(address.length - 4)}`;
-    }
-    if (address.length > 12) {
-      return `${address.substring(0,6)}...${address.substring(address.length - 4)}`;
-    }
-    return address;
-  };
-
-  const parseMessageData = (msg) => {
-    if (!msg) return { type: 'text', text: '' };
-    if (typeof msg.content === 'string') {
-      if (msg.content.startsWith('[JSON_MSG]')) {
-        try {
-          return JSON.parse(msg.content.replace('[JSON_MSG]', ''));
-        } catch (e) {
-          return { type: 'text', text: msg.content };
-        }
-      }
-      return { type: 'text', text: msg.content };
-    }
-    if (msg.content && msg.content.text) return { type: 'text', text: msg.content.text };
-    if (msg.content && msg.content.content) return { type: 'text', text: String(msg.content.content) };
-    return { type: 'system', text: 'System update' };
-  };
-
   const getMessageSnippet = (msg) => {
     if (deletedMessages[msg.id]) return '🚫 Deleted message';
     if (editedMessages[msg.id]) return editedMessages[msg.id];
@@ -1165,18 +1376,6 @@ export default function Home() {
     if (data.type === 'media') return data.text ? `📷 ${data.text}` : '📷 Photo';
     if (data.type === 'audio') return `🎤 Voice Note (${data.duration || 0}s)`;
     return data.text || 'Message';
-  };
-
-  const formatMessageTime = (dateObj) => {
-    if (!dateObj) return '';
-    const date = new Date(dateObj);
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  };
-
-  const formatRecordingTime = (secs) => {
-    const m = Math.floor(secs / 60);
-    const s = Math.floor(secs % 60);
-    return `${m}:${s < 10 ? '0' : ''}${s}`;
   };
 
   // Memoized Filtered Conversations based on Search, Pinned, and Tabs
@@ -1225,269 +1424,347 @@ export default function Home() {
   }, [messages, disappearingTimer, inChatSearchQuery, editedMessages]);
 
   return (
-    <div className="app-container">
-      {/* Sidebar */}
-      <div className="sidebar">
-        <div className="sidebar-header">
-          <div className="brand-title">
-            <span>⚡</span> BlockChat
+    <div className={`app-container whatsapp-app-container ${walletAddress ? 'has-wallet' : 'no-wallet'} ${activeConversation ? 'has-active-chat' : 'no-active-chat'}`}>
+      {/* 1. WhatsApp Sidebar (Left 380px-420px) */}
+      <div className="sidebar whatsapp-sidebar">
+        {/* WhatsApp Top Profile & Controls Header */}
+        <div className="whatsapp-sidebar-header">
+          <div 
+            className="whatsapp-my-avatar-wrap"
+            onClick={() => setShowProfileModal(true)}
+            title="Profile & Settings"
+          >
+            <div className="whatsapp-avatar">
+              {userProfile.profilePictureCID ? (
+                <img 
+                  src={userProfile.profilePictureCID.startsWith('http') ? userProfile.profilePictureCID : `https://ipfs.io/ipfs/${userProfile.profilePictureCID}`} 
+                  alt="My Avatar" 
+                />
+              ) : (
+                (userProfile.username || walletAddress || '☕').substring(0, 2).toUpperCase()
+              )}
+            </div>
+            {walletAddress && <span className="whatsapp-online-dot"></span>}
           </div>
-          <div className="header-actions">
-            {walletAddress ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <div className="wallet-meta-pill" title={`${networkName} • ${userBalance} ETH`}>
-                  <div className="network-indicator-pill">
-                    <span className="network-dot"></span>
-                    <span>{networkName ? networkName.split(' ')[0] : 'Web3'}</span>
-                  </div>
-                  <span className="eth-balance-badge">
-                    {parseFloat(userBalance).toFixed(3)} Ξ
-                  </span>
-                </div>
-                <button 
-                  className="icon-btn" 
-                  title="Share Wallet QR"
-                  onClick={() => setShowQRModal(true)}
-                >
-                  🏁
-                </button>
-                <button 
-                  className="icon-btn" 
-                  title="Identity & Profile Settings"
-                  onClick={() => setShowProfileModal(true)}
-                >
-                  ⚙️
-                </button>
-              </div>
-            ) : (
+
+          <div className="whatsapp-header-actions">
+            {/* BlockBot AI Companion Button */}
+            <button 
+              type="button" 
+              className="whatsapp-icon-btn" 
+              title="Chat with BlockBot Companion"
+              onClick={startBlockBotChat}
+            >
+              🤖
+            </button>
+
+            {/* Wallet QR Code Button */}
+            <button 
+              type="button" 
+              className="whatsapp-icon-btn" 
+              title="Share Wallet QR"
+              onClick={() => setShowQRModal(true)}
+            >
+              🏁
+            </button>
+
+            {/* New conversation focus */}
+            {walletAddress && (
               <button 
-                className="btn-connect" 
-                onClick={connectWallet}
-                disabled={isConnecting}
+                type="button" 
+                className="whatsapp-icon-btn" 
+                title="New Chat"
+                onClick={() => searchInputRef.current?.focus()}
               >
-                {isConnecting ? "Connecting..." : "Connect"}
+                💬
               </button>
             )}
+
+            {/* Coffee Roast Themes & Sound Studio */}
+            <button 
+              type="button" 
+              className="whatsapp-icon-btn" 
+              title="Coffee Roast Themes & Audio Preferences"
+              onClick={() => setShowThemeModal(true)}
+            >
+              ☕
+            </button>
+
+            {/* Quick WhatsApp Audio Mute/Unmute */}
+            <button 
+              type="button" 
+              className="whatsapp-icon-btn" 
+              title={soundEnabled ? "WhatsApp Audio Feedback: Active (Click to Mute)" : "WhatsApp Audio Feedback: Muted (Click to Unmute)"}
+              onClick={handleToggleSound}
+            >
+              {soundEnabled ? '🔊' : '🔇'}
+            </button>
+
+            {/* Profile Settings */}
+            <button 
+              type="button" 
+              className="whatsapp-icon-btn" 
+              title="Settings & Profile"
+              onClick={() => setShowProfileModal(true)}
+            >
+              ⋮
+            </button>
           </div>
         </div>
 
-        {/* User On-Chain Profile Badge */}
-        {walletAddress && (
-          <div className="user-profile-badge" onClick={() => setShowProfileModal(true)}>
-            <div className="user-profile-info">
-              <div className="badge-avatar">
-                {userProfile.profilePictureCID ? (
-                  <img 
-                    src={userProfile.profilePictureCID.startsWith('http') ? userProfile.profilePictureCID : `https://ipfs.io/ipfs/${userProfile.profilePictureCID}`} 
-                    alt="Avatar" 
-                  />
-                ) : (
-                  (userProfile.username || walletAddress).substring(2, 4).toUpperCase()
-                )}
-              </div>
-              <div style={{ overflow: 'hidden' }}>
-                <div className="user-profile-name">
-                  {userProfile.username ? `@${userProfile.username}` : (ensName || "Set Username")}
-                </div>
-                <div className="user-profile-addr">
-                  {formatAddress(walletAddress)}
-                </div>
-              </div>
-            </div>
-            <span style={{ fontSize: '0.8rem', color: '#60a5fa' }}>✏️</span>
-          </div>
-        )}
-
-        {/* Sidebar Search Bar */}
-        <div className="sidebar-search-box">
-          <div className="search-input-wrapper">
-            <span className="search-icon">🔍</span>
+        {/* WhatsApp Search Bar & Filter Tabs */}
+        <div className="whatsapp-search-container">
+          <div className="whatsapp-search-pill" onClick={() => searchInputRef.current?.focus()}>
+            <span className="whatsapp-search-icon">🔍</span>
             <input 
               ref={searchInputRef}
               type="text" 
-              className="search-input" 
-              placeholder="Search contacts, addresses..." 
+              className="whatsapp-search-input" 
+              placeholder="Search or start new chat" 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
+            {searchQuery && (
+              <button 
+                type="button" 
+                className="whatsapp-search-clear"
+                onClick={() => setSearchQuery('')}
+              >
+                ✕
+              </button>
+            )}
+          </div>
+          
+          {/* WhatsApp Filter Tabs */}
+          <div className="whatsapp-filter-pills">
+            <button 
+              type="button" 
+              className={`whatsapp-filter-pill ${activeTab === 'all' ? 'active' : ''}`}
+              onClick={() => setActiveTab('all')}
+            >
+              All
+            </button>
+            <button 
+              type="button" 
+              className={`whatsapp-filter-pill ${activeTab === 'unread' ? 'active' : ''}`}
+              onClick={() => setActiveTab('unread')}
+            >
+              Unread
+            </button>
+            <button 
+              type="button" 
+              className={`whatsapp-filter-pill ${activeTab === 'pinned' ? 'active' : ''}`}
+              onClick={() => setActiveTab('pinned')}
+            >
+              Pinned ({pinnedCount})
+            </button>
           </div>
         </div>
 
-        {/* Sidebar Filter Tabs */}
+        {/* Inline Add Contact / ENS bar */}
         {walletAddress && (
-          <div className="sidebar-tabs">
-            <button 
-              type="button" 
-              className={`tab-btn ${activeTab === 'all' ? 'active' : ''}`}
-              onClick={() => setActiveTab('all')}
-            >
-              All <span className="tab-count-badge">{conversations.length}</span>
-            </button>
-            <button 
-              type="button" 
-              className={`tab-btn ${activeTab === 'pinned' ? 'active' : ''}`}
-              onClick={() => setActiveTab('pinned')}
-            >
-              Pinned 📌 {pinnedCount > 0 && <span className="tab-count-badge">{pinnedCount}</span>}
-            </button>
-          </div>
-        )}
-
-        {/* Start New Chat Input with ENS Support */}
-        {walletAddress && (
-          <div className="new-chat-bar">
+          <div className="whatsapp-new-chat-bar">
             <input 
               type="text" 
-              className="new-chat-input" 
-              placeholder="Enter 0x... address or name.eth" 
+              className="whatsapp-new-chat-input" 
+              placeholder="Enter 0x... or name.eth" 
               value={newContactAddress}
               onChange={(e) => setNewContactAddress(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && startNewConversation()}
             />
-            <button className="btn-new-chat" onClick={() => startNewConversation()}>
-              + Chat
+            <button 
+              type="button" 
+              className="whatsapp-new-chat-btn" 
+              onClick={() => startNewConversation()}
+              title="Start Chat"
+            >
+              +
             </button>
           </div>
         )}
 
-        {/* Conversation List */}
-        <div className="chat-list">
+        {/* WhatsApp Conversations List */}
+        <div className="whatsapp-chat-list chat-list">
           {filteredConversations.map(convo => {
             const displayId = convo.peerAddress || convo.id || "Unknown";
             const peerProf = addressProfiles[displayId.toLowerCase()];
             const displayName = peerProf?.username ? `@${peerProf.username}` : formatAddress(displayId);
             const avatarChar = (peerProf?.username || displayId).substring(displayId.startsWith('0x') ? 2 : 0, displayId.startsWith('0x') ? 4 : 2).toUpperCase();
             const isPinned = !!pinnedConvos[convo.id];
+            const isBot = convo.isDemoBot;
+            const isSelected = activeConversation?.id === convo.id;
 
             return (
               <div 
                 key={convo.id} 
-                className={`conversation-item ${activeConversation?.id === convo.id ? 'active' : ''}`}
+                className={`whatsapp-chat-card ${isSelected ? 'active' : ''}`}
                 onClick={() => selectConversation(convo)}
               >
-                <div className="avatar">
-                  {peerProf?.profilePictureCID ? (
-                    <img 
-                      src={peerProf.profilePictureCID.startsWith('http') ? peerProf.profilePictureCID : `https://ipfs.io/ipfs/${peerProf.profilePictureCID}`} 
-                      alt="Avatar" 
-                    />
-                  ) : (
-                    avatarChar || "??"
-                  )}
+                <div className="whatsapp-card-avatar-wrap">
+                  <div className={`avatar ${isBot ? 'bot-avatar' : ''}`}>
+                    {peerProf?.profilePictureCID ? (
+                      <img 
+                        src={peerProf.profilePictureCID.startsWith('http') ? peerProf.profilePictureCID : `https://ipfs.io/ipfs/${peerProf.profilePictureCID}`} 
+                        alt="Avatar" 
+                      />
+                    ) : (
+                      avatarChar || "??"
+                    )}
+                  </div>
+                  <span className={`whatsapp-status-dot ${isBot ? 'bot' : 'online'}`}></span>
                 </div>
-                <div className="chat-info">
-                  <div className="chat-info-header">
-                    <h4>{displayName}</h4>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+
+                <div className="whatsapp-card-content">
+                  <div className="whatsapp-card-row-top">
+                    <span className="whatsapp-card-title">
+                      {displayName}
+                      {isBot && <span className="whatsapp-bot-tag">BOT</span>}
+                    </span>
+                    <span className="whatsapp-card-time">
+                      {convo.latestMessage?.sentAt ? formatMessageTime(convo.latestMessage.sentAt) : ''}
+                    </span>
+                  </div>
+
+                  <div className="whatsapp-card-row-bottom">
+                    <p className="whatsapp-card-snippet">
+                      <span className="whatsapp-snippet-ticks">✓✓</span>
+                      <span>{convo.latestMessage ? getMessageSnippet(convo.latestMessage) : 'Direct message'}</span>
+                    </p>
+                    <div className="whatsapp-card-badges">
                       <button 
                         type="button" 
-                        className={`convo-pin-btn ${isPinned ? 'pinned' : ''}`}
-                        title={isPinned ? "Unpin chat" : "Pin chat to top"}
+                        className={`whatsapp-pin-btn ${isPinned ? 'pinned' : ''}`}
+                        title={isPinned ? "Unpin chat" : "Pin chat"}
                         onClick={(e) => togglePinConversation(e, convo.id)}
                       >
                         📌
                       </button>
-                      <span className="chat-time">
-                        {convo.createdAt ? formatMessageTime(convo.createdAt) : ''}
-                      </span>
                     </div>
                   </div>
-                  <p className="preview">
-                    {convo.latestMessage ? getMessageSnippet(convo.latestMessage) : 'Start an encrypted chat'}
-                  </p>
                 </div>
               </div>
             );
           })}
 
           {filteredConversations.length === 0 && walletAddress && (
-            <div style={{ padding: '32px 16px', textAlign: 'center', color: '#94a3b8', fontSize: '0.9rem' }}>
-              {activeTab === 'pinned' ? (
-                <div>No pinned chats yet. Click the 📌 icon on any conversation!</div>
-              ) : searchQuery ? (
-                "No conversations matching search."
-              ) : (
-                <div>
-                  <p style={{ marginBottom: '12px' }}>No conversations yet.</p>
-                  <button className="quick-action-chip bot-chip" onClick={startBlockBotChat}>
-                    🤖 Chat with BlockBot Demo
-                  </button>
-                </div>
-              )}
+            <div className="whatsapp-empty-chats">
+              <p>No conversations found.</p>
+              <button 
+                type="button" 
+                className="coffee-btn-secondary"
+                style={{ marginTop: '10px', fontSize: '0.82rem', padding: '6px 14px' }}
+                onClick={startBlockBotChat}
+              >
+                🤖 Chat with BlockBot AI
+              </button>
             </div>
           )}
 
           {!walletAddress && (
-            <div style={{ padding: '40px 20px', textAlign: 'center', color: '#94a3b8' }}>
-              <p style={{ marginBottom: '16px', fontSize: '0.95rem' }}>Connect your Web3 wallet to access your encrypted conversations.</p>
-              <button className="btn-connect" onClick={connectWallet}>Connect Wallet</button>
+            <div className="whatsapp-connect-prompt">
+              <p>Connect Web3 wallet to load on-chain chats.</p>
+              <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
+                <button 
+                  type="button" 
+                  className="coffee-btn-primary" 
+                  style={{ flex: 1, padding: '8px 12px', fontSize: '0.82rem' }}
+                  onClick={connectWallet}
+                  disabled={isConnecting}
+                >
+                  {isConnecting ? "Connecting..." : "Connect Wallet"}
+                </button>
+                {startDemoMode && (
+                  <button 
+                    type="button" 
+                    className="coffee-btn-secondary" 
+                    style={{ padding: '8px 12px', fontSize: '0.82rem' }}
+                    onClick={startDemoMode}
+                  >
+                    🧪 Demo
+                  </button>
+                )}
+              </div>
             </div>
           )}
         </div>
       </div>
 
-      {/* Main Chat Area with WhatsApp Texture */}
-      <div className="chat-area chat-area-wallpaper">
+      {/* 2. Main WhatsApp Chat Area with Coffee Doodle Wallpaper */}
+      <div className="chat-area whatsapp-chat-area whatsapp-wallpaper">
         {activeConversation ? (
           <>
             {/* Active Header */}
-            <div className="active-chat-header">
+            <div className="whatsapp-active-header">
               {(() => {
                 const displayId = activeConversation.peerAddress || activeConversation.id || "Unknown";
                 const peerProf = addressProfiles[displayId.toLowerCase()];
                 const displayName = peerProf?.username ? `@${peerProf.username}` : formatAddress(displayId);
+                const isBot = activeConversation.isDemoBot || displayId.toLowerCase().includes('bot');
                 const avatarChar = (peerProf?.username || displayId).substring(displayId.startsWith('0x') ? 2 : 0, displayId.startsWith('0x') ? 4 : 2).toUpperCase();
 
                 return (
-                  <div style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'space-between' }}>
-                    {/* Clickable Header for WhatsApp Contact Info */}
-                    <div 
-                      className="chat-header-user" 
-                      onClick={() => setShowContactDrawer(true)}
-                      style={{ cursor: 'pointer' }}
-                      title="Click to view Contact Info"
-                    >
-                      <div className="avatar">
-                        {peerProf?.profilePictureCID ? (
-                          <img 
-                            src={peerProf.profilePictureCID.startsWith('http') ? peerProf.profilePictureCID : `https://ipfs.io/ipfs/${peerProf.profilePictureCID}`} 
-                            alt="Avatar" 
-                          />
-                        ) : (
-                          avatarChar || "??"
-                        )}
-                      </div>
-                      <div>
-                        <h3 style={{ fontWeight: 600, fontSize: '1.05rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span>{displayName}</span>
-                          {pinnedConvos[activeConversation.id] && <span style={{ fontSize: '0.8rem' }}>📌</span>}
-                        </h3>
-                        {peerTyping ? (
-                          <p className="typing-status-text" style={{ fontSize: '0.75rem' }}>
-                            <span>typing</span>
-                            <span className="typing-dot"></span>
-                            <span className="typing-dot"></span>
-                            <span className="typing-dot"></span>
-                          </p>
-                        ) : (
-                          <p style={{ fontSize: '0.75rem', color: '#10b981', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <span className="status-indicator" style={{ width: '6px', height: '6px', margin: 0 }}></span> 
-                            <span>Online • E2EE Encrypted</span>
-                            {disappearingTimer > 0 && (
-                              <span style={{ marginLeft: '6px', color: '#f59e0b' }}>
-                                ⏱️ {disappearingTimer === 60 ? '1m' : disappearingTimer === 86400 ? '24h' : '7d'}
-                              </span>
-                            )}
-                          </p>
-                        )}
+                  <div className="whatsapp-header-inner">
+                    {/* Left: Avatar + Peer Details */}
+                    <div className="whatsapp-header-left">
+                      <button 
+                        type="button" 
+                        className="mobile-back-btn" 
+                        onClick={() => setActiveConversation(null)}
+                        title="Back to conversations"
+                        aria-label="Back to conversations"
+                      >
+                        ←
+                      </button>
+
+                      <div 
+                        className="whatsapp-header-contact"
+                        onClick={() => setShowContactDrawer(true)}
+                        title="View contact info"
+                      >
+                        <div className="avatar">
+                          {peerProf?.profilePictureCID ? (
+                            <img 
+                              src={peerProf.profilePictureCID.startsWith('http') ? peerProf.profilePictureCID : `https://ipfs.io/ipfs/${peerProf.profilePictureCID}`} 
+                              alt="Avatar" 
+                            />
+                          ) : (
+                            avatarChar || "??"
+                          )}
+                        </div>
+
+                        <div className="whatsapp-header-meta">
+                          <h3 className="whatsapp-header-name">
+                            <span>{displayName}</span>
+                            {isBot && <span className="whatsapp-bot-tag">BOT</span>}
+                            {pinnedConvos[activeConversation.id] && <span className="whatsapp-pin-icon">📌</span>}
+                          </h3>
+                          {peerTyping ? (
+                            <p className="whatsapp-status typing">
+                              <span>typing</span>
+                              <span className="typing-dot">.</span>
+                              <span className="typing-dot">.</span>
+                              <span className="typing-dot">.</span>
+                            </p>
+                          ) : (
+                            <p className="whatsapp-status online">
+                              <span className="status-indicator"></span> 
+                              <span>online • E2EE</span>
+                              {disappearingTimer > 0 && (
+                                <span className="disappearing-chip">
+                                  ⏱️ {disappearingTimer === 60 ? '1m' : disappearingTimer === 86400 ? '24h' : '7d'}
+                                </span>
+                              )}
+                            </p>
+                          )}
+                        </div>
                       </div>
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      {/* WhatsApp Voice Call */}
+                    {/* Right: Actions (Voice call, Video call, Tip, Search, Drawer) */}
+                    <div className="whatsapp-header-actions">
                       <button 
                         type="button" 
-                        className="header-call-btn" 
+                        className="whatsapp-icon-action" 
                         title="Voice Call"
                         onClick={() => setActiveCall({
                           type: 'voice',
@@ -1498,10 +1775,9 @@ export default function Home() {
                         📞
                       </button>
 
-                      {/* WhatsApp Video Call */}
                       <button 
                         type="button" 
-                        className="header-call-btn" 
+                        className="whatsapp-icon-action" 
                         title="Video Call"
                         onClick={() => setActiveCall({
                           type: 'video',
@@ -1512,30 +1788,27 @@ export default function Home() {
                         📹
                       </button>
 
-                      {/* Send Crypto Tip Button */}
                       <button 
                         type="button" 
-                        className="btn-crypto-tip"
-                        title="Send ETH Tip / Payment"
+                        className="whatsapp-icon-action tip-action" 
+                        title="Send ETH Tip / Transfer"
                         onClick={() => setShowSendCryptoModal(true)}
                       >
                         💸
                       </button>
 
-                      {/* In-Thread Search Toggle */}
                       <button 
                         type="button" 
-                        className="icon-btn" 
-                        title="Search messages"
+                        className="whatsapp-icon-action" 
+                        title="Search in conversation"
                         onClick={() => setShowInChatSearch(!showInChatSearch)}
                       >
                         🔍
                       </button>
 
-                      {/* Contact Info Drawer Trigger */}
                       <button 
                         type="button" 
-                        className="icon-btn" 
+                        className="whatsapp-icon-action" 
                         title="Contact Details"
                         onClick={() => setShowContactDrawer(true)}
                       >
@@ -1549,11 +1822,11 @@ export default function Home() {
 
             {/* In-Chat Search Bar */}
             {showInChatSearch && (
-              <div className="in-chat-search-bar">
-                <span>🔍</span>
+              <div className="whatsapp-inchat-search">
+                <span className="search-icon">🔍</span>
                 <input 
                   type="text" 
-                  className="in-chat-search-input" 
+                  className="whatsapp-inchat-input" 
                   placeholder="Filter messages in this conversation..." 
                   value={inChatSearchQuery}
                   onChange={(e) => setInChatSearchQuery(e.target.value)}
@@ -1567,9 +1840,9 @@ export default function Home() {
                 <button className="banner-close-btn" onClick={() => { setShowInChatSearch(false); setInChatSearchQuery(''); }}>✕</button>
               </div>
             )}
-            
-            {/* Messages Stream */}
-            <div className="messages">
+
+            {/* WhatsApp Message Bubbles Stream */}
+            <div className="whatsapp-messages-stream messages">
               {visibleMessages.map((msg, idx) => {
                 const isSent = msg.senderInboxId === xmtpClient?.inboxId || (!xmtpClient && msg.senderInboxId !== 'bot-inbox');
                 const isDeleted = deletedMessages[msg.id];
@@ -1580,36 +1853,54 @@ export default function Home() {
                 const isStarred = !!starredMessages[msg.id];
 
                 return (
-                  <div key={msg.id || idx} className={`message-row ${isSent ? 'sent' : 'received'}`}>
-                    <div className="message-bubble-wrapper">
-                      {/* Hover Actions (Reply, React, Star, Edit, Delete) */}
+                  <div key={msg.id || idx} className={`whatsapp-bubble-row ${isSent ? 'sent' : 'received'}`}>
+                    <div className={`whatsapp-bubble ${isSent ? 'sent' : 'received'} ${isStarred ? 'starred' : ''}`}>
+                      {/* Bubble Action Controls (Hover Chevron) */}
                       {!isDeleted && (
-                        <div className="message-hover-actions">
+                        <div className="whatsapp-bubble-hover-actions">
                           <button 
-                            className="action-btn-small" 
-                            title="Reply"
-                            onClick={() => setReplyingTo(msg)}
-                          >
-                            ↩
-                          </button>
-                          <button 
-                            className="action-btn-small" 
+                            type="button" 
+                            className="bubble-action-btn" 
                             title="React"
                             onClick={() => setActiveReactionPicker(activeReactionPicker === msg.id ? null : msg.id)}
                           >
                             😊
                           </button>
                           <button 
-                            className={`action-btn-small ${isStarred ? 'active-star' : ''}`}
-                            title={isStarred ? "Unstar Message" : "Star Message"}
+                            type="button" 
+                            className="bubble-action-btn" 
+                            title="Reply"
+                            onClick={() => setReplyingTo(msg)}
+                          >
+                            ↩
+                          </button>
+                          <button 
+                            type="button" 
+                            className={`bubble-action-btn ${isStarred ? 'active-star' : ''}`}
+                            title={isStarred ? "Unstar" : "Star"}
                             onClick={() => toggleStarMessage(msg.id)}
                           >
                             ⭐
                           </button>
+                          {msgData.type === 'text' && (
+                            <button 
+                              type="button" 
+                              className="bubble-action-btn" 
+                              title="Copy Text"
+                              onClick={() => {
+                                if (navigator.clipboard) {
+                                  navigator.clipboard.writeText(renderedText);
+                                }
+                              }}
+                            >
+                              📋
+                            </button>
+                          )}
                           {isSent && msgData.type === 'text' && (
                             <button 
-                              className="action-btn-small" 
-                              title="Edit Message"
+                              type="button" 
+                              className="bubble-action-btn" 
+                              title="Edit"
                               onClick={() => handleStartEdit(msg)}
                             >
                               ✏️
@@ -1617,8 +1908,9 @@ export default function Home() {
                           )}
                           {isSent && (
                             <button 
-                              className="action-btn-small action-btn-delete" 
-                              title="Delete Message"
+                              type="button" 
+                              className="bubble-action-btn delete-btn" 
+                              title="Delete"
                               onClick={() => handleDeleteMessage(msg)}
                             >
                               🗑️
@@ -1627,36 +1919,21 @@ export default function Home() {
                         </div>
                       )}
 
-                      {/* Floating Emoji Reaction Popover */}
-                      {activeReactionPicker === msg.id && (
-                        <div className="emoji-picker-popover">
-                          {['👍', '❤️', '😂', '😮', '🔥', '💎', '🚀'].map(emoji => (
-                            <span 
-                              key={emoji} 
-                              className="emoji-opt" 
-                              onClick={() => handleAddReaction(msg.id, emoji)}
-                            >
-                              {emoji}
-                            </span>
-                          ))}
+                      {/* Quoted Reply inside Bubble */}
+                      {msgData.replyTo && (
+                        <div className="whatsapp-quoted-reply">
+                          <div className="quoted-sender">@{msgData.replyTo.sender}</div>
+                          <div className="quoted-text">{msgData.replyTo.text}</div>
                         </div>
                       )}
 
-                      {/* Bubble */}
+                      {/* Deleted State */}
                       {isDeleted ? (
-                        <div className={`message-bubble deleted ${isSent ? 'sent' : 'received'}`}>
-                          <span>🚫 This message was deleted</span>
+                        <div className="whatsapp-deleted-text">
+                          🚫 <em>This message was deleted</em>
                         </div>
                       ) : (
-                        <div className={`message-bubble ${isSent ? 'sent' : 'received'}`}>
-                          {/* Quoted Reply Banner inside Message */}
-                          {msgData.replyTo && (
-                            <div className="quoted-reply-box">
-                              <div className="quoted-reply-sender">{msgData.replyTo.sender}</div>
-                              <div>{msgData.replyTo.text}</div>
-                            </div>
-                          )}
-
+                        <>
                           {/* Crypto Transfer Receipt Card */}
                           {msgData.type === 'crypto_transfer' && (
                             <CryptoReceipt 
@@ -1667,15 +1944,15 @@ export default function Home() {
                             />
                           )}
 
-                          {/* Voice Note Audio inside Bubble */}
+                          {/* Voice Note Audio */}
                           {msgData.type === 'audio' && (
                             <VoiceNotePlayer audioUrl={msgData.audioUrl} duration={msgData.duration} />
                           )}
 
-                          {/* Image Attachment inside Bubble */}
+                          {/* Media Image Attachment */}
                           {msgData.type === 'media' && msgData.media && (
                             <div 
-                              className="message-image-wrapper"
+                              className="whatsapp-bubble-image-wrap"
                               onClick={() => setLightboxImage(msgData.media)}
                             >
                               <img src={msgData.media} alt="Attached Media" />
@@ -1684,27 +1961,42 @@ export default function Home() {
 
                           {/* Text Content */}
                           {renderedText && msgData.type !== 'crypto_transfer' && (
-                            <div>
+                            <div className="whatsapp-bubble-text">
                               {renderedText}
-                              {isEdited && <span className="message-edited-tag">(edited)</span>}
+                              {isEdited && <span className="whatsapp-edited-tag">(edited)</span>}
                             </div>
                           )}
 
-                          {/* Metadata, Star Badge & WhatsApp Blue Double-Ticks */}
-                          <div className="message-meta">
-                            {isStarred && <span className="starred-badge">⭐</span>}
-                            <span>{msg.sentAt ? formatMessageTime(msg.sentAt) : ''}</span>
-                            {isSent && <span className="check-icon read">✓✓</span>}
+                          {/* Bubble Footer: Time & Double Ticks */}
+                          <div className="whatsapp-bubble-meta">
+                            {isStarred && <span className="whatsapp-starred-icon">⭐</span>}
+                            <span className="whatsapp-time">{msg.sentAt ? formatMessageTime(msg.sentAt) : ''}</span>
+                            {isSent && <span className="whatsapp-checks">✓✓</span>}
                           </div>
+                        </>
+                      )}
+
+                      {/* Emoji Reactions Popover */}
+                      {activeReactionPicker === msg.id && (
+                        <div className="whatsapp-reaction-picker">
+                          {['👍', '❤️', '😂', '😮', '🔥', '☕', '💎'].map(emoji => (
+                            <span 
+                              key={emoji} 
+                              className="reaction-option" 
+                              onClick={() => handleAddReaction(msg.id, emoji)}
+                            >
+                              {emoji}
+                            </span>
+                          ))}
                         </div>
                       )}
                     </div>
 
-                    {/* Reaction Badges */}
+                    {/* Reactions Pill Below Bubble */}
                     {!isDeleted && reactions.length > 0 && (
-                      <div className="reaction-badges">
+                      <div className="whatsapp-reactions-pills-row">
                         {reactions.map((r, rIdx) => (
-                          <div key={rIdx} className="reaction-pill">
+                          <div key={rIdx} className="whatsapp-reaction-pill">
                             {r}
                           </div>
                         ))}
@@ -1716,22 +2008,22 @@ export default function Home() {
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Chat Composer */}
-            <div className="chat-composer-container">
-              {/* Editing Banner */}
+            {/* WhatsApp Chat Composer */}
+            <div className="whatsapp-composer-container chat-composer-container">
+              {/* Attached Banner: Editing */}
               {editingMessage && (
-                <div className="edit-banner">
+                <div className="whatsapp-banner editing">
                   <div>
-                    <span style={{ fontWeight: 600 }}>✏️ Editing Message: </span>
-                    <span style={{ opacity: 0.85 }}>{editingMessage.originalText}</span>
+                    <span style={{ fontWeight: 600 }}>✏️ Editing message: </span>
+                    <span>{editingMessage.originalText}</span>
                   </div>
                   <button className="banner-close-btn" onClick={handleCancelEdit}>✕</button>
                 </div>
               )}
 
-              {/* Quoted Reply Banner */}
+              {/* Attached Banner: Replying */}
               {!editingMessage && replyingTo && (
-                <div className="reply-banner">
+                <div className="whatsapp-banner replying">
                   <div>
                     <span style={{ fontWeight: 600 }}>Replying to: </span>
                     <span>{getMessageSnippet(replyingTo)}</span>
@@ -1740,18 +2032,18 @@ export default function Home() {
                 </div>
               )}
 
-              {/* Image Preview Banner */}
+              {/* Attached Banner: Image Preview */}
               {!editingMessage && selectedImage && (
-                <div className="media-preview-banner">
-                  <div className="media-preview-thumb">
+                <div className="whatsapp-banner media">
+                  <div className="whatsapp-media-thumb">
                     <img src={selectedImage.dataUrl} alt="Preview" />
                     <button className="remove-media-btn" onClick={() => setSelectedImage(null)}>✕</button>
                   </div>
-                  <span style={{ fontSize: '0.85rem', color: '#94a3b8' }}>Ready to send image</span>
+                  <span>Image ready to send</span>
                 </div>
               )}
 
-              {/* Composer Floating Emoji Picker */}
+              {/* Emoji Picker Popover */}
               {showEmojiPicker && (
                 <EmojiPicker 
                   onSelectEmoji={(emoji) => setInputValue(prev => prev + emoji)}
@@ -1759,10 +2051,10 @@ export default function Home() {
                 />
               )}
 
-              {/* Input / Voice Note Recording Form */}
-              <div className="chat-input">
+              {/* Input Bar Form */}
+              <div className="whatsapp-composer-bar">
                 {isRecording ? (
-                  <div className="recording-bar">
+                  <div className="whatsapp-recording-bar">
                     <div className="recording-indicator">
                       <div className="rec-dot"></div>
                       <span className="rec-timer">{formatRecordingTime(recordingDuration)}</span>
@@ -1785,9 +2077,8 @@ export default function Home() {
                       </button>
                       <button 
                         type="button" 
-                        className="btn-send" 
+                        className="whatsapp-send-btn" 
                         title="Send Voice Note"
-                        style={{ width: '38px', height: '38px' }}
                         onClick={sendVoiceNote}
                       >
                         ➤
@@ -1795,10 +2086,18 @@ export default function Home() {
                     </div>
                   </div>
                 ) : (
-                  <form onSubmit={handleSendMessage} style={{ display: 'flex', width: '100%', alignItems: 'center', gap: '10px' }}>
+                  <form onSubmit={handleSendMessage} className="whatsapp-composer-form">
                     {!editingMessage && (
                       <>
-                        {/* Attach Media */}
+                        <button 
+                          type="button" 
+                          className="whatsapp-composer-icon" 
+                          title="Insert Emoji"
+                          onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                        >
+                          😊
+                        </button>
+
                         <input 
                           type="file" 
                           ref={fileInputRef} 
@@ -1808,27 +2107,16 @@ export default function Home() {
                         />
                         <button 
                           type="button" 
-                          className="btn-attach" 
+                          className="whatsapp-composer-icon" 
                           title="Attach Media"
                           onClick={() => fileInputRef.current?.click()}
                         >
                           📎
                         </button>
 
-                        {/* Emoji Keyboard Popover Trigger */}
                         <button 
                           type="button" 
-                          className="btn-attach" 
-                          title="Insert Emoji"
-                          onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                        >
-                          😊
-                        </button>
-
-                        {/* Send ETH Tip Button */}
-                        <button 
-                          type="button" 
-                          className="btn-attach" 
+                          className="whatsapp-composer-icon" 
                           title="Send ETH Tip / Transfer"
                           onClick={() => setShowSendCryptoModal(true)}
                         >
@@ -1836,33 +2124,41 @@ export default function Home() {
                         </button>
                       </>
                     )}
+
                     <input 
                       type="text" 
+                      className="whatsapp-input-field"
                       placeholder={
                         editingMessage 
-                          ? "Edit your message and press Enter..." 
+                          ? "Edit message..." 
                           : selectedImage 
                             ? "Add a caption..." 
-                            : "Type an encrypted message..."
+                            : "Type a message"
                       } 
                       value={inputValue}
                       onChange={(e) => setInputValue(e.target.value)}
                     />
+
                     {!editingMessage && (
                       <button 
                         type="button" 
-                        className="btn-mic" 
+                        className="whatsapp-composer-icon" 
                         title="Record Voice Note"
                         onClick={startRecording}
                       >
                         🎤
                       </button>
                     )}
-                    <button type="submit" className="btn-send" title={editingMessage ? "Save Edit" : "Send Message"}>
+
+                    <button 
+                      type="submit" 
+                      className="whatsapp-send-btn" 
+                      title={editingMessage ? "Save Edit" : "Send Message"}
+                    >
                       {editingMessage ? (
-                        <span style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>✓</span>
+                        <span>✓</span>
                       ) : (
-                        <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
                           <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path>
                         </svg>
                       )}
@@ -1873,7 +2169,6 @@ export default function Home() {
             </div>
           </>
         ) : (
-          /* Hero Command Center Dashboard */
           <HeroDashboard 
             walletAddress={walletAddress}
             ensName={ensName}
@@ -1885,6 +2180,7 @@ export default function Home() {
             onOpenQR={() => setShowQRModal(true)}
             onConnectWallet={connectWallet}
             onStartBlockBotChat={startBlockBotChat}
+            onStartDemoMode={startDemoMode}
           />
         )}
       </div>
@@ -1948,6 +2244,7 @@ export default function Home() {
           setProfileFormAvatar={setProfileFormAvatar}
           isSavingProfile={isSavingProfile}
           onSaveProfile={handleSaveProfile}
+          onDisconnect={disconnectWallet}
           onClose={() => setShowProfileModal(false)}
         />
       )}
@@ -1974,6 +2271,22 @@ export default function Home() {
               : userProfile.username || ensName
           }
           onClose={() => setShowQRModal(false)}
+        />
+      )}
+
+      {/* Coffee Roast Themes & Audio Modal */}
+      {showThemeModal && (
+        <CoffeeThemeModal
+          currentTheme={coffeeTheme}
+          onSelectTheme={handleSelectTheme}
+          wallpaperOpacity={wallpaperOpacity}
+          onSelectWallpaperOpacity={handleSelectWallpaperOpacity}
+          soundEnabled={soundEnabled}
+          onToggleSound={handleToggleSound}
+          onPlaySendPop={playSendPop}
+          onPlayReceiveChime={playReceiveChime}
+          onPlayCoinClink={playCoinClink}
+          onClose={() => setShowThemeModal(false)}
         />
       )}
 

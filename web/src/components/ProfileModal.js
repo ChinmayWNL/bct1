@@ -10,6 +10,7 @@ export default function ProfileModal({
   setProfileFormAvatar,
   isSavingProfile,
   onSaveProfile,
+  onDisconnect,
   onClose
 }) {
   const [validationError, setValidationError] = useState('');
@@ -161,6 +162,32 @@ export default function ProfileModal({
             <small style={{ color: '#64748b', fontSize: '0.72rem', textAlign: 'center' }}>
               On-chain registration calls UserRegistry smart contract (requires Sepolia or local Hardhat gas).
             </small>
+
+            {onDisconnect && (
+              <button 
+                type="button" 
+                style={{
+                  background: 'rgba(239, 68, 68, 0.1)',
+                  color: '#ef4444',
+                  border: '1px solid rgba(239, 68, 68, 0.25)',
+                  padding: '10px 16px',
+                  borderRadius: '10px',
+                  cursor: 'pointer',
+                  fontWeight: 600,
+                  fontSize: '0.86rem',
+                  marginTop: '8px',
+                  transition: 'all 0.2s ease'
+                }}
+                onClick={() => {
+                  if (typeof window !== 'undefined' && window.confirm("Are you sure you want to disconnect your wallet?")) {
+                    onDisconnect();
+                    onClose();
+                  }
+                }}
+              >
+                🔌 Disconnect Wallet
+              </button>
+            )}
           </div>
         </form>
       </div>

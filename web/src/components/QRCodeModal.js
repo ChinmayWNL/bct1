@@ -16,8 +16,8 @@ export default function QRCodeModal({ address, username, onClose }) {
         width: 240,
         margin: 2,
         color: {
-          dark: '#60a5fa',
-          light: '#0b1120'
+          dark: '#c89666',
+          light: '#1c1512'
         }
       },
       (error) => {
