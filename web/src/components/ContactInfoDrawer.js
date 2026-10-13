@@ -1,11 +1,13 @@
 'use client';
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import VoiceNotePlayer from '@/components/VoiceNotePlayer';
 
 export default function ContactInfoDrawer({
   peerAddress,
   peerName,
   peerAvatar,
+  customNickname = '',
+  onSaveNickname,
   messages = [],
   starredMessages = {},
   disappearingTimer,
@@ -20,6 +22,12 @@ export default function ContactInfoDrawer({
 }) {
   const [activeMediaTab, setActiveMediaTab] = useState('media');
   const [copied, setCopied] = useState(false);
+  const [nicknameInput, setNicknameInput] = useState(customNickname || '');
+  const [isSavedNickname, setIsSavedNickname] = useState(false);
+
+  useEffect(() => {
+    setNicknameInput(customNickname || '');
+  }, [customNickname]);
 
   const handleCopy = async () => {
     if (!peerAddress) return;
@@ -129,6 +137,38 @@ export default function ContactInfoDrawer({
               <button className="mini-qr-btn" onClick={onOpenQR}>
                 🏁 QR
               </button>
+            </div>
+
+            {/* Custom Local Nickname */}
+            <div style={{ width: '100%', marginTop: '12px' }}>
+              <div style={{ display: 'flex', gap: '6px', width: '100%' }}>
+                <input
+                  type="text"
+                  className="whatsapp-new-chat-input"
+                  placeholder="Set custom nickname (e.g. Alice Lead)..."
+                  value={nicknameInput}
+                  onChange={(e) => {
+                    setNicknameInput(e.target.value);
+                    setIsSavedNickname(false);
+                  }}
+                  maxLength={30}
+                  style={{ flex: 1, fontSize: '0.82rem' }}
+                />
+                <button
+                  type="button"
+                  className="mini-copy-btn"
+                  onClick={() => {
+                    if (onSaveNickname) {
+                      onSaveNickname(nicknameInput);
+                      setIsSavedNickname(true);
+                      setTimeout(() => setIsSavedNickname(false), 2000);
+                    }
+                  }}
+                  title="Save Nickname"
+                >
+                  {isSavedNickname ? '✓ Saved' : '💾 Save'}
+                </button>
+              </div>
             </div>
           </div>
 

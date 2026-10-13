@@ -2,9 +2,20 @@
 import { useState } from 'react';
 import { ethers } from 'ethers';
 
-export default function SendCryptoModal({ recipientAddress, recipientName, userBalance, signer, onClose, onSuccess }) {
-  const [amount, setAmount] = useState('');
-  const [note, setNote] = useState('');
+export default function SendCryptoModal({ 
+  recipientAddress, 
+  recipientName, 
+  userBalance, 
+  signer, 
+  initialMode = 'send',
+  initialAmount = '',
+  initialNote = '',
+  onClose, 
+  onSuccess 
+}) {
+  const [mode, setMode] = useState(initialMode || 'send'); // 'send' | 'request'
+  const [amount, setAmount] = useState(initialAmount || '');
+  const [note, setNote] = useState(initialNote || '');
   const [isSending, setIsSending] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -56,6 +67,7 @@ export default function SendCryptoModal({ recipientAddress, recipientName, userB
         setIsSending(false);
         const demoHash = '0xdemo' + Array.from({ length: 60 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
         onSuccess({
+          type: 'crypto_transfer',
           amount: trimmedAmt,
           txHash: demoHash,
           note: note.trim(),
@@ -75,6 +87,7 @@ export default function SendCryptoModal({ recipientAddress, recipientName, userB
 
       // Optimistically inform parent with broadcast hash
       onSuccess({
+        type: 'crypto_transfer',
         amount: trimmedAmt,
         txHash: tx.hash,
         note: note.trim(),
@@ -86,6 +99,7 @@ export default function SendCryptoModal({ recipientAddress, recipientName, userB
       tx.wait(1).then((receipt) => {
         if (receipt && receipt.status === 1) {
           onSuccess({
+            type: 'crypto_transfer',
             amount: trimmedAmt,
             txHash: tx.hash,
             note: note.trim(),
@@ -105,20 +119,72 @@ export default function SendCryptoModal({ recipientAddress, recipientName, userB
     }
   };
 
+  const handleRequest = (e) => {
+    e.preventDefault();
+    setErrorMsg('');
+
+    const trimmedAmt = amount.trim();
+    if (!trimmedAmt || !/^\d+(\.\d{1,18})?$/.test(trimmedAmt)) {
+      setErrorMsg('Please enter a valid ETH amount.');
+      return;
+    }
+
+    try {
+      const weiAmount = ethers.parseEther(trimmedAmt);
+      if (weiAmount <= 0n) {
+        setErrorMsg('Please enter an amount greater than 0.');
+        return;
+      }
+    } catch (err) {
+      setErrorMsg('Invalid amount precision.');
+      return;
+    }
+
+    onSuccess({
+      type: 'crypto_request',
+      amount: trimmedAmt,
+      note: note.trim() || 'Payment request ☕',
+      status: 'pending'
+    });
+    onClose();
+  };
+
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-card crypto-modal-card" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <div className="brand-title" style={{ fontSize: '1.2rem' }}>
-            <span>💸</span> Send ETH Tip
+            <span>{mode === 'send' ? '💸' : '📥'}</span> {mode === 'send' ? 'Send ETH Tip' : 'Request ETH Payment'}
           </div>
           <button className="modal-close-btn" onClick={onClose}>✕</button>
         </div>
 
-        <form onSubmit={handleSend}>
-          {/* Recipient Card */}
+        {/* Mode Segmented Switcher */}
+        <div className="crypto-mode-toggle" style={{ display: 'flex', gap: '8px', marginBottom: '14px' }}>
+          <button
+            type="button"
+            className={`wallpaper-btn ${mode === 'send' ? 'active' : ''}`}
+            onClick={() => setMode('send')}
+            style={{ flex: 1, padding: '8px' }}
+          >
+            💸 Send ETH
+          </button>
+          <button
+            type="button"
+            className={`wallpaper-btn ${mode === 'request' ? 'active' : ''}`}
+            onClick={() => setMode('request')}
+            style={{ flex: 1, padding: '8px' }}
+          >
+            📥 Request ETH
+          </button>
+        </div>
+
+        <form onSubmit={mode === 'send' ? handleSend : handleRequest}>
+          {/* Recipient / Peer Card */}
           <div className="crypto-recipient-card">
-            <div className="crypto-rec-label">Sending to</div>
+            <div className="crypto-rec-label">
+              {mode === 'send' ? 'Sending to' : 'Requesting from'}
+            </div>
             <div className="crypto-rec-val">
               <span className="crypto-rec-name">{recipientName ? `@${recipientName}` : 'Peer Wallet'}</span>
               <span className="crypto-rec-addr">{recipientAddress}</span>
@@ -129,8 +195,8 @@ export default function SendCryptoModal({ recipientAddress, recipientName, userB
           <div className="form-group" style={{ marginTop: '16px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
               <label style={{ margin: 0 }}>Amount (ETH)</label>
-              {userBalance && (
-                <span className="balance-hint">
+              {mode === 'send' && userBalance && (
+                <span className="balance-hint" style={{ fontSize: '0.78rem', color: 'var(--coffee-text-muted)' }}>
                   Balance: {parseFloat(userBalance).toFixed(4)} ETH
                 </span>
               )}
@@ -142,7 +208,7 @@ export default function SendCryptoModal({ recipientAddress, recipientName, userB
                 step="0.0001" 
                 min="0.0001"
                 className="crypto-amount-input" 
-                placeholder="0.01" 
+                placeholder="0.005" 
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 autoFocus
@@ -171,7 +237,7 @@ export default function SendCryptoModal({ recipientAddress, recipientName, userB
             <input 
               type="text" 
               className="form-control" 
-              placeholder="e.g. Thanks for the quick feedback! ☕" 
+              placeholder={mode === 'send' ? "e.g. Thanks for the quick feedback! ☕" : "e.g. Coffee split ☕ or gas fee refund"} 
               value={note}
               onChange={(e) => setNote(e.target.value)}
               maxLength={100}
@@ -199,7 +265,10 @@ export default function SendCryptoModal({ recipientAddress, recipientName, userB
               style={{ flex: 1 }}
               disabled={isSending}
             >
-              {isSending ? "Confirming in Wallet..." : `Confirm & Send ${amount ? `${amount} ETH` : 'ETH'}`}
+              {mode === 'send' 
+                ? (isSending ? "Confirming in Wallet..." : `Confirm & Send ${amount ? `${amount} ETH` : 'ETH'}`)
+                : `Create Payment Request (${amount ? `${amount} ETH` : 'ETH'})`
+              }
             </button>
           </div>
         </form>

@@ -13,6 +13,7 @@ import CallModal from '@/components/CallModal';
 import IncomingCallModal from '@/components/IncomingCallModal';
 import ContactInfoDrawer from '@/components/ContactInfoDrawer';
 import CoffeeThemeModal from '@/components/CoffeeThemeModal';
+import { renderWhatsAppMarkdown } from '@/utils/whatsappMarkdown';
 // Pure Utility Functions
 function formatAddress(address) {
   if (!address) return '';
@@ -183,6 +184,125 @@ export default function Home() {
   const [wallpaperOpacity, setWallpaperOpacity] = useState('balanced');
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [showThemeModal, setShowThemeModal] = useState(false);
+
+  // 1. Custom Nicknames Address Book
+  const [customNicknames, setCustomNicknames] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('blockchat_custom_nicknames');
+        return stored ? JSON.parse(stored) : {};
+      } catch (e) {}
+    }
+    return {};
+  });
+
+  // 2. Per-Chat Drafts Memory
+  const [chatDrafts, setChatDrafts] = useState({});
+  const chatDraftsRef = useRef({});
+  const activeConversationRef = useRef(null);
+
+  useEffect(() => {
+    chatDraftsRef.current = chatDrafts;
+  }, [chatDrafts]);
+
+  useEffect(() => {
+    activeConversationRef.current = activeConversation;
+  }, [activeConversation]);
+
+  // 3. Real Unread Counts Matrix
+  const [unreadCounts, setUnreadCounts] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('blockchat_unread_counts');
+        return stored ? JSON.parse(stored) : {};
+      } catch (e) {}
+    }
+    return {};
+  });
+
+  // 4. Known Contacts for Safety Warning Banner
+  const [knownContacts, setKnownContacts] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('blockchat_known_contacts');
+        return stored ? JSON.parse(stored) : {};
+      } catch (e) {}
+    }
+    return {};
+  });
+  const [dismissedSafetyBanners, setDismissedSafetyBanners] = useState({});
+
+  // 5. Crypto Modal Presets (for 1-click Pay Request)
+  const [cryptoModalPreset, setCryptoModalPreset] = useState({
+    mode: 'send',
+    amount: '',
+    note: '',
+    requestId: null
+  });
+
+  // Helpers for Nicknames and Safety
+  const getContactDisplayName = (addr, defaultProfile) => {
+    if (!addr) return 'Peer';
+    const key = addr.toLowerCase();
+    if (customNicknames[key]) {
+      return customNicknames[key];
+    }
+    if (defaultProfile?.username) {
+      return `@${defaultProfile.username}`;
+    }
+    if (addressProfiles[key]?.username) {
+      return `@${addressProfiles[key].username}`;
+    }
+    return formatAddress(addr);
+  };
+
+  const handleSaveNickname = (peerAddr, nickname) => {
+    if (!peerAddr) return;
+    const key = peerAddr.toLowerCase();
+    const updated = { ...customNicknames };
+    if (nickname && nickname.trim()) {
+      updated[key] = nickname.trim();
+    } else {
+      delete updated[key];
+    }
+    setCustomNicknames(updated);
+    try {
+      localStorage.setItem('blockchat_custom_nicknames', JSON.stringify(updated));
+    } catch (e) {}
+  };
+
+  const handleDismissSafetyBanner = (peerAddr) => {
+    if (!peerAddr) return;
+    const key = peerAddr.toLowerCase();
+    setDismissedSafetyBanners(prev => ({ ...prev, [key]: true }));
+    setKnownContacts(prev => {
+      const updated = { ...prev, [key]: true };
+      try { localStorage.setItem('blockchat_known_contacts', JSON.stringify(updated)); } catch(e){}
+      return updated;
+    });
+  };
+
+  const handlePayRequest = (req) => {
+    setCryptoModalPreset({
+      mode: 'send',
+      amount: req.amount || '',
+      note: `Paying invoice: ${req.note || 'Payment'}`,
+      requestId: req.requestId || req.id
+    });
+    setShowSendCryptoModal(true);
+  };
+
+  const handleComposerInputChange = (e) => {
+    const val = e.target.value;
+    setInputValue(val);
+    if (activeConversation && !editingMessage) {
+      setChatDrafts(prev => {
+        const updated = { ...prev, [activeConversation.id]: val };
+        chatDraftsRef.current = updated;
+        return updated;
+      });
+    }
+  };
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -758,6 +878,16 @@ export default function Home() {
   };
 
   const selectConversation = async (conversation) => {
+    // Preserve draft of previous conversation if any
+    if (activeConversation && !editingMessage) {
+      const curDraft = inputValue;
+      setChatDrafts(prev => {
+        const updated = { ...prev, [activeConversation.id]: curDraft };
+        chatDraftsRef.current = updated;
+        return updated;
+      });
+    }
+
     const streamId = ++activeStreamIdRef.current;
     setActiveConversation(conversation);
     setReplyingTo(null);
@@ -766,6 +896,18 @@ export default function Home() {
     setInChatSearchQuery('');
     setShowInChatSearch(false);
     setShowContactDrawer(false);
+
+    // Restore draft for newly active conversation
+    const savedDraft = chatDraftsRef.current[conversation.id] || '';
+    setInputValue(savedDraft);
+
+    // Clear unread count for selected conversation
+    setUnreadCounts(prev => {
+      if (!prev[conversation.id]) return prev;
+      const updated = { ...prev, [conversation.id]: 0 };
+      try { localStorage.setItem('blockchat_unread_counts', JSON.stringify(updated)); } catch (e) {}
+      return updated;
+    });
 
     if (conversation.isDemoBot) {
       // Demo bot conversation loading
@@ -995,6 +1137,8 @@ export default function Home() {
       let replyContent = "Encrypted message verified! 🚀 BlockChat is performing at peak efficiency.";
       if (type === 'crypto_transfer') {
         replyContent = "Thank you so much for the ETH tip! 💎 Transaction confirmed and logged to blockchain state.";
+      } else if (type === 'crypto_request') {
+        replyContent = "Invoice received! 📥 Ready to settle on-chain whenever you are.";
       } else if (type === 'audio') {
         replyContent = "Received your voice note! 🎙️ Decoded audio waveform with 100% clarity.";
       } else if (type === 'media') {
@@ -1010,7 +1154,16 @@ export default function Home() {
         content: replyContent
       };
 
-      setMessages(prev => [...prev, botMessage]);
+      if (activeConversationRef.current?.id === 'demo-blockbot') {
+        setMessages(prev => [...prev, botMessage]);
+      } else {
+        setUnreadCounts(prev => {
+          const next = (prev['demo-blockbot'] || 0) + 1;
+          const updated = { ...prev, ['demo-blockbot']: next };
+          try { localStorage.setItem('blockchat_unread_counts', JSON.stringify(updated)); } catch (e) {}
+          return updated;
+        });
+      }
       playNotificationSound();
     }, 1100);
   };
@@ -1252,6 +1405,14 @@ export default function Home() {
 
       playSendPop();
       setInputValue('');
+      if (activeConversation) {
+        setChatDrafts(prev => {
+          const updated = { ...prev };
+          delete updated[activeConversation.id];
+          chatDraftsRef.current = updated;
+          return updated;
+        });
+      }
       setSelectedImage(null);
       setReplyingTo(null);
     } catch (err) {
@@ -1260,9 +1421,44 @@ export default function Home() {
     }
   };
 
-  // Crypto Transfer Success Handler (with status & chainId tracking)
-  const handleCryptoTransferSuccess = async ({ amount, txHash, note, status = 'confirmed' }) => {
+  // Crypto Transfer / Request Handler (with status & chainId tracking)
+  const handleCryptoTransferSuccess = async ({ amount, txHash, note, status = 'confirmed', type = 'crypto_transfer' }) => {
     if (!activeConversation) return;
+
+    if (type === 'crypto_request') {
+      try {
+        const reqId = `req_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+        const requestPayload = {
+          type: 'crypto_request',
+          requestId: reqId,
+          amount: amount,
+          note: note,
+          status: 'pending',
+          requester: walletAddress,
+          recipient: activeConversation.peerAddress,
+          timestamp: new Date().getTime()
+        };
+        const textPayload = `[JSON_MSG]${JSON.stringify(requestPayload)}`;
+
+        if (activeConversation.isDemoBot) {
+          const localMsg = {
+            id: `demo-req-${new Date().getTime()}`,
+            senderInboxId: xmtpClient?.inboxId || 'user-inbox',
+            sentAt: new Date().toISOString(),
+            content: textPayload
+          };
+          setMessages(prev => [...prev, localMsg]);
+          triggerBotReply('', 'crypto_request');
+        } else {
+          await activeConversation.sendText(textPayload);
+        }
+
+        playSendPop();
+      } catch (err) {
+        console.error("Failed to broadcast crypto request", err);
+      }
+      return;
+    }
 
     try {
       // Check if a receipt for this txHash is already recorded
@@ -1301,6 +1497,20 @@ export default function Home() {
         timestamp: new Date().getTime()
       };
       const textPayload = `[JSON_MSG]${JSON.stringify(cryptoPayload)}`;
+
+      // If paying a pending invoice request, mark it paid
+      if (cryptoModalPreset.requestId) {
+        setMessages(prev => prev.map(m => {
+          const d = parseMessageData(m);
+          if (d.type === 'crypto_request' && (d.requestId === cryptoModalPreset.requestId || m.id === cryptoModalPreset.requestId)) {
+            return {
+              ...m,
+              content: `[JSON_MSG]${JSON.stringify({ ...d, status: 'paid', paidTxHash: txHash })}`
+            };
+          }
+          return m;
+        }));
+      }
 
       if (activeConversation.isDemoBot) {
         const localMsg = {
@@ -1431,23 +1641,31 @@ export default function Home() {
     if (editedMessages[msg.id]) return editedMessages[msg.id];
     const data = parseMessageData(msg);
     if (data.type === 'crypto_transfer') return `💸 Sent ${data.amount} ETH`;
+    if (data.type === 'crypto_request') return `📥 Request: ${data.amount} ETH`;
     if (data.type === 'media') return data.text ? `📷 ${data.text}` : '📷 Photo';
     if (data.type === 'audio') return `🎤 Voice Note (${data.duration || 0}s)`;
     return data.text || 'Message';
   };
 
-  // Memoized Filtered Conversations based on Search, Pinned, and Tabs
+  // Memoized Filtered Conversations based on Search, Nicknames, Pinned, and Tabs
   const filteredConversations = useMemo(() => {
     return conversations
       .filter(convo => {
         const displayId = convo.peerAddress || convo.id || '';
         const peerProf = addressProfiles[displayId.toLowerCase()];
+        const customNick = customNicknames[displayId.toLowerCase()] || '';
         const name = peerProf?.username || displayId;
-        const matchesSearch = name.toLowerCase().includes(searchQuery.toLowerCase());
+        const q = searchQuery.toLowerCase();
+        const matchesSearch = name.toLowerCase().includes(q) || 
+                              customNick.toLowerCase().includes(q) || 
+                              displayId.toLowerCase().includes(q);
         if (!matchesSearch) return false;
 
         if (activeTab === 'pinned') {
           return !!pinnedConvos[convo.id];
+        }
+        if (activeTab === 'unread') {
+          return (unreadCounts[convo.id] || 0) > 0;
         }
         return true;
       })
@@ -1458,11 +1676,15 @@ export default function Home() {
         if (!aPinned && bPinned) return 1;
         return 0;
       });
-  }, [conversations, addressProfiles, searchQuery, activeTab, pinnedConvos]);
+  }, [conversations, addressProfiles, customNicknames, unreadCounts, searchQuery, activeTab, pinnedConvos]);
 
   const pinnedCount = useMemo(() => {
     return Object.values(pinnedConvos).filter(Boolean).length;
   }, [pinnedConvos]);
+
+  const unreadTotalCount = useMemo(() => {
+    return Object.values(unreadCounts).reduce((acc, count) => acc + (Number(count) > 0 ? 1 : 0), 0);
+  }, [unreadCounts]);
 
   // Memoized Filtered Messages for active in-thread search and disappearing messages
   const visibleMessages = useMemo(() => {
@@ -1607,7 +1829,7 @@ export default function Home() {
               className={`whatsapp-filter-pill ${activeTab === 'unread' ? 'active' : ''}`}
               onClick={() => setActiveTab('unread')}
             >
-              Unread
+              Unread {unreadTotalCount > 0 ? `(${unreadTotalCount})` : ''}
             </button>
             <button 
               type="button" 
@@ -1646,11 +1868,14 @@ export default function Home() {
           {filteredConversations.map(convo => {
             const displayId = convo.peerAddress || convo.id || "Unknown";
             const peerProf = addressProfiles[displayId.toLowerCase()];
-            const displayName = peerProf?.username ? `@${peerProf.username}` : formatAddress(displayId);
-            const avatarChar = (peerProf?.username || displayId).substring(displayId.startsWith('0x') ? 2 : 0, displayId.startsWith('0x') ? 4 : 2).toUpperCase();
+            const displayName = getContactDisplayName(displayId, peerProf);
+            const customNick = customNicknames[displayId.toLowerCase()];
+            const avatarChar = (customNick || peerProf?.username || displayId).substring(displayId.startsWith('0x') && !customNick ? 2 : 0, displayId.startsWith('0x') && !customNick ? 4 : 2).toUpperCase();
             const isPinned = !!pinnedConvos[convo.id];
             const isBot = convo.isDemoBot;
             const isSelected = activeConversation?.id === convo.id;
+            const draftText = chatDrafts[convo.id];
+            const unreadCount = unreadCounts[convo.id] || 0;
 
             return (
               <div 
@@ -1685,10 +1910,19 @@ export default function Home() {
 
                   <div className="whatsapp-card-row-bottom">
                     <p className="whatsapp-card-snippet">
-                      <span className="whatsapp-snippet-ticks">✓✓</span>
-                      <span>{convo.latestMessage ? getMessageSnippet(convo.latestMessage) : 'Direct message'}</span>
+                      {draftText && !isSelected ? (
+                        <span className="whatsapp-snippet-draft">Draft: {draftText}</span>
+                      ) : (
+                        <>
+                          <span className="whatsapp-snippet-ticks">✓✓</span>
+                          <span>{convo.latestMessage ? getMessageSnippet(convo.latestMessage) : 'Direct message'}</span>
+                        </>
+                      )}
                     </p>
                     <div className="whatsapp-card-badges">
+                      {unreadCount > 0 && !isSelected && (
+                        <span className="whatsapp-unread-badge">{unreadCount}</span>
+                      )}
                       <button 
                         type="button" 
                         className={`whatsapp-pin-btn ${isPinned ? 'pinned' : ''}`}
@@ -1756,9 +1990,10 @@ export default function Home() {
               {(() => {
                 const displayId = activeConversation.peerAddress || activeConversation.id || "Unknown";
                 const peerProf = addressProfiles[displayId.toLowerCase()];
-                const displayName = peerProf?.username ? `@${peerProf.username}` : formatAddress(displayId);
+                const displayName = getContactDisplayName(displayId, peerProf);
+                const customNick = customNicknames[displayId.toLowerCase()];
                 const isBot = activeConversation.isDemoBot || displayId.toLowerCase().includes('bot');
-                const avatarChar = (peerProf?.username || displayId).substring(displayId.startsWith('0x') ? 2 : 0, displayId.startsWith('0x') ? 4 : 2).toUpperCase();
+                const avatarChar = (customNick || peerProf?.username || displayId).substring(displayId.startsWith('0x') && !customNick ? 2 : 0, displayId.startsWith('0x') && !customNick ? 4 : 2).toUpperCase();
 
                 return (
                   <div className="whatsapp-header-inner">
@@ -1849,8 +2084,11 @@ export default function Home() {
                       <button 
                         type="button" 
                         className="whatsapp-icon-action tip-action" 
-                        title="Send ETH Tip / Transfer"
-                        onClick={() => setShowSendCryptoModal(true)}
+                        title="Send ETH Tip / Transfer or Request ETH"
+                        onClick={() => {
+                          setCryptoModalPreset({ mode: 'send', amount: '', note: '' });
+                          setShowSendCryptoModal(true);
+                        }}
                       >
                         💸
                       </button>
@@ -1877,6 +2115,46 @@ export default function Home() {
                 );
               })()}
             </div>
+
+            {/* WhatsApp First-Time Sender Safety Warning Banner */}
+            {(() => {
+              const peerAddr = activeConversation?.peerAddress;
+              const isUnknown = activeConversation && 
+                                !activeConversation.isDemoBot && 
+                                peerAddr && 
+                                !knownContacts[peerAddr.toLowerCase()] && 
+                                !customNicknames[peerAddr.toLowerCase()] && 
+                                !dismissedSafetyBanners[peerAddr.toLowerCase()];
+              if (!isUnknown) return null;
+              return (
+                <div className="whatsapp-safety-banner">
+                  <div className="safety-banner-left">
+                    <span className="safety-banner-icon">🛡️</span>
+                    <div>
+                      <span style={{ fontWeight: 600 }}>Unknown Sender: </span>
+                      <span>{formatAddress(peerAddr)} is not in your address book. Verify before sending ETH.</span>
+                    </div>
+                  </div>
+                  <div className="safety-banner-actions">
+                    <button 
+                      type="button" 
+                      className="safety-btn-action"
+                      onClick={() => setShowContactDrawer(true)}
+                    >
+                      📇 Set Nickname
+                    </button>
+                    <button 
+                      type="button" 
+                      className="safety-btn-dismiss"
+                      onClick={() => handleDismissSafetyBanner(peerAddr)}
+                      title="Dismiss warning"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* In-Chat Search Bar */}
             {showInChatSearch && (
@@ -2002,6 +2280,52 @@ export default function Home() {
                             />
                           )}
 
+                          {/* Crypto Request Invoice Card */}
+                          {msgData.type === 'crypto_request' && (
+                            <div className="crypto-request-card">
+                              <div className="crypto-request-header">
+                                <span className="crypto-request-tag">📥 ETH Invoice</span>
+                                <span className={`crypto-request-status ${msgData.status || 'pending'}`}>
+                                  {msgData.status === 'paid' ? 'PAID ✓' : 'PENDING'}
+                                </span>
+                              </div>
+                              <div className="crypto-request-amount">
+                                <span className="crypto-request-val">{msgData.amount}</span>
+                                <span className="crypto-request-symbol">ETH</span>
+                              </div>
+                              {msgData.note && (
+                                <div className="crypto-request-note">
+                                  "{msgData.note}"
+                                </div>
+                              )}
+                              <div className="crypto-request-footer">
+                                {msgData.status === 'paid' ? (
+                                  <div className="crypto-paid-label">
+                                    <span>✓ Settled on-chain</span>
+                                    {msgData.paidTxHash && (
+                                      <span style={{ fontFamily: 'monospace', fontSize: '0.72rem' }}>
+                                        ({formatAddress(msgData.paidTxHash)})
+                                      </span>
+                                    )}
+                                  </div>
+                                ) : (
+                                  !isSent && (
+                                    <button 
+                                      type="button" 
+                                      className="crypto-request-pay-btn"
+                                      onClick={() => handlePayRequest(msgData)}
+                                    >
+                                      ⚡ Pay {msgData.amount} ETH Now
+                                    </button>
+                                  )
+                                )}
+                                <div className="crypto-requester-info" style={{ marginTop: '4px' }}>
+                                  {isSent ? 'Requested by You' : `Requested by ${getContactDisplayName(activeConversation.peerAddress)}`}
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
                           {/* Voice Note Audio */}
                           {msgData.type === 'audio' && (
                             <VoiceNotePlayer audioUrl={msgData.audioUrl} duration={msgData.duration} />
@@ -2017,10 +2341,10 @@ export default function Home() {
                             </div>
                           )}
 
-                          {/* Text Content */}
-                          {renderedText && msgData.type !== 'crypto_transfer' && (
+                          {/* Text Content with WhatsApp Markdown formatting */}
+                          {renderedText && msgData.type !== 'crypto_transfer' && msgData.type !== 'crypto_request' && (
                             <div className="whatsapp-bubble-text">
-                              {renderedText}
+                              {renderWhatsAppMarkdown(renderedText)}
                               {isEdited && <span className="whatsapp-edited-tag">(edited)</span>}
                             </div>
                           )}
@@ -2205,8 +2529,11 @@ export default function Home() {
                         <button 
                           type="button" 
                           className="whatsapp-composer-icon" 
-                          title="Send ETH Tip / Transfer"
-                          onClick={() => setShowSendCryptoModal(true)}
+                          title="Send ETH Tip or Request ETH"
+                          onClick={() => {
+                            setCryptoModalPreset({ mode: 'send', amount: '', note: '' });
+                            setShowSendCryptoModal(true);
+                          }}
                         >
                           💸
                         </button>
@@ -2221,10 +2548,10 @@ export default function Home() {
                           ? "Edit message..." 
                           : selectedImage 
                             ? "Add a caption..." 
-                            : "Type a message"
+                            : "Type a message (*bold*, _italic_, ~strike~, `code`)"
                       } 
                       value={inputValue}
-                      onChange={(e) => setInputValue(e.target.value)}
+                      onChange={handleComposerInputChange}
                     />
 
                     {!editingMessage && (
@@ -2307,6 +2634,8 @@ export default function Home() {
           peerAddress={activeConversation.peerAddress}
           peerName={addressProfiles[activeConversation.peerAddress?.toLowerCase()]?.username || ensName}
           peerAvatar={addressProfiles[activeConversation.peerAddress?.toLowerCase()]?.profilePictureCID}
+          customNickname={customNicknames[activeConversation.peerAddress?.toLowerCase()] || ''}
+          onSaveNickname={(nick) => handleSaveNickname(activeConversation.peerAddress, nick)}
           messages={messages}
           starredMessages={starredMessages}
           disappearingTimer={disappearingTimer}
@@ -2341,10 +2670,16 @@ export default function Home() {
       {showSendCryptoModal && activeConversation && (
         <SendCryptoModal 
           recipientAddress={activeConversation.peerAddress}
-          recipientName={addressProfiles[activeConversation.peerAddress?.toLowerCase()]?.username || ensName}
+          recipientName={getContactDisplayName(activeConversation.peerAddress, addressProfiles[activeConversation.peerAddress?.toLowerCase()])}
           userBalance={userBalance}
           signer={signer}
-          onClose={() => setShowSendCryptoModal(false)}
+          initialMode={cryptoModalPreset.mode || 'send'}
+          initialAmount={cryptoModalPreset.amount || ''}
+          initialNote={cryptoModalPreset.note || ''}
+          onClose={() => {
+            setShowSendCryptoModal(false);
+            setCryptoModalPreset({ mode: 'send', amount: '', note: '', requestId: null });
+          }}
           onSuccess={handleCryptoTransferSuccess}
         />
       )}
