@@ -21,51 +21,54 @@ export default function HeroDashboard({
   return (
     <div className="whatsapp-welcome-container">
       <div className="whatsapp-welcome-content">
-        {/* Warm Coffee Illustration Badge */}
+        {/* Retro 8-Bit Arcade Cabinet Mascot Badge */}
         <div className="coffee-illustration-badge">
-          <div className="coffee-cup-graphic">
-            <span className="coffee-steam">♨️</span>
-            <span className="coffee-mug">☕</span>
+          <div className="coffee-cup-graphic" style={{ fontSize: '3.2rem' }}>
+            <span className="coffee-mug">🕹️</span>
           </div>
         </div>
         
-        <h1 className="whatsapp-welcome-title">BlockChat Web</h1>
+        <h1 className="whatsapp-welcome-title">BLOCKCHAT // ARCADE</h1>
         <p className="whatsapp-welcome-subtitle">
-          Send and receive end-to-end encrypted messages, voice notes, WebRTC voice/video calls, and instant ETH transfers over Ethereum.
+          ★ 1P VS 2P DECENTRALIZED WEB3 MESSAGING ★ ENCRYPTED VIA XMTP ★
+          <br />
+          <span style={{ fontSize: '0.85em', opacity: 0.85 }}>
+            VOICE CALLS • 8-BIT SOUNDS • ETH TRANSFERS • PEER-TO-PEER ENCRYPTION
+          </span>
         </p>
 
         {walletAddress ? (
           <div className="coffee-wallet-card">
             <div className="coffee-wallet-header">
               <div className="coffee-avatar">
-                {userProfile?.username ? userProfile.username.substring(0, 2).toUpperCase() : 'Ξ'}
+                {userProfile?.username ? userProfile.username.substring(0, 2).toUpperCase() : '1P'}
               </div>
               <div className="coffee-wallet-details">
                 <span className="coffee-wallet-name">
-                  {userProfile?.username ? `@${userProfile.username}` : (ensName || 'Wallet Connected')}
+                  {userProfile?.username ? `PLAYER 1: @${userProfile.username}` : (ensName ? `PLAYER 1: ${ensName}` : 'PLAYER 1: READY')}
                 </span>
                 <span className="coffee-wallet-address">{formatAddress(walletAddress)}</span>
               </div>
               <span className="coffee-network-badge">
                 <span className="coffee-dot-online"></span>
-                {networkName ? networkName.split(' ')[0] : 'Sepolia'}
+                STAGE: {networkName ? networkName.split(' ')[0].toUpperCase() : 'SEPOLIA'}
               </span>
             </div>
 
             <div className="coffee-balance-row">
-              <span className="balance-label">Balance</span>
+              <span className="balance-label">CREDITS (BALANCE)</span>
               <span className="balance-value">{parseFloat(userBalance || 0).toFixed(4)} ETH</span>
             </div>
 
             <div className="coffee-action-row">
               <button type="button" className="coffee-btn-primary" onClick={onStartBlockBotChat}>
-                🤖 Chat with BlockBot
+                👾 CO-OP BLOCKBOT
               </button>
               <button type="button" className="coffee-btn-secondary" onClick={onOpenQR}>
-                🏁 Share QR
+                🏁 SHARE QR CODE
               </button>
               <button type="button" className="coffee-btn-secondary" onClick={onOpenProfile}>
-                ⚙️ Profile
+                ⚙️ LOADOUT / PROFILE
               </button>
             </div>
           </div>
@@ -73,23 +76,23 @@ export default function HeroDashboard({
           <div className="coffee-guest-cta">
             <div className="coffee-cta-buttons">
               <button type="button" className="coffee-btn-primary large" onClick={onConnectWallet}>
-                ☕ Connect Web3 Wallet
+                🪙 INSERT COIN (CONNECT WALLET)
               </button>
               {onStartDemoMode && (
                 <button type="button" className="coffee-btn-secondary large" onClick={onStartDemoMode}>
-                  🧪 Try Demo Mode
+                  ▶ PRESS START (DEMO MODE)
                 </button>
               )}
             </div>
             <p className="coffee-cta-note">
-              Instant companion testing available with built-in simulated Hardhat/BlockBot transfers.
+              ★ INSERT 1 COIN TO INITIALIZE ENCRYPTED PEER-TO-PEER SESSION ★
             </p>
           </div>
         )}
 
         <div className="whatsapp-welcome-footer">
-          <span className="lock-icon">🔒</span>
-          <span>End-to-end encrypted with XMTP &amp; Ethereum blockchain.</span>
+          <span className="lock-icon">👾</span>
+          <span>HI-SCORE ENCRYPTED MESSAGING VIA XMTP &amp; ETHEREUM PROTOCOL</span>
         </div>
       </div>
     </div>

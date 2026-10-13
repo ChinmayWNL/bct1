@@ -179,8 +179,8 @@ export default function Home() {
   const fileInputRef = useRef(null);
   const searchInputRef = useRef(null);
 
-  // Coffee Roasts Theme & Audio Preferences State
-  const [coffeeTheme, setCoffeeTheme] = useState('espresso');
+  // Arcade Cabinet Themes & Audio Preferences State
+  const [coffeeTheme, setCoffeeTheme] = useState('arcade');
   const [wallpaperOpacity, setWallpaperOpacity] = useState('balanced');
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [showThemeModal, setShowThemeModal] = useState(false);
@@ -311,6 +311,9 @@ export default function Home() {
         if (storedTheme) {
           setCoffeeTheme(storedTheme);
           document.documentElement.setAttribute('data-coffee-theme', storedTheme);
+        } else {
+          setCoffeeTheme('arcade');
+          document.documentElement.setAttribute('data-coffee-theme', 'arcade');
         }
         const storedOpacity = localStorage.getItem('blockchat_wallpaper_opacity');
         if (storedOpacity) {
@@ -329,7 +332,7 @@ export default function Home() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Web Audio Synthesizer (Zero Assets, Authentic WhatsApp Audio Feedback)
+  // Authentic 8-Bit Web Audio Synthesizer (Zero Assets, Authentic Arcade Cabinet SFX)
   const playSendPop = () => {
     if (!soundEnabled || isChatMuted) return;
     try {
@@ -339,16 +342,16 @@ export default function Home() {
       const ctx = new AudioCtx();
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
-      osc.type = 'sine';
-      // WhatsApp signature bubble pop: rapid pitch dive 750Hz -> 180Hz
-      osc.frequency.setValueAtTime(750, ctx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(180, ctx.currentTime + 0.055);
-      gain.gain.setValueAtTime(0.22, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.055);
+      osc.type = 'square';
+      // 8-bit laser blaster zap: 880Hz down to 140Hz in 75ms
+      osc.frequency.setValueAtTime(880, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(140, ctx.currentTime + 0.075);
+      gain.gain.setValueAtTime(0.18, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.075);
       osc.connect(gain);
       gain.connect(ctx.destination);
       osc.start(ctx.currentTime);
-      osc.stop(ctx.currentTime + 0.055);
+      osc.stop(ctx.currentTime + 0.075);
     } catch (e) {}
   };
 
@@ -359,19 +362,21 @@ export default function Home() {
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
       if (!AudioCtx) return;
       const ctx = new AudioCtx();
-      // Warm dual harmonic coffee chime: E5 (659Hz) and B5 (988Hz)
-      [659.25, 987.77].forEach((freq, idx) => {
+      // 8-bit 1-UP fanfare arpeggio: C5 (523Hz), E5 (659Hz), G5 (784Hz), C6 (1046Hz)
+      const notes = [523.25, 659.25, 783.99, 1046.50];
+      notes.forEach((freq, idx) => {
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
-        const startTime = ctx.currentTime + idx * 0.045;
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(freq, startTime);
-        gain.gain.setValueAtTime(0.16, startTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.32);
+        const noteStart = ctx.currentTime + idx * 0.055;
+        const noteDur = idx === notes.length - 1 ? 0.16 : 0.05;
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(freq, noteStart);
+        gain.gain.setValueAtTime(0.14, noteStart);
+        gain.gain.exponentialRampToValueAtTime(0.001, noteStart + noteDur);
         osc.connect(gain);
         gain.connect(ctx.destination);
-        osc.start(startTime);
-        osc.stop(startTime + 0.35);
+        osc.start(noteStart);
+        osc.stop(noteStart + noteDur);
       });
     } catch (e) {}
   };
@@ -383,20 +388,28 @@ export default function Home() {
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
       if (!AudioCtx) return;
       const ctx = new AudioCtx();
-      // Metallic crystal chime for ETH tip confirmation
-      [1567.98, 2093.00, 3135.96].forEach((freq, idx) => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        const startTime = ctx.currentTime + idx * 0.04;
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(freq, startTime);
-        gain.gain.setValueAtTime(0.18, startTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.42);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start(startTime);
-        osc.stop(startTime + 0.45);
-      });
+      // Authentic 8-bit coin ding: B5 (987.77Hz) for 60ms then high E6 (1318.51Hz) for 300ms
+      const osc1 = ctx.createOscillator();
+      const gain1 = ctx.createGain();
+      osc1.type = 'square';
+      osc1.frequency.setValueAtTime(987.77, ctx.currentTime);
+      gain1.gain.setValueAtTime(0.18, ctx.currentTime);
+      gain1.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.06);
+      osc1.connect(gain1);
+      gain1.connect(ctx.destination);
+      osc1.start(ctx.currentTime);
+      osc1.stop(ctx.currentTime + 0.06);
+
+      const osc2 = ctx.createOscillator();
+      const gain2 = ctx.createGain();
+      osc2.type = 'square';
+      osc2.frequency.setValueAtTime(1318.51, ctx.currentTime + 0.06);
+      gain2.gain.setValueAtTime(0.2, ctx.currentTime + 0.06);
+      gain2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+      osc2.connect(gain2);
+      gain2.connect(ctx.destination);
+      osc2.start(ctx.currentTime + 0.06);
+      osc2.stop(ctx.currentTime + 0.35);
     } catch (e) {}
   };
 
@@ -407,17 +420,20 @@ export default function Home() {
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
       if (!AudioCtx) return;
       const ctx = new AudioCtx();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(440, ctx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.1);
-      gain.gain.setValueAtTime(0.15, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start(ctx.currentTime);
-      osc.stop(ctx.currentTime + 0.15);
+      // 8-bit power-up stepped trill
+      [440, 554.37, 659.25, 880].forEach((freq, idx) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        const startTime = ctx.currentTime + idx * 0.04;
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(freq, startTime);
+        gain.gain.setValueAtTime(0.12, startTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.07);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(startTime);
+        osc.stop(startTime + 0.07);
+      });
     } catch (e) {}
   };
 
@@ -1760,21 +1776,21 @@ export default function Home() {
               </button>
             )}
 
-            {/* Coffee Roast Themes & Sound Studio */}
+            {/* Arcade Cabinet Themes & Sound Studio */}
             <button 
               type="button" 
               className="whatsapp-icon-btn" 
-              title="Coffee Roast Themes & Audio Preferences"
+              title="Arcade Cabinet Themes & 8-Bit Audio Studio"
               onClick={() => setShowThemeModal(true)}
             >
-              ☕
+              🕹️
             </button>
 
-            {/* Quick WhatsApp Audio Mute/Unmute */}
+            {/* Quick 8-Bit Audio Mute/Unmute */}
             <button 
               type="button" 
               className="whatsapp-icon-btn" 
-              title={soundEnabled ? "WhatsApp Audio Feedback: Active (Click to Mute)" : "WhatsApp Audio Feedback: Muted (Click to Unmute)"}
+              title={soundEnabled ? "8-Bit Arcade SFX: Active (Click to Mute)" : "8-Bit Arcade SFX: Muted (Click to Unmute)"}
               onClick={handleToggleSound}
             >
               {soundEnabled ? '🔊' : '🔇'}
@@ -2545,10 +2561,10 @@ export default function Home() {
                       className="whatsapp-input-field"
                       placeholder={
                         editingMessage 
-                          ? "Edit message..." 
+                          ? "> Edit message buffer..." 
                           : selectedImage 
-                            ? "Add a caption..." 
-                            : "Type a message (*bold*, _italic_, ~strike~, `code`)"
+                            ? "> Add photo caption..." 
+                            : "> Type a message (*bold*, _italic_, ~strike~, `code`)..."
                       } 
                       value={inputValue}
                       onChange={handleComposerInputChange}

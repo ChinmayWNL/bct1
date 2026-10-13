@@ -1,8 +1,8 @@
 import './globals.css'
 
 export const metadata = {
-  title: 'BlockChat — Sovereign Web3 Messaging & Crypto Transfers',
-  description: 'End-to-end encrypted messaging, peer-to-peer voice & video calls, and instant crypto tipping powered by Ethereum and XMTP.',
+  title: 'BlockChat Arcade — 8-Bit Web3 Messaging & Crypto Transfers',
+  description: 'Decentralized 8-bit retro arcade messenger with end-to-end encryption, peer-to-peer voice & video calls, and instant crypto tipping powered by Ethereum and XMTP.',
 }
 
 export const viewport = {

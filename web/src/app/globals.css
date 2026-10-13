@@ -1,63 +1,132 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Press+Start+2P&family=Silkscreen:wght@400;700&display=swap');
 
 :root {
-  /* WhatsApp Coffee Theme Palette */
-  --coffee-bg-darkest: #120d0a;       /* Deep roasted dark background */
-  --coffee-sidebar: #1c1512;          /* Rich espresso dark sidebar */
-  --coffee-header: #241b17;           /* Espresso crema headers */
-  --coffee-card: #281d17;             /* Dark mocha card */
-  --coffee-input: #1f1713;            /* Input pill background */
-  --coffee-border: #35261f;           /* Subtle dark roast borders */
-  --coffee-divider: #3a2a22;          /* Divider lines */
-  --coffee-hover: #2c201a;            /* Roasted hover state */
-  --coffee-active: #382820;           /* Active conversation background */
+  /* Arcade Fonts */
+  --font-arcade: 'Press Start 2P', cursive, monospace;
+  --font-pixel-sub: 'Silkscreen', monospace;
+  --font-body: 'Chakra Petch', -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Courier New', monospace;
 
-  /* Crema & Caramel Accents */
-  --coffee-accent: #c89666;           /* Golden crema accent */
-  --coffee-accent-hover: #d4a373;     /* Light caramel hover */
-  --coffee-caramel: #b07d56;          /* Warm roasted caramel button */
-  --coffee-caramel-hover: #9c6644;    /* Deep caramel hover */
+  /* Classic 8-Bit Pixel Cabinet Palette (Default) */
+  --arcade-bg-chassis: #0a0b10;        /* Deep arcade cabinet shadow */
+  --arcade-sidebar: #0f121b;           /* Cabinet control deck */
+  --arcade-header: #151926;            /* Scoreboard marquee */
+  --arcade-card: #181d2c;              /* Level/player select slot */
+  --arcade-input: #0d1017;             /* Terminal command line box */
+  --arcade-border: #283046;            /* Pixel border outline */
+  
+  /* Phosphor & CRT Neon Highlights */
+  --arcade-gold: #ffd166;              /* Insert Coin Gold / 1UP */
+  --arcade-green: #39ff14;             /* 1UP Terminal Green */
+  --arcade-cyan: #00f0ff;              /* Player 1 Cyber Cyan */
+  --arcade-magenta: #ff007f;           /* Player 2 Boss Magenta */
+  --arcade-violet: #8338ec;            /* Special Combo Violet */
 
-  /* WhatsApp Bubble Tones */
-  --wa-sent-bubble: #4a3022;          /* Warm roasted caramel sent bubble */
-  --wa-sent-text: #fff5eb;            /* White crema text */
-  --wa-sent-meta: #d4b59d;            /* Golden time text */
-  --wa-sent-ticks: #e0a96d;           /* Crema gold double ticks */
+  /* Pixel Shadows */
+  --pixel-shadow-sm: 2px 2px 0px #000;
+  --pixel-shadow-md: 3px 3px 0px #000;
+  --pixel-shadow-lg: 4px 4px 0px #000;
+  --pixel-shadow-neon: 0 0 10px rgba(0, 240, 255, 0.45);
 
-  --wa-received-bubble: #281d17;      /* Dark mocha received bubble */
-  --wa-received-text: #f5ebe0;        /* Warm froth text */
-  --wa-received-meta: #a89284;        /* Muted froth time text */
+  /* Unified Mappings for BlockChat */
+  --coffee-bg-darkest: var(--arcade-bg-chassis);
+  --coffee-sidebar: var(--arcade-sidebar);
+  --coffee-header: var(--arcade-header);
+  --coffee-card: var(--arcade-card);
+  --coffee-input: var(--arcade-input);
+  --coffee-border: var(--arcade-border);
+  --coffee-divider: #232a3d;
+  --coffee-hover: #1e2436;
+  --coffee-active: #252d43;
+
+  --coffee-accent: var(--arcade-gold);
+  --coffee-accent-hover: #ffe066;
+  --coffee-caramel: var(--arcade-cyan);
+  --coffee-caramel-hover: #5ce6e6;
+
+  /* 8-Bit Speech Dialogue Box Tones */
+  --wa-sent-bubble: #0f241a;           /* Player 1 dialogue box */
+  --wa-sent-text: #eaffea;             /* Phosphor white-green */
+  --wa-sent-meta: #7bf1a8;             /* Pixel green time text */
+  --wa-sent-ticks: var(--arcade-green);/* 1UP double checks */
+
+  --wa-received-bubble: #101c2b;       /* Player 2 dialogue box */
+  --wa-received-text: #eef8ff;         /* Cyber white-blue */
+  --wa-received-meta: #7cd5ff;         /* Pixel cyan time text */
 
   /* Text Colors */
-  --coffee-text-primary: #f5ebe0;     /* Steamed milk froth */
-  --coffee-text-normal: #e6ccb2;      /* Latte text */
-  --coffee-text-muted: #a68a78;       /* Roasted coffee muted text */
-  --coffee-text-dim: #735d4f;         /* Dim hints */
+  --coffee-text-primary: #f0f6fc;      /* High-contrast phosphor white */
+  --coffee-text-normal: #d8e2ec;       /* Clean terminal text */
+  --coffee-text-muted: #8b9bb4;        /* Monospace muted text */
+  --coffee-text-dim: #5c6b84;          /* Dim credits */
 
   /* Status Colors */
-  --coffee-leaf-green: #588157;       /* Coffee leaf green for online status */
-  --coffee-leaf-hover: #486b47;
-  --coffee-danger: #c94a4a;           /* Roasted berry red */
-  --coffee-warning: #e0a96d;          /* Amber crema */
+  --coffee-leaf-green: var(--arcade-green);
+  --coffee-leaf-hover: #2ecb0f;
+  --coffee-danger: var(--arcade-magenta);
+  --coffee-warning: var(--arcade-gold);
 
-  /* Legacy aliases mapped to Coffee theme */
-  --bg-dark: #1c1512;
-  --bg-darker: #120d0a;
-  --primary: #c89666;
-  --primary-hover: #d4a373;
-  --primary-glow: rgba(200, 150, 102, 0.35);
-  --accent-cyan: #c89666;
-  --accent-purple: #b07d56;
-  --text-main: #f5ebe0;
-  --text-muted: #a68a78;
-  --text-dim: #735d4f;
-  --glass-bg: #1c1512;
-  --glass-card: #281d17;
-  --glass-border: #35261f;
-  --glass-border-hover: #423026;
-  --success: #588157;
-  --warning: #e0a96d;
-  --danger: #c94a4a;
+  /* Aliases */
+  --bg-dark: var(--arcade-sidebar);
+  --bg-darker: var(--arcade-bg-chassis);
+  --primary: var(--arcade-gold);
+  --primary-hover: #ffe066;
+  --primary-glow: rgba(255, 209, 102, 0.4);
+  --accent-cyan: var(--arcade-cyan);
+  --accent-purple: var(--arcade-violet);
+  --text-main: #f0f6fc;
+  --text-muted: #8b9bb4;
+  --text-dim: #5c6b84;
+  --glass-bg: var(--arcade-sidebar);
+  --glass-card: var(--arcade-card);
+  --glass-border: var(--arcade-border);
+  --glass-border-hover: var(--arcade-cyan);
+  --success: var(--arcade-green);
+  --warning: var(--arcade-gold);
+  --danger: var(--arcade-magenta);
+}
+
+/* Cabinet Theme Default: 8-Bit Pixel Cabinet */
+[data-coffee-theme="arcade"],
+:root[data-coffee-theme="arcade"] {
+  --coffee-bg-darkest: var(--arcade-bg-chassis);
+  --coffee-sidebar: var(--arcade-sidebar);
+  --coffee-header: var(--arcade-header);
+  --coffee-card: var(--arcade-card);
+  --coffee-input: var(--arcade-input);
+  --coffee-border: var(--arcade-border);
+  --coffee-divider: #232a3d;
+  --coffee-hover: #1e2436;
+  --coffee-active: #252d43;
+
+  --coffee-accent: var(--arcade-gold);
+  --coffee-accent-hover: #ffe066;
+  --coffee-caramel: var(--arcade-cyan);
+  --coffee-caramel-hover: #5ce6e6;
+
+  --wa-sent-bubble: #0f241a;
+  --wa-sent-text: #eaffea;
+  --wa-sent-meta: #7bf1a8;
+  --wa-sent-ticks: var(--arcade-green);
+
+  --wa-received-bubble: #101c2b;
+  --wa-received-text: #eef8ff;
+  --wa-received-meta: #7cd5ff;
+
+  --coffee-text-primary: #f0f6fc;
+  --coffee-text-normal: #d8e2ec;
+  --coffee-text-muted: #8b9bb4;
+  --coffee-text-dim: #5c6b84;
+
+  --coffee-leaf-green: var(--arcade-green);
+  --coffee-leaf-hover: #2ecb0f;
+  --coffee-danger: var(--arcade-magenta);
+  --coffee-warning: var(--arcade-gold);
+
+  --glass-bg: var(--arcade-sidebar);
+  --glass-card: var(--arcade-card);
+  --glass-border: var(--arcade-border);
+  --glass-border-hover: var(--arcade-cyan);
 }
 
 /* Coffee Theme 2: Latte Macchiato (Warm Toffee Caramel & Steamed Milk Foam) */
@@ -140,26 +209,147 @@
   --glass-border: #3b2229;
 }
 
-/* Wallpaper Theme & Opacity Variations */
-[data-coffee-theme="latte"] .whatsapp-wallpaper {
-  background-color: #1a130f;
-  background-image: radial-gradient(#2d1f18 1.2px, transparent 1.2px), 
-                    radial-gradient(#2d1f18 1.2px, #1a130f 1.2px);
+/* Cabinet Theme 1: GameBoy 1989 Phosphor Matrix */
+[data-coffee-theme="gameboy"],
+:root[data-coffee-theme="gameboy"] {
+  --coffee-bg-darkest: #0f240f;
+  --coffee-sidebar: #173817;
+  --coffee-header: #1f4a1f;
+  --coffee-card: #285d28;
+  --coffee-input: #143014;
+  --coffee-border: #3b7d3b;
+  --coffee-divider: #326b32;
+  --coffee-hover: #225222;
+  --coffee-active: #2b672b;
+
+  --coffee-accent: #8bac0f;
+  --coffee-accent-hover: #9bbc0f;
+  --coffee-caramel: #8bac0f;
+  --coffee-caramel-hover: #9bbc0f;
+
+  --wa-sent-bubble: #1f4a1f;
+  --wa-sent-text: #eaffea;
+  --wa-sent-meta: #8bac0f;
+  --wa-sent-ticks: #9bbc0f;
+
+  --wa-received-bubble: #143014;
+  --wa-received-text: #eaffea;
+  --wa-received-meta: #709a0a;
+
+  --coffee-text-primary: #eaffea;
+  --coffee-text-normal: #c5e8c5;
+  --coffee-text-muted: #8bac0f;
+  --coffee-text-dim: #4d7a22;
+
+  --coffee-leaf-green: #9bbc0f;
+  --coffee-warning: #8bac0f;
+
+  --glass-bg: #173817;
+  --glass-card: #285d28;
+  --glass-border: #3b7d3b;
 }
 
-[data-coffee-theme="mocha"] .whatsapp-wallpaper {
-  background-color: #160e11;
-  background-image: radial-gradient(#28171d 1.2px, transparent 1.2px), 
-                    radial-gradient(#28171d 1.2px, #160e11 1.2px);
+/* Cabinet Theme 2: Cyberpunk 1984 Neon Noir */
+[data-coffee-theme="cyberpunk"],
+:root[data-coffee-theme="cyberpunk"] {
+  --coffee-bg-darkest: #0b0217;
+  --coffee-sidebar: #120524;
+  --coffee-header: #1b0a33;
+  --coffee-card: #220e40;
+  --coffee-input: #0f041f;
+  --coffee-border: #3d1c6e;
+  --coffee-divider: #32165b;
+  --coffee-hover: #2a114f;
+  --coffee-active: #351663;
+
+  --coffee-accent: #00f0ff;
+  --coffee-accent-hover: #5ce6e6;
+  --coffee-caramel: #ff007f;
+  --coffee-caramel-hover: #ff4d9e;
+
+  --wa-sent-bubble: #280a3a;
+  --wa-sent-text: #fff0f9;
+  --wa-sent-meta: #ff66b2;
+  --wa-sent-ticks: #ff007f;
+
+  --wa-received-bubble: #0a1f33;
+  --wa-received-text: #eefbff;
+  --wa-received-meta: #5ce6e6;
+
+  --coffee-text-primary: #ffffff;
+  --coffee-text-normal: #e3d2ff;
+  --coffee-text-muted: #9b7ec9;
+  --coffee-text-dim: #654d87;
+
+  --coffee-leaf-green: #00f0ff;
+  --coffee-warning: #ffd166;
+  --coffee-danger: #ff007f;
+
+  --glass-bg: #120524;
+  --glass-card: #220e40;
+  --glass-border: #3d1c6e;
 }
 
-[data-wallpaper-opacity="subtle"] .whatsapp-wallpaper {
-  background-image: radial-gradient(rgba(100, 70, 50, 0.18) 1px, transparent 1px),
-                    radial-gradient(rgba(100, 70, 50, 0.18) 1px, transparent 1px) !important;
+/* Cabinet Theme 3: Espresso Dark Roast */
+[data-coffee-theme="espresso"],
+:root[data-coffee-theme="espresso"] {
+  --coffee-bg-darkest: #120d0a;
+  --coffee-sidebar: #1c1512;
+  --coffee-header: #241b17;
+  --coffee-card: #281d17;
+  --coffee-input: #1f1713;
+  --coffee-border: #35261f;
+  --coffee-divider: #3a2a22;
+  --coffee-hover: #2c201a;
+  --coffee-active: #382820;
+
+  --coffee-accent: #c89666;
+  --coffee-accent-hover: #d4a373;
+  --coffee-caramel: #b07d56;
+  --coffee-caramel-hover: #9c6644;
+
+  --wa-sent-bubble: #4a3022;
+  --wa-sent-text: #fff5eb;
+  --wa-sent-meta: #d4b59d;
+  --wa-sent-ticks: #e0a96d;
+
+  --wa-received-bubble: #281d17;
+  --wa-received-text: #f5ebe0;
+  --wa-received-meta: #a89284;
+
+  --coffee-text-primary: #f5ebe0;
+  --coffee-text-normal: #e6ccb2;
+  --coffee-text-muted: #a68a78;
+  --coffee-text-dim: #735d4f;
+
+  --coffee-leaf-green: #588157;
+  --coffee-warning: #e0a96d;
 }
-[data-wallpaper-opacity="rich"] .whatsapp-wallpaper {
-  background-image: radial-gradient(rgba(200, 150, 102, 0.25) 1.5px, transparent 1.5px),
-                    radial-gradient(rgba(200, 150, 102, 0.25) 1.5px, transparent 1.5px) !important;
+
+/* CRT Scanline Backdrop */
+.whatsapp-wallpaper {
+  position: relative;
+  background-color: var(--coffee-bg-darkest);
+  background-image: 
+    linear-gradient(rgba(10, 11, 16, 0) 50%, rgba(0, 0, 0, 0.4) 50%),
+    linear-gradient(90deg, rgba(0, 240, 255, 0.02), rgba(255, 0, 127, 0.02));
+  background-size: 100% 4px, 8px 100%;
+}
+
+[data-coffee-theme="gameboy"] .whatsapp-wallpaper {
+  background-color: #0f240f;
+  background-image: 
+    linear-gradient(rgba(15, 36, 15, 0) 50%, rgba(0, 0, 0, 0.45) 50%),
+    radial-gradient(#1f4a1f 1.5px, transparent 1.5px);
+  background-size: 100% 4px, 12px 12px;
+}
+
+[data-coffee-theme="cyberpunk"] .whatsapp-wallpaper {
+  background-color: #0b0217;
+  background-image: 
+    linear-gradient(rgba(11, 2, 23, 0) 50%, rgba(0, 0, 0, 0.5) 50%),
+    linear-gradient(90deg, rgba(0, 240, 255, 0.04), rgba(255, 0, 127, 0.04));
+  background-size: 100% 4px, 6px 100%;
 }
 
 * {
@@ -169,13 +359,27 @@
 }
 
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-family: var(--font-body);
   background-color: var(--coffee-bg-darkest);
   color: var(--coffee-text-normal);
   min-height: 100vh;
   margin: 0;
   padding: 0;
   overflow: hidden;
+  letter-spacing: 0.02em;
+}
+
+/* CRT Scanline Overlay */
+.app-container::after {
+  content: "";
+  display: block;
+  position: absolute;
+  top: 0; left: 0; bottom: 0; right: 0;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.12) 50%);
+  background-size: 100% 4px;
+  z-index: 999;
+  pointer-events: none;
+  opacity: 0.75;
 }
 
 /* Main Container - WhatsApp Web 2-Column Desktop Frame */
@@ -3362,68 +3566,88 @@ input:checked + .slider:before {
 }
 
 .whatsapp-filter-pill {
-  padding: 4px 12px;
-  border-radius: 16px;
+  padding: 5px 12px;
+  border-radius: 4px;
   background: var(--coffee-input);
   border: 1px solid var(--coffee-border);
   color: var(--coffee-text-muted);
-  font-size: 0.78rem;
-  font-weight: 500;
+  font-family: var(--font-pixel-sub);
+  font-size: 0.72rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.1s ease;
 }
 
 .whatsapp-filter-pill:hover {
   background: var(--coffee-hover);
+  border-color: var(--arcade-cyan);
   color: var(--coffee-text-primary);
 }
 
 .whatsapp-filter-pill.active {
-  background: var(--coffee-accent);
-  color: #1a130f;
+  background: var(--arcade-gold);
+  color: #000;
   font-weight: 700;
-  border-color: var(--coffee-accent);
+  border: 1px solid #000;
+  box-shadow: 2px 2px 0 #000;
 }
 
 /* Inline Add Contact / ENS Bar */
 .whatsapp-new-chat-bar {
-  padding: 6px 14px 10px 14px;
+  padding: 8px 14px 10px 14px;
   display: flex;
-  gap: 6px;
+  gap: 8px;
   background: var(--coffee-sidebar);
+  border-bottom: 2px solid #000;
 }
 
 .whatsapp-new-chat-input {
   flex: 1;
   background: var(--coffee-input);
   border: 1px solid var(--coffee-border);
-  border-radius: 8px;
-  padding: 6px 10px;
+  border-radius: 4px;
+  padding: 8px 12px;
   color: var(--coffee-text-primary);
-  font-size: 0.82rem;
+  font-family: var(--font-body);
+  font-size: 0.88rem;
   outline: none;
+  box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.5);
 }
 
 .whatsapp-new-chat-input:focus {
-  border-color: var(--coffee-accent);
+  border-color: var(--arcade-cyan);
+  box-shadow: 0 0 6px rgba(0, 240, 255, 0.3);
 }
 
 .whatsapp-new-chat-btn {
-  background: var(--coffee-accent);
-  color: #1a130f;
-  border: none;
-  border-radius: 8px;
-  width: 32px;
-  height: 32px;
-  font-size: 1.15rem;
+  background: var(--arcade-green);
+  color: #000;
+  border: 2px solid #000;
+  box-shadow: 2px 2px 0 #000;
+  border-radius: 4px;
+  width: 36px;
+  height: 36px;
+  font-size: 1.2rem;
   font-weight: 700;
+  font-family: var(--font-arcade);
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   line-height: 1;
-  transition: background 0.15s ease;
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
 }
 
 .whatsapp-new-chat-btn:hover {
-  background: var(--coffee-accent-hover);
+  background: #50ff30;
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0 #000;
+}
+
+.whatsapp-new-chat-btn:active {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0 #000;
 }
 
 /* WhatsApp Conversations List */
@@ -3434,46 +3658,49 @@ input:checked + .slider:before {
 }
 
 .whatsapp-chat-card {
-  height: 72px;
+  height: 74px;
   padding: 0 16px;
   display: flex;
   align-items: center;
   gap: 14px;
-  border-bottom: 1px solid rgba(53, 38, 31, 0.4);
+  border-bottom: 2px solid #0a0b12;
   cursor: pointer;
-  transition: background 0.15s ease;
+  transition: all 0.1s ease;
   position: relative;
 }
 
 .whatsapp-chat-card:hover {
   background: var(--coffee-hover);
+  border-left: 4px solid var(--arcade-cyan);
 }
 
 .whatsapp-chat-card.active {
   background: var(--coffee-active);
-  border-left: 4px solid var(--coffee-accent);
+  border-left: 4px solid var(--arcade-gold);
 }
 
 .whatsapp-card-avatar-wrap {
   position: relative;
-  width: 48px;
-  height: 48px;
+  width: 46px;
+  height: 46px;
   flex-shrink: 0;
 }
 
 .whatsapp-card-avatar-wrap .avatar {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
+  width: 46px;
+  height: 46px;
+  border-radius: 4px;
   background: var(--coffee-card);
-  color: var(--coffee-accent);
+  color: var(--arcade-gold);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.05rem;
+  font-family: var(--font-arcade);
+  font-size: 0.85rem;
   font-weight: 700;
   overflow: hidden;
-  border: 1px solid var(--coffee-border);
+  border: 2px solid #000;
+  box-shadow: 2px 2px 0 #000;
 }
 
 .whatsapp-card-avatar-wrap .avatar img {
@@ -3484,20 +3711,23 @@ input:checked + .slider:before {
 
 .whatsapp-status-dot {
   position: absolute;
-  bottom: 0;
-  right: 0;
+  bottom: -2px;
+  right: -2px;
   width: 12px;
   height: 12px;
-  border-radius: 50%;
-  border: 2px solid var(--coffee-sidebar);
+  border-radius: 2px;
+  border: 1px solid #000;
+  box-shadow: 1px 1px 0 #000;
 }
 
 .whatsapp-status-dot.online {
-  background: var(--coffee-leaf-green);
+  background: var(--arcade-green);
+  box-shadow: 0 0 6px var(--arcade-green);
 }
 
 .whatsapp-status-dot.bot {
-  background: var(--coffee-accent);
+  background: var(--arcade-magenta);
+  box-shadow: 0 0 6px var(--arcade-magenta);
 }
 
 .whatsapp-card-content {
@@ -3515,25 +3745,29 @@ input:checked + .slider:before {
 }
 
 .whatsapp-card-title {
+  font-family: var(--font-body);
   font-size: 0.95rem;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--coffee-text-primary);
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .whatsapp-bot-tag {
-  background: var(--coffee-accent);
-  color: #1a130f;
-  font-size: 0.625rem;
-  font-weight: 800;
-  padding: 1px 4px;
-  border-radius: 3px;
-  letter-spacing: 0.04em;
+  background: var(--arcade-magenta);
+  color: #fff;
+  font-family: var(--font-arcade);
+  font-size: 0.52rem;
+  font-weight: 700;
+  padding: 2px 5px;
+  border-radius: 2px;
+  border: 1px solid #000;
+  box-shadow: 1px 1px 0 #000;
+  letter-spacing: 0.05em;
 }
 
 .whatsapp-card-time {
@@ -3617,13 +3851,15 @@ input:checked + .slider:before {
 }
 
 /* Active Header */
+/* Active Header (Arcade Scoreboard Header) */
 .whatsapp-active-header {
-  height: 60px;
+  height: 64px;
   background: var(--coffee-header);
   padding: 0 16px;
   display: flex;
   align-items: center;
-  border-bottom: 1px solid var(--coffee-border);
+  border-bottom: 2px solid #000;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.4);
   z-index: 10;
   user-select: none;
 }
@@ -3651,18 +3887,20 @@ input:checked + .slider:before {
 }
 
 .whatsapp-header-contact .avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
+  width: 42px;
+  height: 42px;
+  border-radius: 4px;
   background: var(--coffee-card);
-  color: var(--coffee-accent);
+  color: var(--arcade-gold);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1rem;
+  font-family: var(--font-arcade);
+  font-size: 0.85rem;
   font-weight: 700;
   overflow: hidden;
-  border: 1px solid var(--coffee-border);
+  border: 2px solid #000;
+  box-shadow: 2px 2px 0 #000;
 }
 
 .whatsapp-header-contact .avatar img {
@@ -3676,12 +3914,14 @@ input:checked + .slider:before {
 }
 
 .whatsapp-header-name {
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--coffee-text-primary);
+  font-family: var(--font-arcade);
+  font-size: 0.8rem;
+  letter-spacing: 0.05em;
+  color: var(--arcade-gold);
+  text-shadow: 0 0 6px rgba(255, 209, 102, 0.4);
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -3692,24 +3932,28 @@ input:checked + .slider:before {
 }
 
 .whatsapp-status {
-  font-size: 0.78rem;
+  font-family: var(--font-pixel-sub);
+  font-size: 0.72rem;
   color: var(--coffee-text-muted);
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
+  letter-spacing: 0.04em;
 }
 
 .whatsapp-status.online .status-indicator {
   width: 6px;
   height: 6px;
-  border-radius: 50%;
-  background: var(--coffee-leaf-green);
+  border-radius: 1px;
+  background: var(--arcade-green);
+  box-shadow: 0 0 4px var(--arcade-green);
 }
 
 .disappearing-chip {
-  color: var(--coffee-warning);
-  font-size: 0.75rem;
+  color: var(--arcade-gold);
+  font-size: 0.7rem;
   margin-left: 4px;
+  font-family: var(--font-arcade);
 }
 
 .whatsapp-header-actions {
@@ -3721,32 +3965,45 @@ input:checked + .slider:before {
 .whatsapp-icon-action {
   width: 36px;
   height: 36px;
-  border-radius: 50%;
-  background: transparent;
-  border: none;
-  color: var(--coffee-text-muted);
+  border-radius: 4px;
+  background: var(--coffee-card);
+  border: 2px solid #000;
+  box-shadow: 2px 2px 0 #000;
+  color: var(--coffee-text-normal);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  font-size: 1.15rem;
-  transition: all 0.15s ease;
+  font-size: 1.05rem;
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
 }
 
 .whatsapp-icon-action:hover {
   background: var(--coffee-hover);
-  color: var(--coffee-text-primary);
+  color: #fff;
+  border-color: var(--arcade-cyan);
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0 #000;
+}
+
+.whatsapp-icon-action:active {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0 #000;
+}
+
+.whatsapp-icon-action.tip-action {
+  color: var(--arcade-gold);
 }
 
 .whatsapp-icon-action.tip-action:hover {
-  background: rgba(200, 150, 102, 0.2);
-  color: var(--coffee-accent);
+  background: rgba(255, 209, 102, 0.2);
+  border-color: var(--arcade-gold);
 }
 
 /* In-Chat Filter Search */
 .whatsapp-inchat-search {
   background: var(--coffee-header);
-  border-bottom: 1px solid var(--coffee-border);
+  border-bottom: 2px solid #000;
   padding: 8px 16px;
   display: flex;
   align-items: center;
@@ -3757,21 +4014,22 @@ input:checked + .slider:before {
   flex: 1;
   background: var(--coffee-input);
   border: 1px solid var(--coffee-border);
-  border-radius: 6px;
-  padding: 6px 10px;
+  border-radius: 4px;
+  padding: 6px 12px;
   color: var(--coffee-text-primary);
-  font-size: 0.85rem;
+  font-family: var(--font-body);
+  font-size: 0.88rem;
   outline: none;
 }
 
-/* 4. WhatsApp Message Bubbles (Speech Bubbles with Tails) */
+/* 4. WhatsApp Message Bubbles (8-Bit Dialogue Boxes) */
 .whatsapp-messages-stream {
   flex: 1;
   overflow-y: auto;
   padding: 20px 24px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 .whatsapp-bubble-row {
@@ -3790,52 +4048,55 @@ input:checked + .slider:before {
 
 .whatsapp-bubble {
   max-width: 65%;
-  min-width: 110px;
-  padding: 8px 12px 6px 12px;
-  border-radius: 8px;
+  min-width: 120px;
+  padding: 10px 14px 8px 14px;
+  border-radius: 4px;
   position: relative;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
   word-break: break-word;
+  border: 2px solid #000;
+  box-shadow: 3px 3px 0 #000;
 }
 
-/* Received Message Bubble (Dark Mocha) */
+/* Received Message Bubble (Player 2 / Cyber Cyan Dialogue) */
 .whatsapp-bubble.received {
-  background: var(--wa-received-bubble);
-  color: var(--wa-received-text);
+  background: #0d1a27;
+  color: #eef8ff;
+  border-color: var(--arcade-cyan);
   border-top-left-radius: 0px;
 }
 
 .whatsapp-bubble.received::before {
   content: '';
   position: absolute;
-  top: 0;
+  top: -2px;
   left: -8px;
   width: 0;
   height: 0;
-  border-top: 8px solid var(--wa-received-bubble);
+  border-top: 8px solid var(--arcade-cyan);
   border-left: 8px solid transparent;
 }
 
-/* Sent Message Bubble (Warm Roasted Caramel) */
+/* Sent Message Bubble (Player 1 / Phosphor Green Dialogue) */
 .whatsapp-bubble.sent {
-  background: var(--wa-sent-bubble);
-  color: var(--wa-sent-text);
+  background: #092215;
+  color: #eaffea;
+  border-color: var(--arcade-green);
   border-top-right-radius: 0px;
 }
 
 .whatsapp-bubble.sent::after {
   content: '';
   position: absolute;
-  top: 0;
+  top: -2px;
   right: -8px;
   width: 0;
   height: 0;
-  border-top: 8px solid var(--wa-sent-bubble);
+  border-top: 8px solid var(--arcade-green);
   border-right: 8px solid transparent;
 }
 
 .whatsapp-bubble.starred {
-  border-bottom: 2px solid var(--coffee-warning);
+  border-bottom: 3px solid var(--arcade-gold);
 }
 
 /* Quoted Reply inside Bubble */
@@ -4130,25 +4391,33 @@ input:checked + .slider:before {
 }
 
 .whatsapp-send-btn {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: var(--coffee-accent);
-  color: #1a130f;
-  border: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 4px;
+  background: var(--arcade-gold);
+  color: #000;
+  border: 2px solid #000;
+  box-shadow: 2px 2px 0 #000;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  font-size: 1.15rem;
+  font-family: var(--font-arcade);
+  font-size: 0.85rem;
   font-weight: 700;
-  transition: all 0.15s ease;
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
   flex-shrink: 0;
 }
 
 .whatsapp-send-btn:hover {
-  background: var(--coffee-accent-hover);
-  transform: scale(1.05);
+  background: #ffe066;
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0 #000;
+}
+
+.whatsapp-send-btn:active {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0 #000;
 }
 
 /* WhatsApp Recording Bar */
@@ -4160,7 +4429,7 @@ input:checked + .slider:before {
   padding: 0 4px;
 }
 
-/* 6. WhatsApp Web Welcome Screen (HeroDashboard) */
+/* 6. WhatsApp Web Welcome Screen (Arcade Attract Screen / HeroDashboard) */
 .whatsapp-welcome-container {
   width: 100%;
   height: 100%;
@@ -4174,7 +4443,7 @@ input:checked + .slider:before {
 }
 
 .whatsapp-welcome-content {
-  max-width: 520px;
+  max-width: 540px;
   width: 100%;
   display: flex;
   flex-direction: column;
@@ -4182,16 +4451,16 @@ input:checked + .slider:before {
 }
 
 .coffee-illustration-badge {
-  width: 88px;
-  height: 88px;
-  border-radius: 50%;
+  width: 96px;
+  height: 96px;
+  border-radius: 8px;
   background: var(--coffee-card);
-  border: 2px solid var(--coffee-border);
+  border: 3px solid #000;
+  box-shadow: 4px 4px 0 #000, 0 0 16px rgba(0, 240, 255, 0.35);
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 20px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  margin-bottom: 24px;
 }
 
 .coffee-cup-graphic {
@@ -4201,43 +4470,48 @@ input:checked + .slider:before {
 }
 
 .coffee-steam {
-  font-size: 1.2rem;
-  margin-bottom: -6px;
-  animation: steamRise 1.8s ease-in-out infinite alternate;
+  font-size: 1.1rem;
+  margin-bottom: -4px;
+  animation: arcadePulse 1.2s steps(2, start) infinite;
 }
 
-@keyframes steamRise {
-  from { transform: translateY(0); opacity: 0.6; }
-  to { transform: translateY(-4px); opacity: 1; }
+@keyframes arcadePulse {
+  0% { transform: translateY(0); opacity: 0.7; }
+  50% { transform: translateY(-4px); opacity: 1; }
+  100% { transform: translateY(0); opacity: 0.7; }
 }
 
 .coffee-mug {
-  font-size: 2.5rem;
+  font-size: 2.6rem;
 }
 
 .whatsapp-welcome-title {
-  font-size: 1.85rem;
-  font-weight: 700;
-  color: var(--coffee-text-primary);
-  margin-bottom: 8px;
+  font-family: var(--font-arcade);
+  font-size: 1.45rem;
+  letter-spacing: 0.05em;
+  color: var(--arcade-gold);
+  text-shadow: 0 0 10px rgba(255, 209, 102, 0.6), 2px 2px 0px #000;
+  margin-bottom: 12px;
 }
 
 .whatsapp-welcome-subtitle {
+  font-family: var(--font-body);
   font-size: 0.95rem;
   color: var(--coffee-text-muted);
   line-height: 1.5;
   margin-bottom: 24px;
+  letter-spacing: 0.02em;
 }
 
 .coffee-wallet-card {
   width: 100%;
   background: var(--coffee-header);
-  border: 1px solid var(--coffee-border);
-  border-radius: 12px;
+  border: 3px solid #000;
+  box-shadow: 4px 4px 0 #000;
+  border-radius: 6px;
   padding: 20px;
   margin-bottom: 24px;
   text-align: left;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
 }
 
 .coffee-wallet-header {
@@ -4248,16 +4522,19 @@ input:checked + .slider:before {
 }
 
 .coffee-avatar {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: var(--coffee-accent);
-  color: #1a130f;
+  width: 46px;
+  height: 46px;
+  border-radius: 4px;
+  background: var(--arcade-gold);
+  color: #000;
+  border: 2px solid #000;
+  box-shadow: 2px 2px 0 #000;
   display: flex;
   align-items: center;
   justify-content: center;
+  font-family: var(--font-arcade);
   font-weight: 700;
-  font-size: 1.1rem;
+  font-size: 1rem;
 }
 
 .coffee-wallet-details {
@@ -4267,12 +4544,15 @@ input:checked + .slider:before {
 
 .coffee-wallet-name {
   display: block;
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--coffee-text-primary);
+  font-family: var(--font-arcade);
+  font-size: 0.85rem;
+  color: var(--arcade-cyan);
+  text-shadow: 0 0 6px rgba(0, 240, 255, 0.4);
+  letter-spacing: 0.04em;
 }
 
 .coffee-wallet-address {
+  font-family: var(--font-mono);
   font-size: 0.78rem;
   color: var(--coffee-text-muted);
 }
@@ -4281,40 +4561,51 @@ input:checked + .slider:before {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 0.78rem;
-  color: var(--coffee-leaf-green);
-  background: rgba(88, 129, 87, 0.15);
-  padding: 4px 10px;
-  border-radius: 12px;
-  font-weight: 600;
+  font-family: var(--font-pixel-sub);
+  font-size: 0.72rem;
+  color: var(--arcade-green);
+  background: rgba(57, 255, 20, 0.12);
+  border: 1px solid rgba(57, 255, 20, 0.3);
+  padding: 4px 8px;
+  border-radius: 3px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
 }
 
 .coffee-dot-online {
   width: 6px;
   height: 6px;
-  border-radius: 50%;
-  background: var(--coffee-leaf-green);
+  border-radius: 1px;
+  background: var(--arcade-green);
+  box-shadow: 0 0 4px var(--arcade-green);
 }
 
 .coffee-balance-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 14px;
+  padding: 12px 14px;
   background: var(--coffee-input);
-  border-radius: 8px;
+  border: 2px solid #000;
+  box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.6);
+  border-radius: 4px;
   margin-bottom: 16px;
 }
 
 .balance-label {
-  font-size: 0.85rem;
+  font-family: var(--font-pixel-sub);
+  font-size: 0.78rem;
+  text-transform: uppercase;
   color: var(--coffee-text-muted);
+  letter-spacing: 0.06em;
 }
 
 .balance-value {
-  font-size: 1.15rem;
+  font-family: var(--font-arcade);
+  font-size: 0.95rem;
   font-weight: 700;
-  color: var(--coffee-accent);
+  color: var(--arcade-green);
+  text-shadow: 0 0 8px rgba(57, 255, 20, 0.5);
 }
 
 .coffee-action-row {
@@ -4323,37 +4614,60 @@ input:checked + .slider:before {
 }
 
 .coffee-btn-primary {
-  background: linear-gradient(135deg, var(--coffee-accent), var(--coffee-caramel));
-  color: #120d0a;
-  border: none;
-  border-radius: 8px;
+  background: var(--arcade-gold);
+  color: #000;
+  border: 2px solid #000;
+  box-shadow: 3px 3px 0 #000;
+  border-radius: 4px;
   padding: 10px 16px;
+  font-family: var(--font-arcade);
   font-weight: 700;
-  font-size: 0.88rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
   flex: 1;
+  text-transform: uppercase;
 }
 
 .coffee-btn-primary:hover {
-  filter: brightness(1.1);
-  transform: translateY(-1px);
+  background: #ffe066;
+  box-shadow: 4px 4px 0 #000;
+  transform: translate(-1px, -1px);
+}
+
+.coffee-btn-primary:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 #000;
 }
 
 .coffee-btn-secondary {
-  background: var(--coffee-card);
-  color: var(--coffee-text-primary);
-  border: 1px solid var(--coffee-border);
-  border-radius: 8px;
+  background: #141824;
+  color: var(--arcade-cyan);
+  border: 2px solid #000;
+  box-shadow: 3px 3px 0 #000;
+  border-radius: 4px;
   padding: 10px 14px;
-  font-weight: 600;
-  font-size: 0.88rem;
+  font-family: var(--font-arcade);
+  font-weight: 700;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+  text-transform: uppercase;
 }
 
 .coffee-btn-secondary:hover {
-  background: var(--coffee-hover);
+  background: #1c2234;
+  color: #fff;
+  border-color: var(--arcade-cyan);
+  box-shadow: 4px 4px 0 #000;
+  transform: translate(-1px, -1px);
+}
+
+.coffee-btn-secondary:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 #000;
 }
 
 .coffee-guest-cta {
@@ -4370,8 +4684,8 @@ input:checked + .slider:before {
 
 .coffee-btn-primary.large,
 .coffee-btn-secondary.large {
-  padding: 12px 24px;
-  font-size: 0.95rem;
+  padding: 12px 22px;
+  font-size: 0.78rem;
 }
 
 .coffee-cta-note {
@@ -5322,37 +5636,64 @@ input:checked + .slider:before {
   transition: all 0.15s ease;
 }
 
+.sound-sample-btn {
+  background: var(--arcade-card);
+  border: 1.5px solid var(--arcade-border);
+  color: var(--coffee-text-normal);
+  padding: 7px 12px;
+  border-radius: 3px;
+  font-family: var(--font-arcade);
+  font-size: 0.62rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  box-shadow: 2px 2px 0 #000;
+  transition: all 0.1s ease;
+}
+
 .sound-sample-btn:hover {
   background: var(--coffee-hover);
-  color: var(--coffee-text-primary);
-  border-color: var(--coffee-accent);
+  color: var(--arcade-cyan);
+  border-color: var(--arcade-cyan);
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0 #000;
+}
+
+.sound-sample-btn:active {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0 #000;
 }
 
 /* Unread Badge & Draft Snippet in Sidebar */
 .whatsapp-unread-badge {
-  background: var(--coffee-leaf-green);
-  color: #fff;
-  font-size: 0.72rem;
+  background: var(--arcade-green);
+  color: #000;
+  font-family: var(--font-arcade);
+  font-size: 0.6rem;
   font-weight: 700;
   min-width: 20px;
-  height: 20px;
-  padding: 0 6px;
-  border-radius: 10px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 2px;
+  border: 1px solid #000;
+  box-shadow: 1px 1px 0 #000;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .whatsapp-snippet-draft {
-  color: var(--coffee-accent);
+  color: var(--arcade-gold);
   font-weight: 700;
 }
 
 /* Payment Request Card */
 .crypto-request-card {
-  background: var(--coffee-bg-darkest);
-  border: 1.5px solid var(--coffee-border);
-  border-radius: 10px;
+  background: var(--arcade-input);
+  border: 2px solid var(--arcade-gold);
+  border-radius: 4px;
+  box-shadow: var(--pixel-shadow-md);
   padding: 12px 14px;
   margin: 4px 0;
   display: flex;
@@ -5368,30 +5709,32 @@ input:checked + .slider:before {
 }
 
 .crypto-request-tag {
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: var(--coffee-accent);
+  font-family: var(--font-arcade);
+  font-size: 0.65rem;
+  letter-spacing: 0.05em;
+  color: var(--arcade-gold);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
 }
 
 .crypto-request-status {
-  font-size: 0.72rem;
-  padding: 2px 7px;
-  border-radius: 10px;
-  font-weight: 600;
+  font-family: var(--font-arcade);
+  font-size: 0.58rem;
+  padding: 3px 6px;
+  border-radius: 2px;
+  font-weight: 700;
+  text-transform: uppercase;
 }
 
 .crypto-request-status.pending {
-  background: rgba(224, 169, 109, 0.15);
-  color: var(--coffee-warning);
-  border: 1px solid rgba(224, 169, 109, 0.3);
+  background: rgba(255, 209, 102, 0.15);
+  color: var(--arcade-gold);
+  border: 1px solid var(--arcade-gold);
 }
 
 .crypto-request-status.paid {
-  background: rgba(88, 129, 87, 0.2);
-  color: var(--coffee-leaf-green);
-  border: 1px solid rgba(88, 129, 87, 0.4);
+  background: rgba(57, 255, 20, 0.2);
+  color: var(--arcade-green);
+  border: 1px solid var(--arcade-green);
 }
 
 .crypto-request-amount {
@@ -5401,13 +5744,15 @@ input:checked + .slider:before {
 }
 
 .crypto-request-symbol {
-  font-size: 1.15rem;
+  font-family: var(--font-arcade);
+  font-size: 0.95rem;
   font-weight: 700;
-  color: var(--coffee-accent);
+  color: var(--arcade-gold);
 }
 
 .crypto-request-val {
-  font-size: 1.4rem;
+  font-family: var(--font-arcade);
+  font-size: 1.15rem;
   font-weight: 800;
   color: var(--coffee-text-primary);
 }
@@ -5418,7 +5763,8 @@ input:checked + .slider:before {
   font-style: italic;
   background: var(--coffee-header);
   padding: 6px 10px;
-  border-radius: 6px;
+  border-radius: 2px;
+  border-left: 2px solid var(--arcade-cyan);
 }
 
 .crypto-request-footer {
@@ -5426,9 +5772,10 @@ input:checked + .slider:before {
 }
 
 .crypto-paid-label {
-  font-size: 0.78rem;
-  color: var(--coffee-leaf-green);
-  font-weight: 600;
+  font-family: var(--font-arcade);
+  font-size: 0.65rem;
+  color: var(--arcade-green);
+  font-weight: 700;
   display: flex;
   align-items: center;
   gap: 4px;
@@ -5440,12 +5787,13 @@ input:checked + .slider:before {
 }
 
 .crypto-request-pay-btn {
-  background: var(--coffee-accent);
-  color: #120d0a;
-  border: none;
-  border-radius: 8px;
+  background: var(--arcade-gold);
+  color: #000;
+  border: 2px solid #000;
+  border-radius: 2px;
   padding: 8px 12px;
-  font-size: 0.82rem;
+  font-family: var(--font-arcade);
+  font-size: 0.68rem;
   font-weight: 700;
   cursor: pointer;
   display: flex;
@@ -5454,15 +5802,21 @@ input:checked + .slider:before {
   gap: 6px;
   width: 100%;
   margin-top: 8px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
-  transition: all 0.15s ease;
+  box-shadow: 2px 2px 0px #000;
+  transition: all 0.1s ease;
+  text-transform: uppercase;
 }
 
 .crypto-request-pay-btn:hover {
-  filter: brightness(1.12);
-  transform: translateY(-1px);
+  filter: brightness(1.15);
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0px #000;
 }
 
+.crypto-request-pay-btn:active {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0px #000;
+}
 
 /* WhatsApp First-Time Safety Warning Banner */
 .whatsapp-safety-banner {
