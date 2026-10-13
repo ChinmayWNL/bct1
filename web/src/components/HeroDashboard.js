@@ -1,4 +1,12 @@
 'use client';
+import {
+  PixelGamepad,
+  PixelRobot,
+  PixelQr,
+  PixelCoin,
+  PixelSliders,
+  PixelLock
+} from './PixelIcons';
 
 export default function HeroDashboard({
   walletAddress,
@@ -24,8 +32,8 @@ export default function HeroDashboard({
       <div className="whatsapp-welcome-content">
         {/* Retro 8-Bit Arcade Cabinet Mascot Badge */}
         <div className="coffee-illustration-badge">
-          <div className="coffee-cup-graphic" style={{ fontSize: '3.2rem' }}>
-            <span className="coffee-mug">🕹️</span>
+          <div className="coffee-cup-graphic" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <PixelGamepad size={54} color="var(--arcade-gold)" />
           </div>
         </div>
         
@@ -79,26 +87,26 @@ export default function HeroDashboard({
             )}
 
             <div className="coffee-action-row">
-              <button type="button" className="coffee-btn-primary" onClick={onStartBlockBotChat}>
-                👾 CO-OP BLOCKBOT
+              <button type="button" className="coffee-btn-primary" onClick={onStartBlockBotChat} style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}>
+                <PixelRobot size={18} color="#fff" /> CO-OP BLOCKBOT
               </button>
-              <button type="button" className="coffee-btn-secondary" onClick={onOpenQR}>
-                🏁 SHARE QR CODE
+              <button type="button" className="coffee-btn-secondary" onClick={onOpenQR} style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}>
+                <PixelQr size={18} /> SHARE QR CODE
               </button>
-              <button type="button" className="coffee-btn-secondary" onClick={onOpenProfile}>
-                ⚙️ LOADOUT / PROFILE
+              <button type="button" className="coffee-btn-secondary" onClick={onOpenProfile} style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}>
+                <PixelSliders size={18} /> LOADOUT / PROFILE
               </button>
             </div>
           </div>
         ) : (
           <div className="coffee-guest-cta">
             <div className="coffee-cta-buttons">
-              <button type="button" className="coffee-btn-primary large" onClick={onConnectWallet}>
-                🪙 INSERT COIN (CONNECT WALLET)
+              <button type="button" className="coffee-btn-primary large" onClick={onConnectWallet} style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}>
+                <PixelCoin size={20} color="#fff" /> INSERT COIN (CONNECT WALLET)
               </button>
               {onStartDemoMode && (
-                <button type="button" className="coffee-btn-secondary large" onClick={onStartDemoMode}>
-                  ▶ PRESS START (DEMO MODE)
+                <button type="button" className="coffee-btn-secondary large" onClick={onStartDemoMode} style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}>
+                  <PixelGamepad size={20} color="var(--arcade-gold)" /> PRESS START (DEMO MODE)
                 </button>
               )}
             </div>
@@ -108,8 +116,8 @@ export default function HeroDashboard({
           </div>
         )}
 
-        <div className="whatsapp-welcome-footer">
-          <span className="lock-icon">👾</span>
+        <div className="whatsapp-welcome-footer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+          <PixelLock size={15} color="var(--arcade-gold)" />
           <span>HI-SCORE ENCRYPTED MESSAGING VIA XMTP &amp; ETHEREUM PROTOCOL</span>
         </div>
       </div>

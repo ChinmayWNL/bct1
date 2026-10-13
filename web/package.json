@@ -12,6 +12,7 @@
     "@xmtp/browser-sdk": "^7.1.0",
     "ethers": "^6.17.0",
     "next": "16.3.2",
+    "pixelarticons": "^2.4.2",
     "qrcode": "^1.5.4",
     "react": "19.2.8",
     "react-dom": "19.2.8",

@@ -16,6 +16,26 @@ import CoffeeThemeModal from '@/components/CoffeeThemeModal';
 import PixelCoinBurst from '@/components/PixelCoinBurst';
 import LevelUpToast from '@/components/LevelUpToast';
 import { getArcadeRank, loadStoredXp, saveStoredXp } from '@/utils/arcadeXp';
+import {
+  PixelRobot,
+  PixelQr,
+  PixelMessage,
+  PixelGamepad,
+  PixelVolume,
+  PixelMute,
+  PixelMore,
+  PixelPhone,
+  PixelVideo,
+  PixelSearch,
+  PixelPin,
+  PixelSmile,
+  PixelClip,
+  PixelCoin,
+  PixelMic,
+  PixelTrash,
+  PixelSend,
+  PixelShield
+} from '@/components/PixelIcons';
 import { renderWhatsAppMarkdown } from '@/utils/whatsappMarkdown';
 // Pure Utility Functions
 function formatAddress(address) {
@@ -1814,7 +1834,7 @@ export default function Home() {
               title="Chat with BlockBot Companion"
               onClick={startBlockBotChat}
             >
-              🤖
+              <PixelRobot size={18} color="#00f0ff" />
             </button>
 
             {/* Wallet QR Code Button */}
@@ -1824,7 +1844,7 @@ export default function Home() {
               title="Share Wallet QR"
               onClick={() => setShowQRModal(true)}
             >
-              🏁
+              <PixelQr size={18} color="#ffd166" />
             </button>
 
             {/* New conversation focus */}
@@ -1835,7 +1855,7 @@ export default function Home() {
                 title="New Chat"
                 onClick={() => searchInputRef.current?.focus()}
               >
-                💬
+                <PixelMessage size={18} color="#f0f6fc" />
               </button>
             )}
 
@@ -1846,7 +1866,7 @@ export default function Home() {
               title="Arcade Cabinet Themes & 8-Bit Audio Studio"
               onClick={() => setShowThemeModal(true)}
             >
-              🕹️
+              <PixelGamepad size={18} color="#00f0ff" />
             </button>
 
             {/* Quick 8-Bit Audio Mute/Unmute */}
@@ -1856,7 +1876,7 @@ export default function Home() {
               title={soundEnabled ? "8-Bit Arcade SFX: Active (Click to Mute)" : "8-Bit Arcade SFX: Muted (Click to Unmute)"}
               onClick={handleToggleSound}
             >
-              {soundEnabled ? '🔊' : '🔇'}
+              {soundEnabled ? <PixelVolume size={18} color="#39ff14" /> : <PixelMute size={18} color="#8b9bb4" />}
             </button>
 
             {/* Profile Settings */}
@@ -1866,7 +1886,7 @@ export default function Home() {
               title="Settings & Profile"
               onClick={() => setShowProfileModal(true)}
             >
-              ⋮
+              <PixelMore size={18} color="#d8e2ec" />
             </button>
           </div>
         </div>
@@ -2108,7 +2128,7 @@ export default function Home() {
                           <h3 className="whatsapp-header-name">
                             <span>{displayName}</span>
                             {isBot && <span className="whatsapp-bot-tag">BOT</span>}
-                            {pinnedConvos[activeConversation.id] && <span className="whatsapp-pin-icon">📌</span>}
+                            {pinnedConvos[activeConversation.id] && <span className="whatsapp-pin-icon"><PixelPin size={14} color="#ffd166" /></span>}
                           </h3>
                           {peerTyping ? (
                             <p className="whatsapp-status typing">
@@ -2144,7 +2164,7 @@ export default function Home() {
                           callId: `call_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`
                         })}
                       >
-                        📞
+                        <PixelPhone size={18} color="#39ff14" />
                       </button>
 
                       <button 
@@ -2157,7 +2177,7 @@ export default function Home() {
                           callId: `call_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`
                         })}
                       >
-                        📹
+                        <PixelVideo size={18} color="#00f0ff" />
                       </button>
 
                       <button 
@@ -2169,7 +2189,7 @@ export default function Home() {
                           setShowSendCryptoModal(true);
                         }}
                       >
-                        💸
+                        <PixelCoin size={18} color="#ffd166" />
                       </button>
 
                       <button 
@@ -2178,7 +2198,7 @@ export default function Home() {
                         title="Search in conversation"
                         onClick={() => setShowInChatSearch(!showInChatSearch)}
                       >
-                        🔍
+                        <PixelSearch size={18} color="#d8e2ec" />
                       </button>
 
                       <button 
@@ -2187,7 +2207,7 @@ export default function Home() {
                         title="Contact Details"
                         onClick={() => setShowContactDrawer(true)}
                       >
-                        ⋮
+                        <PixelMore size={18} color="#d8e2ec" />
                       </button>
                     </div>
                   </div>
@@ -2208,7 +2228,7 @@ export default function Home() {
               return (
                 <div className="whatsapp-safety-banner">
                   <div className="safety-banner-left">
-                    <span className="safety-banner-icon">🛡️</span>
+                    <span className="safety-banner-icon"><PixelShield size={18} color="#ffd166" /></span>
                     <div>
                       <span style={{ fontWeight: 600 }}>Unknown Sender: </span>
                       <span>{formatAddress(peerAddr)} is not in your address book. Verify before sending ETH.</span>
@@ -2279,7 +2299,7 @@ export default function Home() {
                             title="React"
                             onClick={() => setActiveReactionPicker(activeReactionPicker === msg.id ? null : msg.id)}
                           >
-                            😊
+                            <PixelSmile size={15} color="#ffd166" />
                           </button>
                           <button 
                             type="button" 
@@ -2440,11 +2460,14 @@ export default function Home() {
                       {/* Emoji Reactions Popover */}
                       {activeReactionPicker === msg.id && (
                         <div className="whatsapp-reaction-picker">
-                          {['👍', '❤️', '😂', '😮', '😢', '🙏', '🔥', '🎉', '☕', '💎', '🚀', '👏', '💯', '✨', '😍', '👀'].map(emoji => (
+                          {['👾', '🪙', '⭐', '❤️', '🔥', '⚡', '💎', '🤖', '💀', '🚀', '👍', '☕'].map(emoji => (
                             <span 
                               key={emoji} 
                               className="reaction-option" 
-                              onClick={() => handleAddReaction(msg.id, emoji)}
+                              onClick={() => {
+                                handleAddReaction(msg.id, emoji);
+                                playSendPop();
+                              }}
                             >
                               {emoji}
                             </span>
@@ -2564,7 +2587,7 @@ export default function Home() {
                         title="Cancel Recording"
                         onClick={cancelRecording}
                       >
-                        🗑️
+                        <PixelTrash size={18} color="#ff007f" />
                       </button>
                       <button 
                         type="button" 
@@ -2572,7 +2595,7 @@ export default function Home() {
                         title="Send Voice Note"
                         onClick={sendVoiceNote}
                       >
-                        ➤
+                        <PixelSend size={18} color="#000000" />
                       </button>
                     </div>
                   </div>
@@ -2583,10 +2606,10 @@ export default function Home() {
                         <button 
                           type="button" 
                           className="whatsapp-composer-icon" 
-                          title="Insert Emoji"
+                          title="Insert Pixel Emoji"
                           onClick={() => setShowEmojiPicker(!showEmojiPicker)}
                         >
-                          😊
+                          <PixelSmile size={20} color="#ffd166" />
                         </button>
 
                         <input 
@@ -2602,7 +2625,7 @@ export default function Home() {
                           title="Attach Media"
                           onClick={() => fileInputRef.current?.click()}
                         >
-                          📎
+                          <PixelClip size={20} color="#00f0ff" />
                         </button>
 
                         <button 
@@ -2614,7 +2637,7 @@ export default function Home() {
                             setShowSendCryptoModal(true);
                           }}
                         >
-                          💸
+                          <PixelCoin size={20} color="#ffd166" />
                         </button>
                       </>
                     )}
@@ -2640,7 +2663,7 @@ export default function Home() {
                         title="Record Voice Note"
                         onClick={startRecording}
                       >
-                        🎤
+                        <PixelMic size={20} color="#39ff14" />
                       </button>
                     )}
 
@@ -2652,9 +2675,7 @@ export default function Home() {
                       {editingMessage ? (
                         <span>✓</span>
                       ) : (
-                        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-                          <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path>
-                        </svg>
+                        <PixelSend size={18} color="#000000" />
                       )}
                     </button>
                   </form>

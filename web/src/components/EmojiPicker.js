@@ -1,7 +1,39 @@
 'use client';
 import { useState, useRef, useEffect, useMemo } from 'react';
+import { PixelSearch } from './PixelIcons';
 
 const EMOJI_CATEGORIES = {
+  pixel: {
+    name: '👾 Pixel Arcade',
+    icon: '👾',
+    emojis: [
+      { char: '👾', name: 'pixel alien space invader arcade 8-bit' },
+      { char: '🪙', name: 'pixel coin gold token insert coin' },
+      { char: '⭐', name: 'pixel star 1-up power up bonus' },
+      { char: '❤️', name: 'pixel heart life health 8-bit' },
+      { char: '🔥', name: 'pixel fire flame hot burn' },
+      { char: '⚡', name: 'pixel zap lightning electricity flash' },
+      { char: '💎', name: 'pixel diamond gem crystal eth web3' },
+      { char: '🤖', name: 'pixel robot bot ai companion' },
+      { char: '👻', name: 'pixel ghost pacman spooky boo' },
+      { char: '💀', name: 'pixel skull game over ded skeleton' },
+      { char: '🎮', name: 'pixel gamepad controller console arcade' },
+      { char: '🏆', name: 'pixel trophy cup winner hi-score' },
+      { char: '🛡️', name: 'pixel shield defense armor guard' },
+      { char: '⚔️', name: 'pixel sword combat attack weapon' },
+      { char: '🧪', name: 'pixel potion elixir flask magic mana' },
+      { char: '🔑', name: 'pixel key unlock quest dungeon' },
+      { char: '🔒', name: 'pixel lock security encrypted e2ee' },
+      { char: '🚀', name: 'pixel rocket to the moon space launch' },
+      { char: '🎲', name: 'pixel dice random rng luck roll' },
+      { char: '☕', name: 'pixel coffee brew espresso cup' },
+      { char: '😀', name: 'pixel smile happy classic retro face' },
+      { char: '😁', name: 'pixel grin wide smile beaming' },
+      { char: '😉', name: 'pixel wink flirty playful' },
+      { char: '😎', name: 'pixel cool sunglasses shades boss swag' },
+      { char: '👍', name: 'pixel thumbs up ok good yes like' }
+    ]
+  },
   smileys: {
     name: 'Smileys',
     icon: '😊',
@@ -261,7 +293,7 @@ const EMOJI_CATEGORIES = {
 };
 
 export default function EmojiPicker({ onSelectEmoji, onClose, className = '', style = {} }) {
-  const [activeCategory, setActiveCategory] = useState('smileys');
+  const [activeCategory, setActiveCategory] = useState('pixel');
   const [searchQuery, setSearchQuery] = useState('');
   const popoverRef = useRef(null);
   const searchInputRef = useRef(null);
@@ -305,7 +337,9 @@ export default function EmojiPicker({ onSelectEmoji, onClose, className = '', st
     >
       {/* Search Header */}
       <div className="emoji-search-container">
-        <span className="emoji-search-icon">🔍</span>
+        <span className="emoji-search-icon" style={{ display: 'inline-flex', alignItems: 'center' }}>
+          <PixelSearch size={14} color="#8b9bb4" />
+        </span>
         <input 
           ref={searchInputRef}
           type="text" 
