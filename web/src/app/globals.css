@@ -3986,25 +3986,66 @@ input:checked + .slider:before {
   right: 8px;
   background: var(--coffee-header);
   border: 1px solid var(--coffee-border);
-  border-radius: 8px;
-  padding: 6px 8px;
+  border-radius: 24px;
+  padding: 5px 10px;
   display: flex;
+  align-items: center;
   gap: 6px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-  z-index: 20;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+  z-index: 30;
+  backdrop-filter: blur(12px);
+  animation: reactionPillPop 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes reactionPillPop {
+  from { opacity: 0; transform: translateY(-4px) scale(0.92); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 .reaction-option {
-  font-size: 1.25rem;
+  font-size: 1.35rem;
   cursor: pointer;
   padding: 2px 4px;
-  border-radius: 4px;
-  transition: transform 0.1s ease;
+  border-radius: 6px;
+  transition: transform 0.12s ease, background 0.12s ease;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .reaction-option:hover {
-  transform: scale(1.25);
+  transform: scale(1.3);
   background: var(--coffee-hover);
+}
+
+.reaction-more-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid var(--coffee-border);
+  background: var(--coffee-sidebar);
+  color: var(--coffee-text-muted);
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  margin-left: 2px;
+}
+
+.reaction-more-btn:hover {
+  background: var(--coffee-accent);
+  color: #1a130f;
+  transform: scale(1.15);
+}
+
+.message-reaction-popover-wrap {
+  position: absolute;
+  top: 32px;
+  right: 8px;
+  z-index: 40;
 }
 
 /* 5. WhatsApp Chat Composer */
@@ -4569,31 +4610,97 @@ input:checked + .slider:before {
   left: 16px;
   background: var(--coffee-header);
   border: 1px solid var(--coffee-border);
-  border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
   z-index: 50;
-  width: 320px;
+  width: 350px;
+  max-width: calc(100vw - 32px);
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: emojiPopoverIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes emojiPopoverIn {
+  from { opacity: 0; transform: translateY(8px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.emoji-search-container {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  background: var(--coffee-sidebar);
+  border-bottom: 1px solid var(--coffee-border);
+  gap: 8px;
+}
+
+.emoji-search-icon {
+  font-size: 0.85rem;
+  opacity: 0.7;
+}
+
+.emoji-search-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: 0.84rem;
+  color: var(--coffee-text-primary);
+  font-family: inherit;
+}
+
+.emoji-search-input::placeholder {
+  color: var(--coffee-text-muted);
+}
+
+.emoji-search-clear {
+  background: transparent;
+  border: none;
+  color: var(--coffee-text-muted);
+  font-size: 0.75rem;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+}
+
+.emoji-search-clear:hover {
+  color: var(--coffee-text-primary);
+  background: var(--coffee-hover);
 }
 
 .emoji-categories-nav {
   display: flex;
   background: var(--coffee-sidebar);
   border-bottom: 1px solid var(--coffee-border);
-  padding: 6px 8px;
+  padding: 4px 6px;
   gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.emoji-categories-nav::-webkit-scrollbar {
+  display: none;
 }
 
 .emoji-cat-btn {
   background: transparent;
   border: none;
   color: var(--coffee-text-muted);
-  font-size: 0.78rem;
+  font-size: 0.75rem;
   font-weight: 600;
-  padding: 4px 8px;
+  padding: 5px 8px;
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.15s ease;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.emoji-cat-btn .cat-icon {
+  font-size: 0.95rem;
 }
 
 .emoji-cat-btn:hover {
@@ -4604,21 +4711,22 @@ input:checked + .slider:before {
 .emoji-cat-btn.active {
   background: var(--coffee-accent);
   color: #1a130f;
+  font-weight: 700;
 }
 
 .emoji-grid-body {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(7, 1fr);
   padding: 10px;
-  gap: 6px;
-  max-height: 180px;
+  gap: 4px;
+  max-height: 220px;
   overflow-y: auto;
 }
 
 .emoji-item-btn {
   background: transparent;
   border: none;
-  font-size: 1.4rem;
+  font-size: 1.45rem;
   cursor: pointer;
   border-radius: 8px;
   padding: 4px;
@@ -4626,11 +4734,30 @@ input:checked + .slider:before {
   align-items: center;
   justify-content: center;
   transition: transform 0.12s ease, background 0.12s ease;
+  user-select: none;
 }
 
 .emoji-item-btn:hover {
-  transform: scale(1.2);
+  transform: scale(1.22);
   background: var(--coffee-hover);
+}
+
+.emoji-no-results {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 30px 10px;
+  font-size: 0.85rem;
+  color: var(--coffee-text-muted);
+}
+
+.emoji-popover-footer {
+  padding: 4px 10px;
+  background: var(--coffee-sidebar);
+  border-top: 1px solid var(--coffee-border);
+  font-size: 0.72rem;
+  color: var(--coffee-text-muted);
+  text-align: right;
+  letter-spacing: 0.3px;
 }
 
 /* Coffee Crypto Send Modal */

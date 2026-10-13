@@ -120,6 +120,14 @@ This document details all technical, security, protocol, and performance improve
   - **Explicit Action Semantics**: Payloads specify `action: 'add'` or `action: 'remove'`, guaranteeing deterministic idempotency.
   - **Pill Click-to-Toggle**: Users can click existing reaction pills under message bubbles to quickly toggle off or change their reactions.
 
+### 2.11 Comprehensive 250+ Emoji Suite, Categories & Real-Time Search
+- **Previous behavior**: `EmojiPicker.js` only contained 48 basic emojis across 4 categories without search capability. The in-chat message reaction bar was limited to only 7 hardcoded emojis without ability to select others.
+- **Implemented Fix**:
+  - **Over 250+ Curated Emojis**: Added comprehensive emoji sets spanning 7 distinct categories: `Smileys` (76 emojis), `Hands & Gestures` (34 emojis), `Hearts` (21 emojis), `Web3 & Tech` (24 emojis), `Coffee & Food` (23 emojis), `Party & Celebration` (15 emojis), and `Nature & Animals` (20 emojis).
+  - **Instant Keyword Search**: Added a search input that searches across emoji characters, names, and semantic keywords (e.g. searching "love", "cry", "fire", "eth", "beer", "rocket") in real time across all categories.
+  - **Responsive Category Tabs**: Category navigation tabs with icons, active highlights, and smooth horizontal scrolling.
+  - **Expanded Message Reactions**: Upgraded the hovering message reaction bar to 16 top reactions (`👍`, `❤️`, `😂`, `😮`, `😢`, `🙏`, `🔥`, `🎉`, `☕`, `💎`, `🚀`, `👏`, `💯`, `✨`, `😍`, `👀`) plus a `➕` button that toggles the full 250+ emoji picker, allowing users to react with any emoji in the catalog.
+
 ---
 
 ## 3. Verification & Validation

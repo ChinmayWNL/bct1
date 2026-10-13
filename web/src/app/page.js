@@ -150,6 +150,7 @@ export default function Home() {
   const [selectedImage, setSelectedImage] = useState(null);
   const [lightboxImage, setLightboxImage] = useState(null);
   const [activeReactionPicker, setActiveReactionPicker] = useState(null);
+  const [showReactionModal, setShowReactionModal] = useState(null);
   const [reactionsMap, setReactionsMap] = useState({});
   const reactionUsersMapRef = useRef({});
 
@@ -2036,7 +2037,7 @@ export default function Home() {
                       {/* Emoji Reactions Popover */}
                       {activeReactionPicker === msg.id && (
                         <div className="whatsapp-reaction-picker">
-                          {['👍', '❤️', '😂', '😮', '🔥', '☕', '💎'].map(emoji => (
+                          {['👍', '❤️', '😂', '😮', '😢', '🙏', '🔥', '🎉', '☕', '💎', '🚀', '👏', '💯', '✨', '😍', '👀'].map(emoji => (
                             <span 
                               key={emoji} 
                               className="reaction-option" 
@@ -2045,6 +2046,30 @@ export default function Home() {
                               {emoji}
                             </span>
                           ))}
+                          <button
+                            type="button"
+                            className="reaction-more-btn"
+                            title="More reactions"
+                            onClick={() => {
+                              setShowReactionModal(showReactionModal === msg.id ? null : msg.id);
+                              setActiveReactionPicker(null);
+                            }}
+                          >
+                            ➕
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Full 250+ Emoji Picker for Message Reaction */}
+                      {showReactionModal === msg.id && (
+                        <div className="message-reaction-popover-wrap">
+                          <EmojiPicker 
+                            onSelectEmoji={(emoji) => {
+                              handleAddReaction(msg.id, emoji);
+                              setShowReactionModal(null);
+                            }}
+                            onClose={() => setShowReactionModal(null)}
+                          />
                         </div>
                       )}
                     </div>
