@@ -151,6 +151,7 @@ export default function Home() {
   const [lightboxImage, setLightboxImage] = useState(null);
   const [activeReactionPicker, setActiveReactionPicker] = useState(null);
   const [reactionsMap, setReactionsMap] = useState({});
+  const reactionUsersMapRef = useRef({});
 
   // Edit & Delete State
   const [editingMessage, setEditingMessage] = useState(null);
@@ -690,9 +691,6 @@ export default function Home() {
       if (isFromSelf) {
         return false;
       }
-      if (isFromSelf) {
-        return false;
-      }
 
       if (data.subType === 'offer') {
         const callerPeerAddr = data.senderAddress || activeConversation?.peerAddress || message.senderInboxId;
@@ -714,13 +712,38 @@ export default function Home() {
       return false;
     }
     if (data.type === 'reaction' && data.targetId && data.emoji) {
-      setReactionsMap(prev => {
-        const existing = prev[data.targetId] || [];
-        const updated = existing.includes(data.emoji)
-          ? existing.filter(e => e !== data.emoji)
-          : [...existing, data.emoji];
-        return { ...prev, [data.targetId]: updated };
-      });
+      const isFromSelf = (message.senderInboxId && xmtpClient?.inboxId && message.senderInboxId === xmtpClient.inboxId) ||
+                         (data.senderInboxId && xmtpClient?.inboxId && data.senderInboxId === xmtpClient.inboxId) ||
+                         (data.senderAddress && walletAddress && data.senderAddress.toLowerCase() === walletAddress.toLowerCase());
+      
+      // If the reaction was dispatched by our own local client, it was already applied optimistically
+      if (isFromSelf) {
+        return false;
+      }
+
+      const senderKey = message.senderInboxId || data.senderInboxId || data.senderAddress || 'peer';
+      if (!reactionUsersMapRef.current[data.targetId]) {
+        reactionUsersMapRef.current[data.targetId] = {};
+      }
+
+      if (data.action === 'remove') {
+        delete reactionUsersMapRef.current[data.targetId][senderKey];
+      } else if (data.action === 'add') {
+        reactionUsersMapRef.current[data.targetId][senderKey] = data.emoji;
+      } else {
+        // Fallback for legacy messages without action field
+        if (reactionUsersMapRef.current[data.targetId][senderKey] === data.emoji) {
+          delete reactionUsersMapRef.current[data.targetId][senderKey];
+        } else {
+          reactionUsersMapRef.current[data.targetId][senderKey] = data.emoji;
+        }
+      }
+
+      const updatedEmojis = Array.from(new Set(Object.values(reactionUsersMapRef.current[data.targetId])));
+      setReactionsMap(prev => ({
+        ...prev,
+        [data.targetId]: updatedEmojis
+      }));
       return false;
     }
     if (data.type === 'disappearing_config' && typeof data.timer === 'number') {
@@ -757,7 +780,7 @@ export default function Home() {
       const displayMsgs = [];
       const newDeleted = {};
       const newEdited = {};
-      const newReactions = {};
+      const userReactions = {};
 
       for (const m of rawMsgs) {
         const d = parseMessageData(m);
@@ -774,10 +797,21 @@ export default function Home() {
             newEdited[d.targetId] = d.newText;
           }
         } else if (d.type === 'reaction' && d.targetId && d.emoji) {
-          const existing = newReactions[d.targetId] || [];
-          newReactions[d.targetId] = existing.includes(d.emoji)
-            ? existing.filter(e => e !== d.emoji)
-            : [...existing, d.emoji];
+          const sender = m.senderInboxId || d.senderInboxId || d.senderAddress || 'peer';
+          if (!userReactions[d.targetId]) userReactions[d.targetId] = {};
+
+          if (d.action === 'remove') {
+            delete userReactions[d.targetId][sender];
+          } else if (d.action === 'add') {
+            userReactions[d.targetId][sender] = d.emoji;
+          } else {
+            // Legacy toggle fallback
+            if (userReactions[d.targetId][sender] === d.emoji) {
+              delete userReactions[d.targetId][sender];
+            } else {
+              userReactions[d.targetId][sender] = d.emoji;
+            }
+          }
         } else if (d.type === 'disappearing_config' && typeof d.timer === 'number') {
           setDisappearingTimer(d.timer);
         } else {
@@ -785,9 +819,18 @@ export default function Home() {
         }
       }
 
+      reactionUsersMapRef.current = userReactions;
+      const newReactions = {};
+      for (const [targetId, userMap] of Object.entries(userReactions)) {
+        const emojis = Object.values(userMap);
+        if (emojis.length > 0) {
+          newReactions[targetId] = Array.from(new Set(emojis));
+        }
+      }
+
       setDeletedMessages(prev => ({ ...prev, ...newDeleted }));
       setEditedMessages(prev => ({ ...prev, ...newEdited }));
-      setReactionsMap(prev => ({ ...prev, ...newReactions }));
+      setReactionsMap(newReactions);
       setMessages(displayMsgs);
       
       const stream = await conversation.stream();
@@ -1283,14 +1326,25 @@ export default function Home() {
   };
 
   const handleAddReaction = async (messageId, emoji) => {
-    // 1. Optimistically update local UI state
-    setReactionsMap(prev => {
-      const existing = prev[messageId] || [];
-      const updated = existing.includes(emoji) 
-        ? existing.filter(e => e !== emoji)
-        : [...existing, emoji];
-      return { ...prev, [messageId]: updated };
-    });
+    const mySenderId = xmtpClient?.inboxId || walletAddress || 'me';
+    if (!reactionUsersMapRef.current[messageId]) {
+      reactionUsersMapRef.current[messageId] = {};
+    }
+
+    const currentEmoji = reactionUsersMapRef.current[messageId][mySenderId];
+    const isRemoving = currentEmoji === emoji;
+
+    if (isRemoving) {
+      delete reactionUsersMapRef.current[messageId][mySenderId];
+    } else {
+      reactionUsersMapRef.current[messageId][mySenderId] = emoji;
+    }
+
+    const updatedEmojis = Array.from(new Set(Object.values(reactionUsersMapRef.current[messageId])));
+    setReactionsMap(prev => ({
+      ...prev,
+      [messageId]: updatedEmojis
+    }));
     setActiveReactionPicker(null);
 
     // 2. Broadcast reaction over XMTP network to peer
@@ -1300,12 +1354,15 @@ export default function Home() {
           type: 'reaction',
           targetId: messageId,
           emoji: emoji,
+          action: isRemoving ? 'remove' : 'add',
+          senderInboxId: xmtpClient?.inboxId || walletAddress,
+          senderAddress: walletAddress,
           timestamp: new Date().getTime()
         };
         const textPayload = `[JSON_MSG]${JSON.stringify(reactionPayload)}`;
 
         if (activeConversation.isDemoBot) {
-          triggerBotReply(emoji, 'text');
+          if (!isRemoving) triggerBotReply(emoji, 'text');
         } else {
           await activeConversation.sendText(textPayload);
         }
@@ -1996,7 +2053,13 @@ export default function Home() {
                     {!isDeleted && reactions.length > 0 && (
                       <div className="whatsapp-reactions-pills-row">
                         {reactions.map((r, rIdx) => (
-                          <div key={rIdx} className="whatsapp-reaction-pill">
+                          <div 
+                            key={rIdx} 
+                            className="whatsapp-reaction-pill"
+                            onClick={() => handleAddReaction(msg.id, r)}
+                            title="Click to toggle reaction"
+                            style={{ cursor: 'pointer' }}
+                          >
                             {r}
                           </div>
                         ))}

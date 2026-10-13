@@ -110,6 +110,16 @@ This document details all technical, security, protocol, and performance improve
 - **Disappearing Messages Sync**: Setting disappearing message intervals now broadcasts an XMTP configuration payload (`disappearing_config`) so counterparties automatically match the expiration settings.
 - **Memoization**: `filteredConversations`, `pinnedCount`, and `visibleMessages` are wrapped in `useMemo` to eliminate re-rendering lag during typing and scrolling.
 
+### 2.10 Reaction State Machine & Stream Echo Decoupling
+- **Problem Identified**:
+  - Reactions disappeared on the reacting user's screen moments after reacting, but remained visible to the recipient.
+  - **Root Cause**: `handleAddReaction` optimistically toggled the emoji into local `reactionsMap`. When the reaction was broadcast over XMTP, the conversation stream echoed the message back to the sender. `processIncomingMessage` ran the identical toggle logic (`existing.includes(emoji) ? remove : add`) without checking `isFromSelf`. Because the emoji had just been added optimistically, the incoming echo found `existing.includes(emoji) === true` and promptly deleted it, causing the sender's reaction to vanish. Furthermore, reactions lacked per-user tracking, meaning reacting to a message could unintentionally toggle off another user's reaction of the same emoji.
+- **Implemented Fix**:
+  - **Self-Echo Filtering**: `processIncomingMessage` drops self-broadcast reaction messages (`message.senderInboxId === xmtpClient?.inboxId || data.senderAddress === walletAddress`).
+  - **Per-User Reaction Matrix (`reactionUsersMapRef`)**: Reactions are tracked per-user per-message (`{ [targetId]: { [senderId]: emoji } }`).
+  - **Explicit Action Semantics**: Payloads specify `action: 'add'` or `action: 'remove'`, guaranteeing deterministic idempotency.
+  - **Pill Click-to-Toggle**: Users can click existing reaction pills under message bubbles to quickly toggle off or change their reactions.
+
 ---
 
 ## 3. Verification & Validation
