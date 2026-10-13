@@ -13,6 +13,9 @@ import CallModal from '@/components/CallModal';
 import IncomingCallModal from '@/components/IncomingCallModal';
 import ContactInfoDrawer from '@/components/ContactInfoDrawer';
 import CoffeeThemeModal from '@/components/CoffeeThemeModal';
+import PixelCoinBurst from '@/components/PixelCoinBurst';
+import LevelUpToast from '@/components/LevelUpToast';
+import { getArcadeRank, loadStoredXp, saveStoredXp } from '@/utils/arcadeXp';
 import { renderWhatsAppMarkdown } from '@/utils/whatsappMarkdown';
 // Pure Utility Functions
 function formatAddress(address) {
@@ -184,6 +187,17 @@ export default function Home() {
   const [wallpaperOpacity, setWallpaperOpacity] = useState('balanced');
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [showThemeModal, setShowThemeModal] = useState(false);
+
+  // Arcade Progression & Celebration States
+  const [arcadeXp, setArcadeXp] = useState(50);
+  const [coinBurstEvent, setCoinBurstEvent] = useState(null);
+  const [levelUpEvent, setLevelUpEvent] = useState(null);
+
+  const arcadeRank = useMemo(() => getArcadeRank(arcadeXp), [arcadeXp]);
+
+  useEffect(() => {
+    setArcadeXp(loadStoredXp());
+  }, []);
 
   // 1. Custom Nicknames Address Book
   const [customNicknames, setCustomNicknames] = useState(() => {
@@ -440,6 +454,35 @@ export default function Home() {
   // Backward-compatible alias for existing notification chime calls
   const playNotificationSound = playReceiveChime;
 
+  // Arcade XP Progression & Coin Burst Audio-Visual Triggers
+  const addArcadeXp = (amount, reason = '') => {
+    setArcadeXp(prev => {
+      const next = prev + amount;
+      saveStoredXp(next);
+      const prevRank = getArcadeRank(prev);
+      const nextRank = getArcadeRank(next);
+      if (nextRank.level > prevRank.level) {
+        setLevelUpEvent({
+          id: Date.now(),
+          level: nextRank.level,
+          title: nextRank.title,
+          badge: nextRank.badge
+        });
+        playReceiveChime();
+      }
+      return next;
+    });
+  };
+
+  const triggerCoinBurst = (amount = '0.01', note = '') => {
+    setCoinBurstEvent({
+      id: Date.now(),
+      amount: amount || '0.01',
+      note
+    });
+    playCoinClink();
+  };
+
   const handleSelectTheme = (newTheme) => {
     setCoffeeTheme(newTheme);
     if (typeof window !== 'undefined') {
@@ -657,6 +700,7 @@ export default function Home() {
         } catch (e) {}
         
         fetchOnChainProfile(ethSigner, address);
+        addArcadeXp(50, 'Wallet Connected');
 
         try {
           const { Client, IdentifierKind } = await import('@xmtp/browser-sdk');
@@ -761,6 +805,7 @@ export default function Home() {
       setUserProfile(updated);
       setAddressProfiles(prev => ({ ...prev, [walletAddress.toLowerCase()]: updated }));
       localStorage.setItem(`profile_${walletAddress.toLowerCase()}`, JSON.stringify(updated));
+      addArcadeXp(35, 'Profile Updated');
       alert("Profile updated successfully!");
       setShowProfileModal(false);
       return;
@@ -783,6 +828,7 @@ export default function Home() {
       setUserProfile(updated);
       setAddressProfiles(prev => ({ ...prev, [walletAddress.toLowerCase()]: updated }));
       localStorage.setItem(`profile_${walletAddress.toLowerCase()}`, JSON.stringify(updated));
+      addArcadeXp(100, 'On-Chain Identity Registered');
       alert("Profile permanently registered on the blockchain!");
       setShowProfileModal(false);
     } catch (error) {
@@ -1297,6 +1343,7 @@ export default function Home() {
             await activeConversation.sendText(textPayload);
           }
           playSendPop();
+          addArcadeXp(20, 'Voice Note Broadcast');
           setReplyingTo(null);
         } catch (err) {
           console.error("Failed to send voice note", err);
@@ -1420,6 +1467,7 @@ export default function Home() {
       }
 
       playSendPop();
+      addArcadeXp(selectedImage ? 15 : 10, 'Message Sent');
       setInputValue('');
       if (activeConversation) {
         setChatDrafts(prev => {
@@ -1470,6 +1518,7 @@ export default function Home() {
         }
 
         playSendPop();
+        addArcadeXp(25, 'Payment Request Broadcast');
       } catch (err) {
         console.error("Failed to broadcast crypto request", err);
       }
@@ -1497,7 +1546,8 @@ export default function Home() {
         if (provider && walletAddress) {
           refreshBalance(provider, walletAddress);
         }
-        playCoinClink();
+        triggerCoinBurst(amount, note);
+        addArcadeXp(50, 'ETH Tip Confirmed');
         return;
       }
 
@@ -1541,7 +1591,8 @@ export default function Home() {
         await activeConversation.sendText(textPayload);
       }
 
-      playCoinClink();
+      triggerCoinBurst(amount, note);
+      addArcadeXp(50, 'ETH Tip Broadcasted');
 
       // Refresh balance
       if (provider && walletAddress) {
@@ -1573,6 +1624,7 @@ export default function Home() {
       [messageId]: updatedEmojis
     }));
     setActiveReactionPicker(null);
+    if (!isRemoving) addArcadeXp(5, 'Reaction Added');
 
     // 2. Broadcast reaction over XMTP network to peer
     if (activeConversation) {
@@ -1742,6 +1794,17 @@ export default function Home() {
             </div>
             {walletAddress && <span className="whatsapp-online-dot"></span>}
           </div>
+
+          {arcadeRank && (
+            <div 
+              className="whatsapp-sidebar-rank"
+              onClick={() => setShowProfileModal(true)}
+              title={`Arcade Rank: LVL ${arcadeRank.level} ${arcadeRank.title} (${arcadeRank.currentXp}/${arcadeRank.nextRankMin} XP)`}
+            >
+              <span>{arcadeRank.badge}</span>
+              <span>LVL {arcadeRank.level}</span>
+            </div>
+          )}
 
           <div className="whatsapp-header-actions">
             {/* BlockBot AI Companion Button */}
@@ -2606,6 +2669,7 @@ export default function Home() {
             userBalance={userBalance}
             networkName={networkName}
             userProfile={userProfile}
+            arcadeRank={arcadeRank}
             onStartChatClick={() => searchInputRef.current?.focus()}
             onOpenProfile={() => setShowProfileModal(true)}
             onOpenQR={() => setShowQRModal(true)}
@@ -2676,6 +2740,7 @@ export default function Home() {
           profileFormAvatar={profileFormAvatar}
           setProfileFormAvatar={setProfileFormAvatar}
           isSavingProfile={isSavingProfile}
+          arcadeRank={arcadeRank}
           onSaveProfile={handleSaveProfile}
           onDisconnect={disconnectWallet}
           onClose={() => setShowProfileModal(false)}
@@ -2725,6 +2790,7 @@ export default function Home() {
           onPlaySendPop={playSendPop}
           onPlayReceiveChime={playReceiveChime}
           onPlayCoinClink={playCoinClink}
+          onTestCoinBurst={() => triggerCoinBurst('0.05', 'Soundboard Test')}
           onClose={() => setShowThemeModal(false)}
         />
       )}
@@ -2734,6 +2800,22 @@ export default function Home() {
         <div className="modal-overlay" onClick={() => setLightboxImage(null)}>
           <img src={lightboxImage} alt="Enlarged media" className="lightbox-img" onClick={(e) => e.stopPropagation()} />
         </div>
+      )}
+
+      {/* Pixel Coin Burst & Floating Pop Celebration */}
+      {coinBurstEvent && (
+        <PixelCoinBurst
+          event={coinBurstEvent}
+          onComplete={() => setCoinBurstEvent(null)}
+        />
+      )}
+
+      {/* Arcade Level Up Celebration Banner */}
+      {levelUpEvent && (
+        <LevelUpToast
+          event={levelUpEvent}
+          onComplete={() => setLevelUpEvent(null)}
+        />
       )}
     </div>
   );

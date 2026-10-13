@@ -9,6 +9,7 @@ export default function ProfileModal({
   profileFormAvatar,
   setProfileFormAvatar,
   isSavingProfile,
+  arcadeRank,
   onSaveProfile,
   onDisconnect,
   onClose
@@ -65,8 +66,8 @@ export default function ProfileModal({
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-card" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <div className="brand-title" style={{ fontSize: '1.2rem' }}>
-            <span>🆔</span> Web3 Identity Profile
+          <div className="brand-title" style={{ fontSize: '1.05rem', fontFamily: 'var(--font-arcade)' }}>
+            <span>🆔</span> PLAYER LOADOUT &amp; PROFILE
           </div>
           <button className="modal-close-btn" onClick={onClose}>✕</button>
         </div>
@@ -90,6 +91,40 @@ export default function ProfileModal({
               <p>{walletAddress ? `${walletAddress.substring(0, 6)}...${walletAddress.substring(walletAddress.length - 4)}` : ''}</p>
             </div>
           </div>
+
+          {/* Arcade Rank & XP HUD */}
+          {arcadeRank && (
+            <div style={{
+              background: 'var(--arcade-card)',
+              border: '2px solid var(--arcade-border)',
+              borderRadius: '4px',
+              padding: '12px 14px',
+              marginTop: '14px',
+              boxShadow: 'var(--pixel-shadow-sm)'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '1.4rem' }}>{arcadeRank.badge}</span>
+                  <div>
+                    <div style={{ fontFamily: 'var(--font-arcade)', fontSize: '0.72rem', color: 'var(--arcade-gold)' }}>
+                      LVL {arcadeRank.level} {arcadeRank.title}
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--coffee-text-muted)' }}>
+                      {arcadeRank.currentXp} XP accumulated
+                    </div>
+                  </div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <span style={{ fontFamily: 'var(--font-arcade)', fontSize: '0.62rem', color: 'var(--arcade-green)' }}>
+                    {arcadeRank.xpToNext > 0 ? `${arcadeRank.xpToNext} XP to Next` : 'MAX RANK'}
+                  </span>
+                </div>
+              </div>
+              <div className="arcade-xp-track" style={{ marginTop: '8px' }}>
+                <div className="arcade-xp-fill" style={{ width: `${arcadeRank.progressPercent}%` }}></div>
+              </div>
+            </div>
+          )}
 
           <div className="form-group" style={{ marginTop: '16px' }}>
             <label>Connected Wallet</label>

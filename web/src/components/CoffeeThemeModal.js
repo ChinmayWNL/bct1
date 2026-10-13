@@ -10,6 +10,7 @@ export default function CoffeeThemeModal({
   onPlaySendPop,
   onPlayReceiveChime,
   onPlayCoinClink,
+  onTestCoinBurst,
   onClose
 }) {
   const themes = [
@@ -147,9 +148,12 @@ export default function CoffeeThemeModal({
               <button
                 type="button"
                 className="sound-sample-btn"
-                onClick={onPlayCoinClink}
+                onClick={() => {
+                  onPlayCoinClink();
+                  if (onTestCoinBurst) onTestCoinBurst();
+                }}
               >
-                <span>🪙</span> Insert Coin
+                <span>🪙</span> Coin Burst FX
               </button>
             </div>
           </div>

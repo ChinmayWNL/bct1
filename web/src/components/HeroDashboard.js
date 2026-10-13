@@ -6,6 +6,7 @@ export default function HeroDashboard({
   userBalance,
   networkName,
   userProfile,
+  arcadeRank,
   onStartChatClick,
   onOpenProfile,
   onOpenQR,
@@ -59,6 +60,23 @@ export default function HeroDashboard({
               <span className="balance-label">CREDITS (BALANCE)</span>
               <span className="balance-value">{parseFloat(userBalance || 0).toFixed(4)} ETH</span>
             </div>
+
+            {arcadeRank && (
+              <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid var(--coffee-border)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div className="arcade-rank-pill">
+                    <span>{arcadeRank.badge}</span>
+                    <span className="rank-title">LVL {arcadeRank.level} {arcadeRank.title}</span>
+                  </div>
+                  <span style={{ fontFamily: 'var(--font-arcade)', fontSize: '0.62rem', color: 'var(--arcade-gold)' }}>
+                    {arcadeRank.currentXp} / {arcadeRank.nextRankMin} XP
+                  </span>
+                </div>
+                <div className="arcade-xp-track">
+                  <div className="arcade-xp-fill" style={{ width: `${arcadeRank.progressPercent}%` }}></div>
+                </div>
+              </div>
+            )}
 
             <div className="coffee-action-row">
               <button type="button" className="coffee-btn-primary" onClick={onStartBlockBotChat}>
