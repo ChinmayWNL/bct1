@@ -9,6 +9,8 @@ export default function ContactInfoDrawer({
   customNickname = '',
   onSaveNickname,
   messages = [],
+  revealText = (text) => text,
+  isCipherLocked = false,
   starredMessages = {},
   disappearingTimer,
   setDisappearingTimer,
@@ -51,10 +53,10 @@ export default function ContactInfoDrawer({
         if (m.content.startsWith('[JSON_MSG]')) {
           try {
             const parsed = JSON.parse(m.content.replace('[JSON_MSG]', ''));
-            text = parsed.text || `[${parsed.type || 'Attachment'}]`;
+            text = revealText(parsed.text) || revealText(parsed.note) || `[${parsed.type || 'Attachment'}]`;
           } catch (e) { text = m.content; }
         } else {
-          text = m.content;
+          text = revealText(m.content);
         }
       } else if (m.content?.text) {
         text = m.content.text;
@@ -97,18 +99,18 @@ export default function ContactInfoDrawer({
       }
 
       if (data.type === 'media' && data.media) {
-        p.push({ id: msg.id, media: data.media, caption: data.text });
+        p.push({ id: msg.id, media: data.media, caption: revealText(data.text) });
       }
       if (data.type === 'audio' && data.audioUrl) {
         vn.push({ id: msg.id, duration: data.duration, audioUrl: data.audioUrl });
       }
       if (starredMessages[msg.id]) {
-        star.push({ id: msg.id, text: data.text || data.note || (data.type === 'media' ? '📷 Photo' : '🎤 Voice Note') });
+        star.push({ id: msg.id, text: revealText(data.text) || revealText(data.note) || (data.type === 'media' ? '📷 Photo' : '🎤 Voice Note') });
       }
     });
 
     return { photos: p, voiceNotes: vn, starredList: star };
-  }, [messages, starredMessages]);
+  }, [messages, starredMessages, revealText]);
 
   return (
     <div className="contact-drawer-overlay" onClick={onClose}>
@@ -271,8 +273,8 @@ export default function ContactInfoDrawer({
                 {photos.map(p => (
                   <div 
                     key={p.id} 
-                    className="media-thumb-item" 
-                    onClick={() => onOpenLightbox && onOpenLightbox(p.media)}
+                    className={`media-thumb-item ${isCipherLocked ? 'cipher-blurred' : ''}`}
+                    onClick={() => !isCipherLocked && onOpenLightbox && onOpenLightbox(p.media)}
                     style={{ cursor: 'pointer' }}
                     title="Click to view full photo"
                   >
@@ -287,7 +289,11 @@ export default function ContactInfoDrawer({
               <div className="voice-gallery-list" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {voiceNotes.map((vn, i) => (
                   <div key={vn.id || i} className="voice-gallery-item" style={{ padding: '6px', background: 'rgba(255,255,255,0.03)', borderRadius: '10px' }}>
-                    <VoiceNotePlayer audioUrl={vn.audioUrl} duration={vn.duration} />
+                    {isCipherLocked ? (
+                      <div className="whatsapp-cipher-hidden-media">🔒 Voice note ({vn.duration || 0}s) hidden</div>
+                    ) : (
+                      <VoiceNotePlayer audioUrl={vn.audioUrl} duration={vn.duration} />
+                    )}
                   </div>
                 ))}
                 {voiceNotes.length === 0 && <div className="empty-subtext">No voice notes recorded yet.</div>}

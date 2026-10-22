@@ -15,6 +15,7 @@ import ContactInfoDrawer from '@/components/ContactInfoDrawer';
 import CoffeeThemeModal from '@/components/CoffeeThemeModal';
 import PixelCoinBurst from '@/components/PixelCoinBurst';
 import LevelUpToast from '@/components/LevelUpToast';
+import PlayfairLockModal from '@/components/PlayfairLockModal';
 import { getArcadeRank, loadStoredXp, saveStoredXp } from '@/utils/arcadeXp';
 import {
   PixelRobot,
@@ -34,9 +35,21 @@ import {
   PixelMic,
   PixelTrash,
   PixelSend,
-  PixelShield
+  PixelShield,
+  PixelLock
 } from '@/components/PixelIcons';
 import { renderWhatsAppMarkdown } from '@/utils/whatsappMarkdown';
+import {
+  encryptPlayfair,
+  decryptPlayfair,
+  isPlayfairEnvelope,
+  getPlayfairCipherText,
+  hashPlayfairKey,
+  screenKeyFromHash
+} from '@/utils/playfairCipher';
+
+// Auto-lock unlocked cipher chats after this much inactivity
+const CIPHER_IDLE_LOCK_MS = 3 * 60 * 1000;
 // Pure Utility Functions
 function formatAddress(address) {
   if (!address) return '';
@@ -266,6 +279,26 @@ export default function Home() {
   });
   const [dismissedSafetyBanners, setDismissedSafetyBanners] = useState({});
 
+  // 6. Playfair Cipher Chat Lock
+  // Per-chat settings are persisted ({ [convoId]: { keyHash, encryptOutgoing } }), but the key
+  // itself only lives in memory while a chat is unlocked, so a reload or idle timeout re-locks it.
+  const [cipherSettings, setCipherSettings] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('blockchat_playfair_settings');
+        return stored ? JSON.parse(stored) : {};
+      } catch (e) {}
+    }
+    return {};
+  });
+  const [cipherKeys, setCipherKeys] = useState({});
+  const [showCipherModal, setShowCipherModal] = useState(false);
+  const cipherKeysRef = useRef({});
+
+  useEffect(() => {
+    cipherKeysRef.current = cipherKeys;
+  }, [cipherKeys]);
+
   // 5. Crypto Modal Presets (for 1-click Pay Request)
   const [cryptoModalPreset, setCryptoModalPreset] = useState({
     mode: 'send',
@@ -315,6 +348,101 @@ export default function Home() {
       return updated;
     });
   };
+
+  // Playfair Cipher Helpers
+  const activeCipherSetting = activeConversation ? cipherSettings[activeConversation.id] : null;
+  const activeCipherKey = activeConversation ? cipherKeys[activeConversation.id] : null;
+  const isCipherLocked = !!activeCipherSetting?.keyHash && !activeCipherKey;
+  const isEncryptingOutgoing = !!activeCipherSetting?.keyHash && !!activeCipherSetting?.encryptOutgoing && !!activeCipherKey;
+
+  const isChatLocked = (convoId) => !!convoId && !!cipherSettings[convoId]?.keyHash && !cipherKeys[convoId];
+
+  // Show message text readable when its chat is unlocked. While a cipher chat is locked the whole
+  // history is scrambled: encrypted messages show their real ciphertext, and older plain messages
+  // are scrambled with the screen key so nothing in the chat is readable.
+  const revealText = (text, convoId = activeConversation?.id) => {
+    if (!text || typeof text !== 'string') return text;
+    const key = convoId ? cipherKeys[convoId] : null;
+    if (isPlayfairEnvelope(text)) {
+      return key ? decryptPlayfair(text, key) : getPlayfairCipherText(text);
+    }
+    if (isChatLocked(convoId)) {
+      return getPlayfairCipherText(encryptPlayfair(text, screenKeyFromHash(cipherSettings[convoId].keyHash)));
+    }
+    return text;
+  };
+
+  const sealText = (text) => (isEncryptingOutgoing && text ? encryptPlayfair(text, activeCipherKey) : text);
+
+  const persistCipherSettings = (updated) => {
+    setCipherSettings(updated);
+    try {
+      localStorage.setItem('blockchat_playfair_settings', JSON.stringify(updated));
+    } catch (e) {}
+  };
+
+  const handleSetupCipherKey = async (key) => {
+    if (!activeConversation) return;
+    const convoId = activeConversation.id;
+    const keyHash = await hashPlayfairKey(key, convoId);
+    persistCipherSettings({ ...cipherSettings, [convoId]: { keyHash, encryptOutgoing: true } });
+    setCipherKeys(prev => ({ ...prev, [convoId]: key }));
+    setShowCipherModal(false);
+    addArcadeXp(25, 'Chat Cipher Enabled');
+  };
+
+  const handleUnlockCipher = async (key) => {
+    if (!activeConversation) return false;
+    const convoId = activeConversation.id;
+    const keyHash = await hashPlayfairKey(key, convoId);
+    if (keyHash !== cipherSettings[convoId]?.keyHash) return false;
+    setCipherKeys(prev => ({ ...prev, [convoId]: key }));
+    setShowCipherModal(false);
+    return true;
+  };
+
+  const lockAllCiphers = () => {
+    setCipherKeys({});
+    setShowCipherModal(false);
+    setEditingMessage(null);
+  };
+
+  const handleToggleEncryptOutgoing = (enabled) => {
+    if (!activeConversation) return;
+    const convoId = activeConversation.id;
+    persistCipherSettings({ ...cipherSettings, [convoId]: { ...cipherSettings[convoId], encryptOutgoing: enabled } });
+  };
+
+  const handleResetCipherKey = () => {
+    if (!activeConversation) return;
+    const convoId = activeConversation.id;
+    const updated = { ...cipherSettings };
+    delete updated[convoId];
+    persistCipherSettings(updated);
+    setCipherKeys(prev => {
+      const next = { ...prev };
+      delete next[convoId];
+      return next;
+    });
+    setShowCipherModal(false);
+  };
+
+  // Auto-lock unlocked chats after a period of no activity (e.g. you walked away)
+  const hasUnlockedCipher = Object.keys(cipherKeys).length > 0;
+  useEffect(() => {
+    if (!hasUnlockedCipher) return;
+    let timer = setTimeout(() => setCipherKeys({}), CIPHER_IDLE_LOCK_MS);
+    const resetTimer = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => setCipherKeys({}), CIPHER_IDLE_LOCK_MS);
+    };
+    const events = ['mousemove', 'keydown', 'mousedown', 'touchstart', 'scroll'];
+    events.forEach(evt => window.addEventListener(evt, resetTimer, { passive: true }));
+    return () => {
+      clearTimeout(timer);
+      events.forEach(evt => window.removeEventListener(evt, resetTimer));
+    };
+  }, [hasUnlockedCipher]);
 
   const handlePayRequest = (req) => {
     setCryptoModalPreset({
@@ -766,6 +894,7 @@ export default function Home() {
     setActiveConversation(null);
     setMessages([]);
     setShowProfileModal(false);
+    lockAllCiphers();
   };
 
   // EIP-1193 Listeners for Account and Network Changes
@@ -971,6 +1100,11 @@ export default function Home() {
     }
 
     const streamId = ++activeStreamIdRef.current;
+    // Re-lock cipher chats whenever you leave a chat
+    if (activeConversation?.id !== conversation.id) {
+      setCipherKeys({});
+      setShowCipherModal(false);
+    }
     setActiveConversation(conversation);
     setReplyingTo(null);
     setSelectedImage(null);
@@ -1229,11 +1363,13 @@ export default function Home() {
         replyContent = "Greetings! ⚡ Excited to pair with you on decentralized messaging.";
       }
 
+      // BlockBot plays a peer who knows the shared key: reply encrypted while the chat is unlocked
+      const botCipherKey = cipherKeysRef.current['demo-blockbot'];
       const botMessage = {
         id: `bot-reply-${new Date().getTime()}`,
         senderInboxId: 'bot-inbox',
         sentAt: new Date().toISOString(),
-        content: replyContent
+        content: botCipherKey ? encryptPlayfair(replyContent, botCipherKey) : replyContent
       };
 
       if (activeConversationRef.current?.id === 'demo-blockbot') {
@@ -1341,11 +1477,7 @@ export default function Home() {
             type: 'audio',
             audioUrl: base64Audio,
             duration: duration || 1,
-            replyTo: replyingTo ? {
-              id: replyingTo.id,
-              text: getMessageSnippet(replyingTo),
-              sender: replyingTo.senderInboxId === xmtpClient?.inboxId ? 'You' : 'Peer'
-            } : null,
+            replyTo: replyingTo ? buildReplyRef(replyingTo) : null,
             timestamp: new Date().getTime()
           };
           const textPayload = `[JSON_MSG]${JSON.stringify(payload)}`;
@@ -1380,8 +1512,9 @@ export default function Home() {
 
   // Edit & Delete Handlers
   const handleStartEdit = (msg) => {
-    const currentText = editedMessages[msg.id] || parseMessageData(msg).text;
-    setEditingMessage({ id: msg.id, originalText: currentText });
+    const rawText = editedMessages[msg.id] || parseMessageData(msg).text;
+    const currentText = revealText(rawText);
+    setEditingMessage({ id: msg.id, originalText: currentText, wasCipher: isPlayfairEnvelope(rawText) });
     setInputValue(currentText);
     setSelectedImage(null);
     setReplyingTo(null);
@@ -1416,21 +1549,31 @@ export default function Home() {
     e.preventDefault();
     if (!activeConversation) return;
 
+    // A cipher-locked chat can't send until the key is entered
+    if (isCipherLocked) {
+      setShowCipherModal(true);
+      return;
+    }
+
     // Handle saving an edited message
     if (editingMessage) {
       if (!inputValue.trim()) return;
       try {
+        // Encrypted messages stay encrypted when edited
+        const newText = editingMessage.wasCipher && activeCipherKey
+          ? encryptPlayfair(inputValue.trim(), activeCipherKey)
+          : sealText(inputValue.trim());
         const editPayload = {
           type: 'edit',
           targetId: editingMessage.id,
-          newText: inputValue.trim(),
+          newText,
           timestamp: new Date().getTime()
         };
         const textPayload = `[JSON_MSG]${JSON.stringify(editPayload)}`;
         if (!activeConversation.isDemoBot) {
           await activeConversation.sendText(textPayload);
         }
-        setEditedMessages(prev => ({ ...prev, [editingMessage.id]: inputValue.trim() }));
+        setEditedMessages(prev => ({ ...prev, [editingMessage.id]: newText }));
         setEditingMessage(null);
         setInputValue('');
       } catch (err) {
@@ -1449,13 +1592,9 @@ export default function Home() {
       if (selectedImage || replyingTo) {
         payload = {
           type: selectedImage ? 'media' : 'text',
-          text: inputValue.trim(),
+          text: sealText(inputValue.trim()),
           media: selectedImage ? selectedImage.dataUrl : null,
-          replyTo: replyingTo ? {
-            id: replyingTo.id,
-            text: getMessageSnippet(replyingTo),
-            sender: replyingTo.senderInboxId === xmtpClient?.inboxId ? 'You' : 'Peer'
-          } : null,
+          replyTo: replyingTo ? buildReplyRef(replyingTo) : null,
           timestamp: new Date().getTime()
         };
         const textPayload = `[JSON_MSG]${JSON.stringify(payload)}`;
@@ -1477,12 +1616,12 @@ export default function Home() {
             id: `demo-msg-${new Date().getTime()}`,
             senderInboxId: xmtpClient?.inboxId || 'user-inbox',
             sentAt: new Date().toISOString(),
-            content: inputValue.trim()
+            content: sealText(inputValue.trim())
           };
           setMessages(prev => [...prev, localMsg]);
           triggerBotReply(inputValue.trim(), 'text');
         } else {
-          await activeConversation.sendText(inputValue.trim());
+          await activeConversation.sendText(sealText(inputValue.trim()));
         }
       }
 
@@ -1724,16 +1863,26 @@ export default function Home() {
   };
 
   // Helpers
-  const getMessageSnippet = (msg) => {
+  // `locked: true` always shows cipher text scrambled, even if the chat is unlocked
+  const getMessageSnippet = (msg, { convoId = activeConversation?.id, locked = false } = {}) => {
+    const show = (text) => (locked ? getPlayfairCipherText(text) : revealText(text, convoId));
     if (deletedMessages[msg.id]) return '🚫 Deleted message';
-    if (editedMessages[msg.id]) return editedMessages[msg.id];
+    if (editedMessages[msg.id]) return show(editedMessages[msg.id]);
     const data = parseMessageData(msg);
     if (data.type === 'crypto_transfer') return `💸 Sent ${data.amount} ETH`;
     if (data.type === 'crypto_request') return `📥 Request: ${data.amount} ETH`;
-    if (data.type === 'media') return data.text ? `📷 ${data.text}` : '📷 Photo';
+    if (data.type === 'media') return data.text ? `📷 ${show(data.text)}` : '📷 Photo';
     if (data.type === 'audio') return `🎤 Voice Note (${data.duration || 0}s)`;
-    return data.text || 'Message';
+    return show(data.text) || 'Message';
   };
+
+  // Quoted-reply reference for an outgoing message: encrypted if this message is encrypted,
+  // otherwise only ever the scrambled form so no plaintext leaks out of a cipher chat
+  const buildReplyRef = (msg) => ({
+    id: msg.id,
+    text: isEncryptingOutgoing ? sealText(getMessageSnippet(msg)) : getMessageSnippet(msg, { locked: true }),
+    sender: msg.senderInboxId === xmtpClient?.inboxId ? 'You' : 'Peer'
+  });
 
   // Memoized Filtered Conversations based on Search, Nicknames, Pinned, and Tabs
   const filteredConversations = useMemo(() => {
@@ -1786,10 +1935,10 @@ export default function Home() {
       }
       if (!inChatSearchQuery.trim()) return true;
       const data = parseMessageData(msg);
-      const text = editedMessages[msg.id] || data.text || data.note || '';
+      const text = revealText(editedMessages[msg.id] || data.text) || revealText(data.note) || '';
       return text.toLowerCase().includes(inChatSearchQuery.toLowerCase());
     });
-  }, [messages, disappearingTimer, inChatSearchQuery, editedMessages]);
+  }, [messages, disappearingTimer, inChatSearchQuery, editedMessages, cipherKeys, activeConversation]);
 
   return (
     <div className={`app-container whatsapp-app-container ${walletAddress ? 'has-wallet' : 'no-wallet'} ${activeConversation ? 'has-active-chat' : 'no-active-chat'}`}>
@@ -2010,11 +2159,13 @@ export default function Home() {
                   <div className="whatsapp-card-row-bottom">
                     <p className="whatsapp-card-snippet">
                       {draftText && !isSelected ? (
-                        <span className="whatsapp-snippet-draft">Draft: {draftText}</span>
+                        <span className="whatsapp-snippet-draft">
+                          Draft: {cipherSettings[convo.id]?.keyHash && !cipherKeys[convo.id] ? '🔒 hidden' : draftText}
+                        </span>
                       ) : (
                         <>
                           <span className="whatsapp-snippet-ticks">✓✓</span>
-                          <span>{convo.latestMessage ? getMessageSnippet(convo.latestMessage) : 'Direct message'}</span>
+                          <span>{convo.latestMessage ? getMessageSnippet(convo.latestMessage, { convoId: convo.id }) : 'Direct message'}</span>
                         </>
                       )}
                     </p>
@@ -2101,7 +2252,10 @@ export default function Home() {
                       <button 
                         type="button" 
                         className="mobile-back-btn" 
-                        onClick={() => setActiveConversation(null)}
+                        onClick={() => {
+                          setActiveConversation(null);
+                          lockAllCiphers();
+                        }}
                         title="Back to conversations"
                         aria-label="Back to conversations"
                       >
@@ -2141,6 +2295,11 @@ export default function Home() {
                             <p className="whatsapp-status online">
                               <span className="status-indicator"></span> 
                               <span>online • E2EE</span>
+                              {activeCipherSetting?.keyHash && (
+                                <span className={`cipher-chip ${isCipherLocked ? 'locked' : 'unlocked'}`}>
+                                  {isCipherLocked ? '🔒 CIPHER' : '🔓 CIPHER'}
+                                </span>
+                              )}
                               {disappearingTimer > 0 && (
                                 <span className="disappearing-chip">
                                   ⏱️ {disappearingTimer === 60 ? '1m' : disappearingTimer === 86400 ? '24h' : '7d'}
@@ -2190,6 +2349,19 @@ export default function Home() {
                         }}
                       >
                         <PixelCoin size={18} color="#ffd166" />
+                      </button>
+
+                      <button 
+                        type="button" 
+                        className={`whatsapp-icon-action cipher-action ${isCipherLocked ? 'locked' : activeCipherKey ? 'unlocked' : ''}`}
+                        title={
+                          !activeCipherSetting?.keyHash
+                            ? 'Playfair Cipher: set a secret key for this chat'
+                            : isCipherLocked ? 'Unlock chat with secret key' : 'Cipher unlocked (click to lock / settings)'
+                        }
+                        onClick={() => setShowCipherModal(true)}
+                      >
+                        <PixelLock size={18} color={isCipherLocked ? '#ff007f' : activeCipherKey ? '#39ff14' : '#d8e2ec'} />
                       </button>
 
                       <button 
@@ -2255,6 +2427,24 @@ export default function Home() {
               );
             })()}
 
+            {/* Playfair Cipher Banner: encrypted messages received but no key set on this device */}
+            {!activeCipherSetting?.keyHash && messages.some(m => isPlayfairEnvelope(editedMessages[m.id] || parseMessageData(m).text)) && (
+              <div className="whatsapp-safety-banner cipher-banner">
+                <div className="safety-banner-left">
+                  <span className="safety-banner-icon"><PixelLock size={18} color="#ffd166" /></span>
+                  <div>
+                    <span style={{ fontWeight: 600 }}>Playfair encrypted: </span>
+                    <span>Some messages here are scrambled. Enter the shared key to read them.</span>
+                  </div>
+                </div>
+                <div className="safety-banner-actions">
+                  <button type="button" className="safety-btn-action" onClick={() => setShowCipherModal(true)}>
+                    🔐 Enter Key
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* In-Chat Search Bar */}
             {showInChatSearch && (
               <div className="whatsapp-inchat-search">
@@ -2282,7 +2472,10 @@ export default function Home() {
                 const isSent = msg.senderInboxId === xmtpClient?.inboxId || (!xmtpClient && msg.senderInboxId !== 'bot-inbox');
                 const isDeleted = deletedMessages[msg.id];
                 const msgData = parseMessageData(msg);
-                const renderedText = editedMessages[msg.id] || msgData.text;
+                const rawText = editedMessages[msg.id] || msgData.text;
+                const isCipherMsg = isPlayfairEnvelope(rawText);
+                const renderedText = revealText(rawText);
+                const isScrambled = isCipherLocked || (isCipherMsg && !activeCipherKey);
                 const isEdited = !!editedMessages[msg.id];
                 const reactions = reactionsMap[msg.id] || [];
                 const isStarred = !!starredMessages[msg.id];
@@ -2331,7 +2524,7 @@ export default function Home() {
                               📋
                             </button>
                           )}
-                          {isSent && msgData.type === 'text' && (
+                          {isSent && msgData.type === 'text' && !isCipherLocked && (
                             <button 
                               type="button" 
                               className="bubble-action-btn" 
@@ -2358,7 +2551,7 @@ export default function Home() {
                       {msgData.replyTo && (
                         <div className="whatsapp-quoted-reply">
                           <div className="quoted-sender">@{msgData.replyTo.sender}</div>
-                          <div className="quoted-text">{msgData.replyTo.text}</div>
+                          <div className="quoted-text">{revealText(msgData.replyTo.text)}</div>
                         </div>
                       )}
 
@@ -2372,7 +2565,7 @@ export default function Home() {
                           {/* Crypto Transfer Receipt Card */}
                           {msgData.type === 'crypto_transfer' && (
                             <CryptoReceipt 
-                              data={msgData} 
+                              data={{ ...msgData, note: revealText(msgData.note) }} 
                               isSent={isSent} 
                               networkName={networkName} 
                               chainId={chainId}
@@ -2394,7 +2587,7 @@ export default function Home() {
                               </div>
                               {msgData.note && (
                                 <div className="crypto-request-note">
-                                  "{msgData.note}"
+                                  &ldquo;{revealText(msgData.note)}&rdquo;
                                 </div>
                               )}
                               <div className="crypto-request-footer">
@@ -2427,14 +2620,18 @@ export default function Home() {
 
                           {/* Voice Note Audio */}
                           {msgData.type === 'audio' && (
-                            <VoiceNotePlayer audioUrl={msgData.audioUrl} duration={msgData.duration} />
+                            isCipherLocked ? (
+                              <div className="whatsapp-cipher-hidden-media">🔒 Voice note ({msgData.duration || 0}s) hidden</div>
+                            ) : (
+                              <VoiceNotePlayer audioUrl={msgData.audioUrl} duration={msgData.duration} />
+                            )
                           )}
 
                           {/* Media Image Attachment */}
                           {msgData.type === 'media' && msgData.media && (
                             <div 
-                              className="whatsapp-bubble-image-wrap"
-                              onClick={() => setLightboxImage(msgData.media)}
+                              className={`whatsapp-bubble-image-wrap ${isCipherLocked ? 'cipher-blurred' : ''}`}
+                              onClick={() => !isCipherLocked && setLightboxImage(msgData.media)}
                             >
                               <img src={msgData.media} alt="Attached Media" />
                             </div>
@@ -2442,8 +2639,8 @@ export default function Home() {
 
                           {/* Text Content with WhatsApp Markdown formatting */}
                           {renderedText && msgData.type !== 'crypto_transfer' && msgData.type !== 'crypto_request' && (
-                            <div className="whatsapp-bubble-text">
-                              {renderWhatsAppMarkdown(renderedText)}
+                            <div className={`whatsapp-bubble-text ${isScrambled ? 'cipher-scrambled' : ''}`}>
+                              {isScrambled ? renderedText : renderWhatsAppMarkdown(renderedText)}
                               {isEdited && <span className="whatsapp-edited-tag">(edited)</span>}
                             </div>
                           )}
@@ -2451,6 +2648,11 @@ export default function Home() {
                           {/* Bubble Footer: Time & Double Ticks */}
                           <div className="whatsapp-bubble-meta">
                             {isStarred && <span className="whatsapp-starred-icon">⭐</span>}
+                            {isCipherMsg && (
+                              <span className="whatsapp-cipher-tag" title={activeCipherKey ? 'Playfair encrypted (unlocked)' : 'Playfair encrypted'}>
+                                {activeCipherKey ? '🔓' : '🔒'}
+                              </span>
+                            )}
                             <span className="whatsapp-time">{msg.sentAt ? formatMessageTime(msg.sentAt) : ''}</span>
                             {isSent && <span className="whatsapp-checks">✓✓</span>}
                           </div>
@@ -2567,7 +2769,14 @@ export default function Home() {
 
               {/* Input Bar Form */}
               <div className="whatsapp-composer-bar">
-                {isRecording ? (
+                {isCipherLocked ? (
+                  <div className="whatsapp-cipher-locked-bar">
+                    <span><PixelLock size={16} color="#ff007f" /> Chat is cipher-locked</span>
+                    <button type="button" className="coffee-btn-primary" onClick={() => setShowCipherModal(true)}>
+                      🔐 Enter Key
+                    </button>
+                  </div>
+                ) : isRecording ? (
                   <div className="whatsapp-recording-bar">
                     <div className="recording-indicator">
                       <div className="rec-dot"></div>
@@ -2648,7 +2857,9 @@ export default function Home() {
                       placeholder={
                         editingMessage 
                           ? "> Edit message buffer..." 
-                          : selectedImage 
+                          : isEncryptingOutgoing
+                            ? "> 🔐 Playfair-encrypted message..."
+                            : selectedImage 
                             ? "> Add photo caption..." 
                             : "> Type a message (*bold*, _italic_, ~strike~, `code`)..."
                       } 
@@ -2738,6 +2949,8 @@ export default function Home() {
           customNickname={customNicknames[activeConversation.peerAddress?.toLowerCase()] || ''}
           onSaveNickname={(nick) => handleSaveNickname(activeConversation.peerAddress, nick)}
           messages={messages}
+          revealText={revealText}
+          isCipherLocked={isCipherLocked}
           starredMessages={starredMessages}
           disappearingTimer={disappearingTimer}
           setDisappearingTimer={handleSetDisappearingTimer}
@@ -2748,6 +2961,23 @@ export default function Home() {
           onOpenLightbox={(img) => setLightboxImage(img)}
           onUnstarMessage={toggleStarMessage}
           onClose={() => setShowContactDrawer(false)}
+        />
+      )}
+
+      {/* Playfair Cipher Chat Lock Modal */}
+      {showCipherModal && activeConversation && (
+        <PlayfairLockModal
+          mode={!activeCipherSetting?.keyHash ? 'setup' : isCipherLocked ? 'unlock' : 'unlocked'}
+          peerName={getContactDisplayName(activeConversation.peerAddress, addressProfiles[activeConversation.peerAddress?.toLowerCase()])}
+          sampleEnvelope={[...messages].reverse().map(m => editedMessages[m.id] || parseMessageData(m).text).find(isPlayfairEnvelope)}
+          encryptOutgoing={!!activeCipherSetting?.encryptOutgoing}
+          unlockedKey={activeCipherKey}
+          onSetupKey={handleSetupCipherKey}
+          onUnlock={handleUnlockCipher}
+          onLock={lockAllCiphers}
+          onToggleEncryptOutgoing={handleToggleEncryptOutgoing}
+          onResetKey={handleResetCipherKey}
+          onClose={() => setShowCipherModal(false)}
         />
       )}
 

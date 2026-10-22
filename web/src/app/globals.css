@@ -6289,3 +6289,190 @@ input:checked + .slider:before {
   color: var(--arcade-cyan);
   transform: translateY(-1px);
 }
+
+/* ===== Playfair Cipher Chat Lock ===== */
+.cipher-chip {
+  font-family: var(--font-arcade);
+  font-size: 0.5rem;
+  margin-left: 4px;
+  padding: 2px 5px;
+  border: 1px solid currentColor;
+  border-radius: 2px;
+}
+
+.cipher-chip.locked {
+  color: var(--arcade-magenta);
+}
+
+.cipher-chip.unlocked {
+  color: var(--arcade-green);
+}
+
+.whatsapp-icon-action.cipher-action.locked {
+  border-color: var(--arcade-magenta);
+}
+
+.whatsapp-icon-action.cipher-action.unlocked {
+  border-color: var(--arcade-green);
+}
+
+.whatsapp-safety-banner.cipher-banner {
+  background: var(--coffee-card);
+  border-left: 4px solid var(--arcade-gold);
+}
+
+.whatsapp-bubble-text.cipher-scrambled {
+  font-family: var(--font-mono);
+  letter-spacing: 0.04em;
+  opacity: 0.85;
+  user-select: none;
+}
+
+.whatsapp-cipher-tag {
+  font-size: 0.7rem;
+  margin-right: 2px;
+}
+
+.whatsapp-cipher-locked-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--coffee-card);
+  border: 2px solid #000;
+  box-shadow: var(--pixel-shadow-sm);
+  border-radius: 4px;
+  font-size: 0.85rem;
+  color: var(--coffee-text-normal);
+}
+
+.whatsapp-cipher-locked-bar > span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.whatsapp-cipher-locked-bar .coffee-btn-primary {
+  padding: 6px 14px;
+  font-size: 0.8rem;
+}
+
+.playfair-modal-card {
+  max-width: calc(100vw - 32px);
+}
+
+.playfair-help {
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: var(--coffee-text-muted);
+  margin-bottom: 16px;
+}
+
+.playfair-key-row {
+  display: flex;
+  gap: 8px;
+}
+
+.playfair-eye-btn {
+  background: var(--coffee-card);
+  border: 1px solid var(--coffee-border);
+  border-radius: 8px;
+  padding: 0 10px;
+  cursor: pointer;
+}
+
+.playfair-error {
+  color: var(--arcade-magenta);
+  font-size: 0.8rem;
+  margin-bottom: 4px;
+}
+
+.playfair-square-wrap {
+  margin-top: 18px;
+}
+
+.playfair-square-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--coffee-text-muted);
+  margin-bottom: 6px;
+}
+
+.playfair-square {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+  max-width: 240px;
+}
+
+.playfair-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 34px;
+  background: var(--coffee-input);
+  border: 1px solid var(--coffee-border);
+  border-radius: 2px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--arcade-cyan);
+}
+
+.playfair-sample {
+  margin: 10px 0 4px;
+  font-size: 0.8rem;
+  color: var(--coffee-text-muted);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  word-break: break-word;
+}
+
+.playfair-sample code {
+  font-family: var(--font-mono);
+  color: var(--arcade-gold);
+}
+
+.playfair-actions {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.playfair-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.playfair-reset-btn {
+  width: 100%;
+  padding: 10px;
+  margin-top: 4px;
+  cursor: pointer;
+}
+
+.cipher-blurred {
+  position: relative;
+  cursor: not-allowed !important;
+}
+
+.cipher-blurred img {
+  filter: blur(18px) saturate(0.4);
+}
+
+.whatsapp-cipher-hidden-media {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--coffee-text-muted);
+  padding: 8px 10px;
+  border: 1px dashed var(--coffee-border);
+  border-radius: 4px;
+}
