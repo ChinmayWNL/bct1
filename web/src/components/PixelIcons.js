@@ -176,6 +176,56 @@ export function PixelSend({ size = 20, color = 'currentColor', style = {}, ...pr
   );
 }
 
+export function PixelSwords({ size = 20, color = '#ff007f', style = {}, ...props }) {
+  return (
+    <span className="pixel-icon-wrap" style={{ display: 'inline-flex', width: size, height: size, color, ...style }} {...props}>
+      <svg viewBox="0 0 24 24" width={size} height={size} fill="currentColor" style={{ shapeRendering: 'crispEdges' }}>
+        <path d="M19 2h3v3h-2v2h-2v2h-2v2h-2v2h-2v2h-2v2H8v2H5v3H2v-3h3v-3h2v-2h2v-2h2v-2h2v-2h2V7h2V5h2V2zm-4 7l2-2 2 2-2 2-2-2zM4 2h3v3H5v2H3v2H1V6h2V4h1V2zm15 15h3v3h-2v2h-2v2h-3v-3h2v-2h2v-2z" />
+      </svg>
+    </span>
+  );
+}
+
+export function PixelDice({ size = 20, color = '#ffd166', style = {}, ...props }) {
+  return (
+    <span className="pixel-icon-wrap" style={{ display: 'inline-flex', width: size, height: size, color, ...style }} {...props}>
+      <svg viewBox="0 0 24 24" width={size} height={size} fill="currentColor" style={{ shapeRendering: 'crispEdges' }}>
+        <path d="M5 3h14v2H5zm-2 2h2v14H3zm16 0h2v14h-2zm-14 14h14v2H5zM7 7h2v2H7zm8 0h2v2h-2zm-4 4h2v2h-2zm-4 4h2v2H7zm8 0h2v2h-2z" />
+      </svg>
+    </span>
+  );
+}
+
+export function PixelHourglass({ size = 20, color = '#ffd166', style = {}, ...props }) {
+  return (
+    <span className="pixel-icon-wrap" style={{ display: 'inline-flex', width: size, height: size, color, ...style }} {...props}>
+      <svg viewBox="0 0 24 24" width={size} height={size} fill="currentColor" style={{ shapeRendering: 'crispEdges' }}>
+        <path d="M4 2h16v2H4zm2 2h12v2H6zm2 2h8v2H8zm2 2h4v2h-4zm1 2h2v2h-2zm-1 2h4v2h-4zm-2 2h8v2H8zm-2 2h12v2H6zm-2 2h16v2H4z" />
+      </svg>
+    </span>
+  );
+}
+
+export function PixelChest({ size = 20, color = '#ffd166', style = {}, ...props }) {
+  return (
+    <span className="pixel-icon-wrap" style={{ display: 'inline-flex', width: size, height: size, color, ...style }} {...props}>
+      <svg viewBox="0 0 24 24" width={size} height={size} fill="currentColor" style={{ shapeRendering: 'crispEdges' }}>
+        <path d="M4 4h16v2H4zm-2 2h2v14H2zm18 0h2v14h-2zm-16 4h16v2H4zm0 8h16v2H4zm7-5h2v3h-2z" />
+      </svg>
+    </span>
+  );
+}
+
+export function PixelTerminal({ size = 20, color = '#39ff14', style = {}, ...props }) {
+  return (
+    <span className="pixel-icon-wrap" style={{ display: 'inline-flex', width: size, height: size, color, ...style }} {...props}>
+      <svg viewBox="0 0 24 24" width={size} height={size} fill="currentColor" style={{ shapeRendering: 'crispEdges' }}>
+        <path d="M3 3h18v2H3zm-1 2h2v14H2zm18 0h2v14h-2zm-17 14h18v2H3zM6 8h2v2H6zm2 2h2v2H8zm-2 2h2v2H6zm6 2h6v2h-6z" />
+      </svg>
+    </span>
+  );
+}
+
 // Complete Catalog of 8-Bit Pixel Emojis for EmojiPicker and Reaction Bars
 export const PIXEL_EMOJI_CATALOG = [
   { id: 'p_smile', name: 'Pixel Smile', char: '😀', Component: PixelSmile, color: '#ffd166' },

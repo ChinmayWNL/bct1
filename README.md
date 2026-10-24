@@ -1,18 +1,23 @@
-# bct1
+## 👾 BlockChat Arcade (BlockChat 2.0)
+### Decentralized 8-Bit Retro Web3 Messenger & Interactive Arcade Hub
 
-## BlockChat 2.0 - Web3 Decentralized Messaging & Crypto Transfer dApp
+BlockChat Arcade is a next-generation decentralized chat platform built on Ethereum and XMTP v3, offering a familiar WhatsApp-like user experience fused with Web3 privacy, wallet connectivity, and an authentic **8-bit retro arcade aesthetic**.
 
-BlockChat 2.0 is a next-generation decentralized chat platform built on Ethereum, offering a familiar WhatsApp-like user experience with Web3 privacy, wallet connectivity, and cryptographic security.
+👉 **For the complete in-depth documentation, architecture diagrams, and working feature breakdown, see [PROJECT_OVERVIEW.md](./PROJECT_OVERVIEW.md).**
 
-### Features
-- **Wallet-to-Wallet Messaging**: Connect via MetaMask or Coinbase Wallet (Ethers.js / Web3Modal).
-- **End-to-End Encryption**: Secure XMTP v3 encryption protocol.
-- **In-Chat Crypto Transfers**: Send ETH/ERC-20 tips directly in chat with live transaction hash generation and receipt generation.
-- **Voice Notes**: In-browser audio recording, interactive waveform visualization, and variable playback speeds (1x, 1.5x, 2x).
-- **WebRTC Voice & Video Calls**: Peer-to-peer audio and video calling modal with mute, camera toggle, and fullscreen controls.
-- **Contact Info & Media Drawer**: Sliding drawer with verified ENS address, media gallery, disappearing message controls, and starred messages.
-- **Playfair Cipher Chat Lock**: Set a secret key per chat (🔒 button in the chat header) and your messages are sent Playfair-encrypted. Anyone who opens the chat without the key sees only scrambled text; both people can read it by entering the shared key. Chats re-lock on reload, when you switch chats, and after 3 minutes idle. Only a hash of the key is stored. It's a privacy screen against people looking over your shoulder, not a replacement for XMTP encryption.
-- **WhatsApp Experience**: Double blue check delivery indicators, typing status, emoji picker, attachment handling, and quick message search.
+### 🌟 Core Working Highlights
+- **Wallet-to-Wallet Messaging**: Pure cryptographic authentication via MetaMask / Web3Modal and XMTP v3 E2EE.
+- **Two-Layer Privacy (Playfair Cipher)**: In-chat secret key matrix shields messages from shoulder-surfers with automatic inactivity locking.
+- **In-Chat Web3 Financials**: Instant ETH tips with block explorer receipts, interactive payment requests, and `/split` bill tools.
+- **1v1 Arcade Duels (`/duel`)**: Interactive commit-reveal Cypher RPS duels with live victory narratives and XP rewards.
+- **Timelocked Vault Capsules (`/capsule`)**: Digital vaults with real-time countdown clocks and unsealing fanfares.
+- **In-Chat Live Polls (`/poll`) & XP Gift Packets (`/gift`)**: Interactive voting bars and provably fair red-envelope drops.
+- **Copilot Slash Terminal (`/`)**: Autocomplete floating palette for `/gas`, `/price`, `/flip`, `/roll`, `/trivia`, and `/export`.
+- **Multiplayer Arcade Party Lobby (`/lobby`)**: Multi-user lobby with simulated squad members (`BlockBot`, `CypherPunk #42`, `PixelKnight`).
+- **WebRTC Voice & Video Calling**: P2P audio and video calls with camera flip, mute, and fullscreen controls.
+- **Web Audio API Sound Studio**: Procedurally generated 8-bit chiptune sound effects with quick mute toggle.
+- **PWA & Desktop Alerts (`/notify`)**: Installable desktop/mobile progressive web app with background notifications.
+- **6 Retro Cabinet Themes**: Arcade Neon, Gameboy Classic, Cyberpunk 2077, Espresso, Latte, and Mocha with dynamic CRT scanlines.
 
 ### Getting Started
 

@@ -5,7 +5,8 @@ import {
   PixelQr,
   PixelCoin,
   PixelSliders,
-  PixelLock
+  PixelLock,
+  PixelAlien
 } from './PixelIcons';
 
 export default function HeroDashboard({
@@ -20,7 +21,8 @@ export default function HeroDashboard({
   onOpenQR,
   onConnectWallet,
   onStartBlockBotChat,
-  onStartDemoMode
+  onStartDemoMode,
+  onCreateGroup
 }) {
   const formatAddress = (addr) => {
     if (!addr) return '';
@@ -90,6 +92,23 @@ export default function HeroDashboard({
               <button type="button" className="coffee-btn-primary" onClick={onStartBlockBotChat} style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}>
                 <PixelRobot size={18} color="#fff" /> CO-OP BLOCKBOT
               </button>
+              {onCreateGroup && (
+                <button
+                  type="button"
+                  className="coffee-btn-secondary"
+                  onClick={onCreateGroup}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    justifyContent: 'center',
+                    borderColor: 'var(--arcade-neon-magenta, #ff007f)',
+                    color: 'var(--arcade-neon-magenta, #ff007f)'
+                  }}
+                >
+                  <PixelAlien size={18} color="var(--arcade-neon-magenta, #ff007f)" /> NEW GROUP
+                </button>
+              )}
               <button type="button" className="coffee-btn-secondary" onClick={onOpenQR} style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}>
                 <PixelQr size={18} /> SHARE QR CODE
               </button>

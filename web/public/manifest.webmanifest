@@ -1,0 +1,12 @@
+{
+  "name": "BlockChat Arcade",
+  "short_name": "BlockChat",
+  "description": "8-bit Web3 messenger with duels, polls, gift packets and crypto tipping.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#12091f",
+  "theme_color": "#12091f",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

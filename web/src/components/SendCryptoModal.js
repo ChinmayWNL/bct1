@@ -7,6 +7,7 @@ export default function SendCryptoModal({
   recipientName, 
   userBalance, 
   signer, 
+  groupMembers = [],
   initialMode = 'send',
   initialAmount = '',
   initialNote = '',
@@ -14,6 +15,7 @@ export default function SendCryptoModal({
   onSuccess 
 }) {
   const [mode, setMode] = useState(initialMode || 'send'); // 'send' | 'request'
+  const [targetAddress, setTargetAddress] = useState(recipientAddress || '');
   const [amount, setAmount] = useState(initialAmount || '');
   const [note, setNote] = useState(initialNote || '');
   const [isSending, setIsSending] = useState(false);
@@ -23,6 +25,7 @@ export default function SendCryptoModal({
 
   const handleSend = async (e) => {
     e.preventDefault();
+    if (isSending) return;
     setErrorMsg('');
 
     const trimmedAmt = amount.trim();
@@ -54,8 +57,9 @@ export default function SendCryptoModal({
     }
 
     // Validate recipient
-    const isBot = recipientAddress?.toLowerCase() === '0x000000000000000000000000000000000000dead';
-    if (!isBot && !ethers.isAddress(recipientAddress)) {
+    const toAddr = (recipientAddress || targetAddress || '').trim();
+    const isBot = toAddr?.toLowerCase() === '0x000000000000000000000000000000000000dead';
+    if (!isBot && !ethers.isAddress(toAddr)) {
       setErrorMsg('Recipient address is not a valid Ethereum address.');
       return;
     }
@@ -71,7 +75,8 @@ export default function SendCryptoModal({
           amount: trimmedAmt,
           txHash: demoHash,
           note: note.trim(),
-          status: 'confirmed'
+          status: 'confirmed',
+          recipient: toAddr
         });
         onClose();
       }, 700);
@@ -81,32 +86,22 @@ export default function SendCryptoModal({
     try {
       setIsSending(true);
       const tx = await signer.sendTransaction({
-        to: recipientAddress,
+        to: toAddr,
         value: weiAmount
       });
 
-      // Optimistically inform parent with broadcast hash
+      // Wait for 1 confirmation
+      await tx.wait(1);
+
       onSuccess({
         type: 'crypto_transfer',
         amount: trimmedAmt,
         txHash: tx.hash,
         note: note.trim(),
-        status: 'pending'
+        status: 'confirmed',
+        recipient: toAddr
       });
       onClose();
-
-      // Monitor confirmation asynchronously
-      tx.wait(1).then((receipt) => {
-        if (receipt && receipt.status === 1) {
-          onSuccess({
-            type: 'crypto_transfer',
-            amount: trimmedAmt,
-            txHash: tx.hash,
-            note: note.trim(),
-            status: 'confirmed'
-          });
-        }
-      }).catch(console.warn);
     } catch (err) {
       console.error("Crypto transfer failed", err);
       if (err.code === 'ACTION_REJECTED' || err.message?.includes('user rejected')) {
@@ -140,11 +135,13 @@ export default function SendCryptoModal({
       return;
     }
 
+    const toAddr = (recipientAddress || targetAddress || '').trim();
     onSuccess({
       type: 'crypto_request',
       amount: trimmedAmt,
       note: note.trim() || 'Payment request ☕',
-      status: 'pending'
+      status: 'pending',
+      recipient: toAddr
     });
     onClose();
   };
@@ -180,16 +177,52 @@ export default function SendCryptoModal({
         </div>
 
         <form onSubmit={mode === 'send' ? handleSend : handleRequest}>
-          {/* Recipient / Peer Card */}
-          <div className="crypto-recipient-card">
-            <div className="crypto-rec-label">
-              {mode === 'send' ? 'Sending to' : 'Requesting from'}
+          {/* Recipient / Peer Card or Picker */}
+          {recipientAddress ? (
+            <div className="crypto-recipient-card">
+              <div className="crypto-rec-label">
+                {mode === 'send' ? 'Sending to' : 'Requesting from'}
+              </div>
+              <div className="crypto-rec-val">
+                <span className="crypto-rec-name">{recipientName ? `@${recipientName}` : 'Peer Wallet'}</span>
+                <span className="crypto-rec-addr">{recipientAddress}</span>
+              </div>
             </div>
-            <div className="crypto-rec-val">
-              <span className="crypto-rec-name">{recipientName ? `@${recipientName}` : 'Peer Wallet'}</span>
-              <span className="crypto-rec-addr">{recipientAddress}</span>
+          ) : (
+            <div className="form-group" style={{ marginBottom: '14px' }}>
+              <label style={{ display: 'block', marginBottom: '6px' }}>
+                {mode === 'send' ? 'Sending to (Select Member or Enter Address)' : 'Requesting from (Select Member or Enter Address)'}
+              </label>
+              {groupMembers && groupMembers.length > 0 ? (
+                <select
+                  className="theme-select font-arcade"
+                  value={targetAddress}
+                  onChange={(e) => setTargetAddress(e.target.value)}
+                  style={{ width: '100%', padding: '10px', background: 'rgba(0,0,0,0.4)', color: '#fff', border: '1px solid var(--border-color)', borderRadius: '6px', fontSize: '0.8rem' }}
+                >
+                  <option value="">-- Select group member --</option>
+                  {groupMembers.map((m, idx) => {
+                    const addr = m.accountIdentifiers?.[0]?.identifier || m.inboxId || '';
+                    return (
+                      <option key={idx} value={addr}>
+                        {addr ? `${addr.slice(0, 8)}…${addr.slice(-6)}` : m.inboxId}
+                      </option>
+                    );
+                  })}
+                </select>
+              ) : (
+                <input
+                  type="text"
+                  className="crypto-amount-input"
+                  style={{ width: '100%', fontSize: '0.85rem', textAlign: 'left', padding: '8px 12px' }}
+                  placeholder="0x... or ENS"
+                  value={targetAddress}
+                  onChange={(e) => setTargetAddress(e.target.value)}
+                  required
+                />
+              )}
             </div>
-          </div>
+          )}
 
           {/* Amount Input */}
           <div className="form-group" style={{ marginTop: '16px' }}>

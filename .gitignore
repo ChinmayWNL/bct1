@@ -41,3 +41,7 @@ Thumbs.db
 
 # Local test instances
 web2/
+
+# Hardhat build outputs
+artifacts/
+cache/

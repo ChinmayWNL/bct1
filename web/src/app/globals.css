@@ -6476,3 +6476,885 @@ input:checked + .slider:before {
   border: 1px dashed var(--coffee-border);
   border-radius: 4px;
 }
+
+/* ==========================================================================
+   PHASE 1: ARCADE DUELS, TIME CAPSULES & COPILOT PALETTE STYLES
+   ========================================================================== */
+
+/* 1. In-Chat 1v1 Arcade Duel Card */
+.arcade-duel-card {
+  width: 100%;
+  max-width: 380px;
+  background: linear-gradient(135deg, rgba(255, 0, 127, 0.12) 0%, rgba(10, 11, 16, 0.95) 50%, rgba(0, 240, 255, 0.1) 100%);
+  border: 2px solid var(--arcade-neon-magenta, #ff007f);
+  border-radius: 6px;
+  padding: 12px;
+  margin: 4px 0;
+  box-shadow: 0 0 16px rgba(255, 0, 127, 0.25), inset 0 0 8px rgba(0, 240, 255, 0.1);
+  color: #fff;
+  image-rendering: pixelated;
+}
+
+.arcade-duel-card.resolved {
+  border-color: var(--arcade-gold, #ffd166);
+  box-shadow: 0 0 16px rgba(255, 209, 102, 0.25);
+}
+
+.duel-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 0, 127, 0.3);
+  padding-bottom: 8px;
+  margin-bottom: 10px;
+}
+
+.duel-title-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-arcade);
+  font-size: 0.72rem;
+  color: var(--arcade-neon-magenta, #ff007f);
+  letter-spacing: 0.5px;
+}
+
+.duel-crypto-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-arcade);
+  font-size: 0.62rem;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid var(--arcade-gold, #ffd166);
+  padding: 2px 6px;
+  border-radius: 3px;
+  color: var(--arcade-gold, #ffd166);
+}
+
+.duel-roster-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.duel-player-pill {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 6px 8px;
+  border-radius: 4px;
+  font-size: 0.78rem;
+  overflow: hidden;
+}
+
+.duel-player-pill.self {
+  border-color: var(--arcade-neon-cyan, #00f0ff);
+  background: rgba(0, 240, 255, 0.08);
+}
+
+.player-tag {
+  font-family: var(--font-arcade);
+  font-size: 0.6rem;
+  color: var(--arcade-gold, #ffd166);
+}
+
+.player-name {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 600;
+}
+
+.revealed-move-icon {
+  font-size: 1.1rem;
+}
+
+.duel-vs-badge {
+  font-family: var(--font-arcade);
+  font-size: 0.68rem;
+  color: var(--arcade-neon-magenta, #ff007f);
+  background: rgba(0, 0, 0, 0.6);
+  padding: 4px 6px;
+  border: 1px dashed var(--arcade-neon-magenta);
+}
+
+.duel-arena-box {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 10px;
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+
+.duel-action-prompt {
+  text-align: center;
+}
+
+.prompt-label {
+  font-family: var(--font-arcade);
+  font-size: 0.64rem;
+  color: var(--arcade-gold, #ffd166);
+  margin-bottom: 8px;
+  letter-spacing: 0.5px;
+}
+
+.duel-buttons-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.duel-move-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--arcade-neon-cyan, #00f0ff);
+  color: #fff;
+  padding: 8px 4px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.duel-move-btn:hover {
+  background: rgba(0, 240, 255, 0.2);
+  transform: translateY(-2px);
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.4);
+}
+
+.duel-move-btn:active, .duel-move-btn.active {
+  background: var(--arcade-neon-cyan, #00f0ff);
+  color: #000;
+}
+
+.move-emoji {
+  font-size: 1.3rem;
+}
+
+.move-name {
+  font-family: var(--font-arcade);
+  font-size: 0.62rem;
+  letter-spacing: 0.5px;
+}
+
+.duel-waiting-message {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.74rem;
+  color: var(--coffee-text-muted);
+  padding: 4px 0;
+}
+
+.pulse-spinner {
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--arcade-neon-cyan, #00f0ff);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.duel-resolved-banner {
+  text-align: center;
+}
+
+.duel-result-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-arcade);
+  font-size: 0.74rem;
+  padding: 6px 12px;
+  border-radius: 3px;
+  margin-bottom: 6px;
+}
+
+.duel-result-tag.victory {
+  background: rgba(57, 255, 20, 0.15);
+  border: 1px solid var(--arcade-neon-green, #39ff14);
+  color: var(--arcade-neon-green, #39ff14);
+  box-shadow: 0 0 12px rgba(57, 255, 20, 0.3);
+}
+
+.duel-result-tag.defeat {
+  background: rgba(255, 0, 127, 0.15);
+  border: 1px solid var(--arcade-neon-magenta, #ff007f);
+  color: var(--arcade-neon-magenta, #ff007f);
+}
+
+.duel-result-tag.draw {
+  background: rgba(255, 209, 102, 0.15);
+  border: 1px solid var(--arcade-gold, #ffd166);
+  color: var(--arcade-gold, #ffd166);
+}
+
+.duel-summary-text {
+  font-size: 0.74rem;
+  color: var(--coffee-text-muted);
+  margin-bottom: 8px;
+}
+
+.duel-rematch-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: 1px dashed var(--arcade-gold, #ffd166);
+  color: var(--arcade-gold, #ffd166);
+  font-family: var(--font-arcade);
+  font-size: 0.64rem;
+  padding: 4px 10px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.duel-rematch-btn:hover {
+  background: rgba(255, 209, 102, 0.15);
+}
+
+.duel-footer-hash {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.6rem;
+  color: var(--coffee-text-dim);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 6px;
+}
+
+/* 2. In-Chat Timelocked Vault Capsule Card */
+.time-capsule-card {
+  width: 100%;
+  max-width: 360px;
+  background: linear-gradient(135deg, rgba(255, 209, 102, 0.1) 0%, rgba(10, 11, 16, 0.95) 100%);
+  border: 2px solid var(--arcade-gold, #ffd166);
+  border-radius: 6px;
+  padding: 12px;
+  margin: 4px 0;
+  box-shadow: 0 0 16px rgba(255, 209, 102, 0.2);
+  color: #fff;
+  image-rendering: pixelated;
+}
+
+.time-capsule-card.ready {
+  border-color: var(--arcade-neon-green, #39ff14);
+  box-shadow: 0 0 18px rgba(57, 255, 20, 0.3);
+}
+
+.time-capsule-card.revealed {
+  border-color: var(--arcade-neon-cyan, #00f0ff);
+  box-shadow: 0 0 14px rgba(0, 240, 255, 0.2);
+}
+
+.capsule-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 209, 102, 0.3);
+  padding-bottom: 6px;
+  margin-bottom: 10px;
+}
+
+.capsule-title-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-arcade);
+  font-size: 0.72rem;
+  color: var(--arcade-gold, #ffd166);
+}
+
+.capsule-status-pill {
+  font-family: var(--font-arcade);
+  font-size: 0.6rem;
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+.capsule-status-pill.sealed {
+  background: rgba(255, 209, 102, 0.15);
+  border: 1px solid var(--arcade-gold);
+  color: var(--arcade-gold);
+}
+
+.capsule-status-pill.ready {
+  background: rgba(57, 255, 20, 0.2);
+  border: 1px solid var(--arcade-neon-green);
+  color: var(--arcade-neon-green);
+  animation: pulse-glow 1s infinite alternate;
+}
+
+.capsule-status-pill.opened {
+  background: rgba(0, 240, 255, 0.15);
+  border: 1px solid var(--arcade-neon-cyan);
+  color: var(--arcade-neon-cyan);
+}
+
+@keyframes pulse-glow {
+  from { opacity: 0.7; }
+  to { opacity: 1; transform: scale(1.02); }
+}
+
+.capsule-vault-body {
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+.capsule-chest-box {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+.capsule-chest-box.shake-pulse {
+  animation: chest-shake 0.8s infinite;
+}
+
+@keyframes chest-shake {
+  0% { transform: translate(0, 0) rotate(0deg); }
+  20% { transform: translate(-2px, 1px) rotate(-1deg); }
+  40% { transform: translate(2px, -1px) rotate(1deg); }
+  60% { transform: translate(-2px, -1px) rotate(-1deg); }
+  80% { transform: translate(2px, 1px) rotate(1deg); }
+  100% { transform: translate(0, 0) rotate(0deg); }
+}
+
+.capsule-custom-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--coffee-text-primary);
+  margin-bottom: 8px;
+}
+
+.capsule-countdown-box {
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 209, 102, 0.2);
+  padding: 10px;
+  border-radius: 4px;
+}
+
+.countdown-label {
+  font-family: var(--font-arcade);
+  font-size: 0.6rem;
+  color: var(--coffee-text-muted);
+  margin-bottom: 4px;
+}
+
+.countdown-digits {
+  font-size: 1.45rem;
+  color: var(--arcade-gold, #ffd166);
+  letter-spacing: 2px;
+  text-shadow: 0 0 10px rgba(255, 209, 102, 0.5);
+}
+
+.countdown-subtext {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 0.68rem;
+  color: var(--coffee-text-dim);
+  margin-top: 6px;
+}
+
+.capsule-ready-box {
+  background: rgba(57, 255, 20, 0.08);
+  border: 1px solid var(--arcade-neon-green, #39ff14);
+  padding: 12px;
+  border-radius: 4px;
+}
+
+.ready-text {
+  font-family: var(--font-arcade);
+  font-size: 0.72rem;
+  color: var(--arcade-neon-green, #39ff14);
+  margin-bottom: 8px;
+}
+
+.capsule-open-btn {
+  background: var(--arcade-neon-green, #39ff14);
+  color: #000;
+  border: none;
+  font-family: var(--font-arcade);
+  font-size: 0.76rem;
+  padding: 8px 16px;
+  border-radius: 3px;
+  cursor: pointer;
+  font-weight: 700;
+  box-shadow: 0 0 12px rgba(57, 255, 20, 0.4);
+  transition: all 0.15s ease;
+}
+
+.capsule-open-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 18px rgba(57, 255, 20, 0.6);
+}
+
+.capsule-revealed-payload {
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid var(--arcade-neon-cyan, #00f0ff);
+  padding: 10px;
+  border-radius: 4px;
+  text-align: left;
+}
+
+.payload-tag {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-arcade);
+  font-size: 0.65rem;
+  color: var(--arcade-neon-green, #39ff14);
+  margin-bottom: 6px;
+}
+
+.payload-content {
+  font-size: 0.88rem;
+  color: #fff;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.payload-timestamp {
+  font-size: 0.64rem;
+  color: var(--coffee-text-dim);
+  margin-top: 6px;
+  text-align: right;
+}
+
+.capsule-footer-meta {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.6rem;
+  color: var(--coffee-text-dim);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 6px;
+}
+
+/* 3. Time Capsule Creator Modal */
+.capsule-modal-card {
+  width: 90%;
+  max-width: 480px;
+}
+
+.capsule-preset-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.capsule-preset-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--coffee-border);
+  color: var(--coffee-text-primary);
+  padding: 8px 4px;
+  border-radius: 4px;
+  font-size: 0.74rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.capsule-preset-btn:hover {
+  border-color: var(--arcade-gold);
+}
+
+.capsule-preset-btn.active {
+  background: rgba(255, 209, 102, 0.15);
+  border-color: var(--arcade-gold);
+  color: var(--arcade-gold);
+  font-weight: 600;
+}
+
+.custom-duration-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.capsule-security-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 209, 102, 0.08);
+  border: 1px dashed var(--arcade-gold);
+  padding: 8px 10px;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  color: var(--coffee-text-muted);
+  margin-top: 14px;
+}
+
+/* 4. Copilot Command Palette (Floating Dropdown) */
+.copilot-palette-floating {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 14px;
+  right: 14px;
+  max-width: 460px;
+  background: rgba(10, 12, 18, 0.96);
+  backdrop-filter: blur(14px);
+  border: 2px solid var(--arcade-neon-cyan, #00f0ff);
+  border-radius: 6px;
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.25), 0 8px 32px rgba(0, 0, 0, 0.8);
+  z-index: 100;
+  overflow: hidden;
+  image-rendering: pixelated;
+}
+
+.copilot-palette-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: rgba(0, 240, 255, 0.08);
+  border-bottom: 1px solid rgba(0, 240, 255, 0.2);
+  font-size: 0.68rem;
+  color: var(--arcade-neon-cyan, #00f0ff);
+}
+
+.copilot-hint-esc {
+  margin-left: auto;
+  font-size: 0.58rem;
+  color: var(--coffee-text-dim);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 1px 4px;
+  border-radius: 2px;
+}
+
+.copilot-palette-list {
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.copilot-palette-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  cursor: pointer;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  transition: all 0.1s ease;
+}
+
+.copilot-palette-item:hover, .copilot-palette-item.active {
+  background: rgba(0, 240, 255, 0.15);
+}
+
+.copilot-item-icon {
+  font-size: 1.15rem;
+  width: 24px;
+  text-align: center;
+}
+
+.copilot-item-info {
+  flex: 1;
+}
+
+.copilot-item-syntax {
+  font-size: 0.72rem;
+  color: var(--arcade-neon-green, #39ff14);
+}
+
+.syntax-detail {
+  color: var(--coffee-text-dim);
+  font-size: 0.65rem;
+  margin-left: 4px;
+}
+
+.copilot-item-desc {
+  font-size: 0.7rem;
+  color: var(--coffee-text-muted);
+  margin-top: 2px;
+}
+
+.copilot-item-enter {
+  font-size: 0.75rem;
+  color: var(--arcade-neon-cyan, #00f0ff);
+  opacity: 0.7;
+}
+
+/* 5. Copilot Widget Cards (In Chat Stream) */
+.copilot-widget-card {
+  width: 100%;
+  max-width: 360px;
+  border-radius: 6px;
+  padding: 12px;
+  margin: 4px 0;
+  color: #fff;
+  image-rendering: pixelated;
+}
+
+.copilot-widget-card .widget-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-arcade);
+  font-size: 0.68rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  padding-bottom: 6px;
+  margin-bottom: 10px;
+}
+
+.copilot-widget-card .widget-footer-meta {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.6rem;
+  color: var(--coffee-text-dim);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 6px;
+  margin-top: 10px;
+}
+
+/* 5a. Flip Card */
+.copilot-widget-card.flip-card {
+  background: linear-gradient(135deg, rgba(255, 209, 102, 0.1) 0%, rgba(10, 11, 16, 0.95) 100%);
+  border: 2px solid var(--arcade-gold, #ffd166);
+  box-shadow: 0 0 16px rgba(255, 209, 102, 0.2);
+}
+
+.flip-center-display {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 8px 0;
+}
+
+.flip-coin-large {
+  font-size: 2.2rem;
+  animation: coin-wobble 0.6s ease;
+}
+
+@keyframes coin-wobble {
+  0% { transform: scale(0.2) rotateY(0deg); }
+  50% { transform: scale(1.2) rotateY(180deg); }
+  100% { transform: scale(1) rotateY(360deg); }
+}
+
+.flip-result-tag {
+  font-size: 1.5rem;
+  color: var(--arcade-gold, #ffd166);
+  letter-spacing: 1px;
+  text-shadow: 0 0 8px rgba(255, 209, 102, 0.4);
+}
+
+/* 5b. Roll Card */
+.copilot-widget-card.roll-card {
+  background: linear-gradient(135deg, rgba(255, 0, 127, 0.1) 0%, rgba(10, 11, 16, 0.95) 100%);
+  border: 2px solid var(--arcade-neon-magenta, #ff007f);
+  box-shadow: 0 0 16px rgba(255, 0, 127, 0.2);
+}
+
+.roll-center-display {
+  text-align: center;
+  padding: 6px 0;
+}
+
+.roll-number {
+  font-size: 2.4rem;
+  color: var(--arcade-neon-magenta, #ff007f);
+  text-shadow: 0 0 12px rgba(255, 0, 127, 0.5);
+}
+
+.roll-badge {
+  font-size: 0.65rem;
+  padding: 2px 6px;
+  display: inline-block;
+  margin-top: 4px;
+  border-radius: 2px;
+}
+
+.roll-badge.crit {
+  background: rgba(57, 255, 20, 0.2);
+  border: 1px solid var(--arcade-neon-green);
+  color: var(--arcade-neon-green);
+}
+
+.roll-badge.fumble {
+  background: rgba(255, 0, 0, 0.2);
+  border: 1px solid #ff4444;
+  color: #ff6666;
+}
+
+/* 5c. Gas Card */
+.copilot-widget-card.gas-card {
+  background: linear-gradient(135deg, rgba(0, 240, 255, 0.08) 0%, rgba(10, 11, 16, 0.95) 100%);
+  border: 2px solid var(--arcade-neon-cyan, #00f0ff);
+  box-shadow: 0 0 16px rgba(0, 240, 255, 0.2);
+}
+
+.gas-matrix-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+}
+
+.gas-net-item {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(0, 240, 255, 0.2);
+  padding: 6px 8px;
+  border-radius: 4px;
+}
+
+.gas-net-name {
+  font-size: 0.68rem;
+  color: var(--coffee-text-muted);
+}
+
+.gas-net-value {
+  font-size: 1.05rem;
+  color: var(--arcade-neon-cyan, #00f0ff);
+  margin: 2px 0;
+}
+
+.gas-net-speed {
+  font-size: 0.6rem;
+  color: var(--arcade-neon-green, #39ff14);
+}
+
+/* 5d. Price Card */
+.copilot-widget-card.price-card {
+  background: linear-gradient(135deg, rgba(57, 255, 20, 0.08) 0%, rgba(10, 11, 16, 0.95) 100%);
+  border: 2px solid var(--arcade-neon-green, #39ff14);
+  box-shadow: 0 0 16px rgba(57, 255, 20, 0.2);
+}
+
+.price-display-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 8px 0;
+}
+
+.price-value {
+  font-size: 1.5rem;
+  color: #fff;
+  letter-spacing: 0.5px;
+}
+
+.price-delta-badge {
+  font-size: 0.78rem;
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+.price-delta-badge.up {
+  background: rgba(57, 255, 20, 0.15);
+  color: var(--arcade-neon-green, #39ff14);
+  border: 1px solid var(--arcade-neon-green);
+}
+
+.price-delta-badge.down {
+  background: rgba(255, 0, 127, 0.15);
+  color: var(--arcade-neon-magenta, #ff007f);
+  border: 1px solid var(--arcade-neon-magenta);
+}
+
+/* 5e. Trivia Card */
+.copilot-widget-card.trivia-card {
+  background: linear-gradient(135deg, rgba(131, 56, 236, 0.15) 0%, rgba(10, 11, 16, 0.95) 100%);
+  border: 2px solid #8338ec;
+  box-shadow: 0 0 16px rgba(131, 56, 236, 0.25);
+}
+
+.trivia-question-text {
+  font-size: 0.85rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--coffee-text-primary);
+  margin-bottom: 10px;
+}
+
+.trivia-options-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.trivia-option-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(131, 56, 236, 0.3);
+  color: #fff;
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-size: 0.76rem;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.trivia-option-btn:hover:not(:disabled) {
+  background: rgba(131, 56, 236, 0.25);
+  border-color: #8338ec;
+}
+
+.trivia-option-btn.correct {
+  background: rgba(57, 255, 20, 0.2) !important;
+  border-color: var(--arcade-neon-green, #39ff14) !important;
+  color: var(--arcade-neon-green, #39ff14) !important;
+  font-weight: 600;
+}
+
+.trivia-option-btn.wrong {
+  background: rgba(255, 0, 127, 0.2) !important;
+  border-color: var(--arcade-neon-magenta, #ff007f) !important;
+  color: var(--arcade-neon-magenta, #ff007f) !important;
+}
+
+.opt-letter {
+  display: inline-block;
+  width: 16px;
+  color: var(--arcade-gold, #ffd166);
+  font-size: 0.72rem;
+}
+
+.opt-text {
+  flex: 1;
+}
+
+.trivia-feedback-banner {
+  margin-top: 8px;
+  padding: 6px 8px;
+  border-radius: 3px;
+  font-family: var(--font-arcade);
+  font-size: 0.65rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.trivia-feedback-banner.correct {
+  background: rgba(57, 255, 20, 0.15);
+  border: 1px solid var(--arcade-neon-green);
+  color: var(--arcade-neon-green);
+}
+
+.trivia-feedback-banner.wrong {
+  background: rgba(255, 0, 127, 0.15);
+  border: 1px solid var(--arcade-neon-magenta);
+  color: var(--arcade-neon-magenta);
+}
+
