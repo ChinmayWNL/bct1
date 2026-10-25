@@ -3938,10 +3938,15 @@ export default function Home() {
     }
   };
 
-  // Send Message (or Save Edit)
-  const handleSendMessage = async (e) => {
-    e.preventDefault();
+  // Send Message (or Save Edit, or Direct Programmatic Share)
+  const handleSendMessage = async (e, directText = null) => {
+    if (e && typeof e.preventDefault === 'function') {
+      e.preventDefault();
+    }
     if (!activeConversation) return;
+
+    const explicitText = typeof e === 'string' ? e : directText;
+    const rawText = explicitText !== null && explicitText !== undefined ? explicitText : inputValue;
 
     // A cipher-locked chat can't send until the key is entered
     if (isCipherLocked) {
@@ -3950,13 +3955,13 @@ export default function Home() {
     }
 
     // Handle saving an edited message
-    if (editingMessage) {
-      if (!inputValue.trim()) return;
+    if (editingMessage && !explicitText) {
+      if (!rawText.trim()) return;
       try {
         // Encrypted messages stay encrypted when edited
         const newText = editingMessage.wasCipher && activeCipherKey
-          ? encryptPlayfair(inputValue.trim(), activeCipherKey)
-          : sealText(inputValue.trim());
+          ? encryptPlayfair(rawText.trim(), activeCipherKey)
+          : sealText(rawText.trim());
         const editPayload = {
           type: 'edit',
           targetId: editingMessage.id,
@@ -3978,8 +3983,8 @@ export default function Home() {
     }
 
     // Intercept Copilot Slash Commands
-    const trimmedInput = inputValue.trim();
-    if (trimmedInput.startsWith('/') && !selectedImage && !editingMessage) {
+    const trimmedInput = rawText.trim();
+    if (trimmedInput.startsWith('/') && !selectedImage && !editingMessage && !explicitText) {
       setShowCopilotPalette(false);
       const parts = trimmedInput.split(/\s+/);
       const command = parts[0].toLowerCase();
@@ -4090,7 +4095,7 @@ export default function Home() {
     }
 
     // Normal Send
-    if (!inputValue.trim() && !selectedImage) return;
+    if (!trimmedInput && !selectedImage) return;
 
     try {
       let payload = {};
@@ -4098,7 +4103,7 @@ export default function Home() {
       if (selectedImage || replyingTo) {
         payload = {
           type: selectedImage ? 'media' : 'text',
-          text: sealText(inputValue.trim()),
+          text: sealText(trimmedInput),
           media: selectedImage ? selectedImage.dataUrl : null,
           replyTo: replyingTo ? buildReplyRef(replyingTo) : null,
           timestamp: new Date().getTime()
@@ -4113,7 +4118,7 @@ export default function Home() {
           };
           setMessages(prev => [...prev, localMsg]);
           if (!isGroupConversation(activeConversation) && activeConversation.id === 'demo-blockbot') {
-            triggerBotReply(inputValue.trim(), selectedImage ? 'media' : 'text');
+            triggerBotReply(trimmedInput, selectedImage ? 'media' : 'text');
           }
         } else {
           await activeConversation.sendText(textPayload);
@@ -4124,30 +4129,32 @@ export default function Home() {
             id: `demo-msg-${new Date().getTime()}`,
             senderInboxId: xmtpClient?.inboxId || 'user-inbox',
             sentAt: new Date().toISOString(),
-            content: sealText(inputValue.trim())
+            content: sealText(trimmedInput)
           };
           setMessages(prev => [...prev, localMsg]);
           if (!isGroupConversation(activeConversation) && activeConversation.id === 'demo-blockbot') {
-            triggerBotReply(inputValue.trim(), 'text');
+            triggerBotReply(trimmedInput, 'text');
           }
         } else {
-          await activeConversation.sendText(sealText(inputValue.trim()));
+          await activeConversation.sendText(sealText(trimmedInput));
         }
       }
 
       playSendPop();
       addArcadeXp(selectedImage ? 15 : 10, 'Message Sent');
-      setInputValue('');
-      if (activeConversation) {
-        setChatDrafts(prev => {
-          const updated = { ...prev };
-          delete updated[activeConversation.id];
-          chatDraftsRef.current = updated;
-          return updated;
-        });
+      if (!explicitText) {
+        setInputValue('');
+        if (activeConversation) {
+          setChatDrafts(prev => {
+            const updated = { ...prev };
+            delete updated[activeConversation.id];
+            chatDraftsRef.current = updated;
+            return updated;
+          });
+        }
+        setSelectedImage(null);
+        setReplyingTo(null);
       }
-      setSelectedImage(null);
-      setReplyingTo(null);
     } catch (err) {
       console.error("Failed to send message", err);
       alert("Failed to send message: " + err.message);
