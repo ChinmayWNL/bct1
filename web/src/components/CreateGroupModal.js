@@ -4,6 +4,7 @@ import { PixelAlien } from './PixelIcons';
 
 export default function CreateGroupModal({ onClose, onCreate, walletAddress }) {
   const [groupName, setGroupName] = useState('');
+  const [groupAvatar, setGroupAvatar] = useState('');
   const [memberInput, setMemberInput] = useState('');
   const [members, setMembers] = useState([]);
   const [isCreating, setIsCreating] = useState(false);
@@ -45,7 +46,7 @@ export default function CreateGroupModal({ onClose, onCreate, walletAddress }) {
     setError('');
     setIsCreating(true);
     try {
-      await onCreate({ groupName: groupName.trim(), members });
+      await onCreate({ groupName: groupName.trim(), members, groupAvatar: groupAvatar.trim() });
     } catch (e) {
       setError(e.message || 'Group creation failed.');
       setIsCreating(false);
@@ -104,12 +105,55 @@ export default function CreateGroupModal({ onClose, onCreate, walletAddress }) {
             width: '100%', boxSizing: 'border-box',
             background: '#0d1117', border: '1px solid #30363d',
             borderRadius: '10px', padding: '10px 14px',
-            color: '#f0f6fc', fontSize: '0.9rem', marginBottom: '18px',
+            color: '#f0f6fc', fontSize: '0.9rem', marginBottom: '16px',
             outline: 'none'
           }}
           onFocus={e => e.target.style.borderColor = 'var(--arcade-neon-blue, #00f0ff)'}
           onBlur={e => e.target.style.borderColor = '#30363d'}
         />
+
+        {/* Group Avatar (Optional) */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '18px' }}>
+          <div style={{
+            width: '46px', height: '46px', borderRadius: '12px',
+            background: 'radial-gradient(circle at 30% 30%, #301934 0%, #161b22 100%)',
+            border: '1.5px solid var(--arcade-neon-magenta, #ff007f)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            overflow: 'hidden', flexShrink: 0,
+            boxShadow: '0 0 12px rgba(255, 0, 127, 0.3)'
+          }}>
+            {groupAvatar ? (
+              <img 
+                src={groupAvatar.startsWith('http') ? groupAvatar : `https://ipfs.io/ipfs/${groupAvatar}`} 
+                alt="Group Avatar Preview" 
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                onError={(e) => { e.currentTarget.style.display = 'none'; }}
+              />
+            ) : (
+              <PixelAlien size={24} color="var(--arcade-neon-magenta, #ff007f)" />
+            )}
+          </div>
+          <div style={{ flex: 1 }}>
+            <label style={{ display: 'block', marginBottom: '4px', fontSize: '0.68rem', color: '#8b9bb4', fontFamily: 'monospace' }}>
+              GROUP AVATAR (OPTIONAL URL / IPFS)
+            </label>
+            <input
+              type="text"
+              value={groupAvatar}
+              onChange={e => setGroupAvatar(e.target.value)}
+              placeholder="https://... or Qm... / bafy..."
+              style={{
+                width: '100%', boxSizing: 'border-box',
+                background: '#0d1117', border: '1px solid #30363d',
+                borderRadius: '8px', padding: '8px 12px',
+                color: '#f0f6fc', fontSize: '0.78rem',
+                outline: 'none'
+              }}
+              onFocus={e => e.target.style.borderColor = 'var(--arcade-neon-magenta, #ff007f)'}
+              onBlur={e => e.target.style.borderColor = '#30363d'}
+            />
+          </div>
+        </div>
 
         {/* Add Members */}
         <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.72rem', color: '#8b9bb4', fontFamily: 'monospace' }}>

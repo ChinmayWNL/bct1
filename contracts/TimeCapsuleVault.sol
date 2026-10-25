@@ -37,10 +37,12 @@ contract TimeCapsuleVault is ReentrancyGuard {
     }
 
     uint256 public nextCapsuleId = 1;
-    uint256 public constant MAX_PAYLOAD_BYTES = 2048;
-    uint256 public constant MAX_TITLE_BYTES = 80;
+    uint256 public constant MAX_PAYLOAD_BYTES = 32768;
+    uint256 public constant MAX_TITLE_BYTES = 120;
 
     mapping(uint256 => Capsule) private capsules;
+
+    fallback() external {}
 
     event CapsuleCreated(
         uint256 indexed capsuleId,

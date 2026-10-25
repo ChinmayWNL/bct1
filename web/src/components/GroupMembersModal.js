@@ -4,10 +4,13 @@ import { PixelAlien } from './PixelIcons';
 
 export default function GroupMembersModal({
   groupName,
+  groupAvatar,
   members = [],
   walletAddress,
+  addressProfiles = {},
   onAddMember,
   onRemoveMember,
+  onUpdateGroupAvatar,
   onClose
 }) {
   const [newMemberInput, setNewMemberInput] = useState('');
@@ -16,6 +19,8 @@ export default function GroupMembersModal({
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [copiedAddr, setCopiedAddr] = useState(null);
+  const [isEditingAvatar, setIsEditingAvatar] = useState(false);
+  const [avatarInput, setAvatarInput] = useState(groupAvatar || '');
 
   const handleCopy = async (addr) => {
     try {
@@ -84,8 +89,31 @@ export default function GroupMembersModal({
       >
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <PixelAlien size={24} color="var(--arcade-neon-magenta, #ff007f)" />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div 
+              style={{
+                width: '42px', height: '42px', borderRadius: '12px',
+                background: 'radial-gradient(circle at 30% 30%, #301934 0%, #161b22 100%)',
+                border: '1.5px solid var(--arcade-neon-magenta, #ff007f)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                overflow: 'hidden', flexShrink: 0,
+                boxShadow: '0 0 12px rgba(255, 0, 127, 0.3)',
+                cursor: onUpdateGroupAvatar ? 'pointer' : 'default'
+              }}
+              onClick={() => onUpdateGroupAvatar && setIsEditingAvatar(prev => !prev)}
+              title={onUpdateGroupAvatar ? "Click to change group avatar" : "Group avatar"}
+            >
+              {groupAvatar ? (
+                <img 
+                  src={groupAvatar.startsWith('http') ? groupAvatar : `https://ipfs.io/ipfs/${groupAvatar}`} 
+                  alt="Group Avatar" 
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                />
+              ) : (
+                <PixelAlien size={24} color="var(--arcade-neon-magenta, #ff007f)" />
+              )}
+            </div>
             <div>
               <h2 style={{
                 margin: 0,
@@ -96,9 +124,23 @@ export default function GroupMembersModal({
               }}>
                 {groupName || 'Group Chat'}
               </h2>
-              <span style={{ fontSize: '0.65rem', color: '#8b9bb4', fontFamily: 'monospace' }}>
-                {members.length} {members.length === 1 ? 'MEMBER' : 'MEMBERS'} ON-CHAIN
-              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
+                <span style={{ fontSize: '0.65rem', color: '#8b9bb4', fontFamily: 'monospace' }}>
+                  {members.length} {members.length === 1 ? 'MEMBER' : 'MEMBERS'} ON-CHAIN
+                </span>
+                {onUpdateGroupAvatar && (
+                  <button
+                    type="button"
+                    onClick={() => setIsEditingAvatar(prev => !prev)}
+                    style={{
+                      background: 'none', border: 'none', color: 'var(--arcade-neon-cyan, #00f0ff)',
+                      fontSize: '0.65rem', cursor: 'pointer', fontFamily: 'monospace', padding: 0
+                    }}
+                  >
+                    {isEditingAvatar ? '✕ Cancel' : '✎ Edit PFP'}
+                  </button>
+                )}
+              </div>
             </div>
           </div>
           <button
@@ -110,6 +152,45 @@ export default function GroupMembersModal({
             }}
           >✕</button>
         </div>
+
+        {/* Change Group Avatar Form */}
+        {isEditingAvatar && onUpdateGroupAvatar && (
+          <div style={{
+            background: 'rgba(255,0,127,0.06)', border: '1px solid rgba(255,0,127,0.3)',
+            borderRadius: '10px', padding: '10px 12px', marginBottom: '16px'
+          }}>
+            <label style={{ display: 'block', fontSize: '0.65rem', color: '#ff007f', fontFamily: 'monospace', marginBottom: '6px' }}>
+              GROUP AVATAR (URL OR IPFS CID)
+            </label>
+            <div style={{ display: 'flex', gap: '6px' }}>
+              <input
+                type="text"
+                value={avatarInput}
+                onChange={e => setAvatarInput(e.target.value)}
+                placeholder="https://... or Qm..."
+                style={{
+                  flex: 1, background: '#0d1117', border: '1px solid #30363d',
+                  borderRadius: '6px', padding: '6px 10px', color: '#fff', fontSize: '0.78rem'
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  onUpdateGroupAvatar(avatarInput.trim());
+                  setIsEditingAvatar(false);
+                  setSuccess('Group avatar updated!');
+                }}
+                style={{
+                  background: 'var(--arcade-neon-magenta, #ff007f)', border: 'none',
+                  borderRadius: '6px', color: '#fff', fontSize: '0.72rem', padding: '6px 12px',
+                  fontWeight: 'bold', cursor: 'pointer'
+                }}
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Status Alerts */}
         {error && (
@@ -199,6 +280,9 @@ export default function GroupMembersModal({
                 const addr = m.accountIdentifiers?.[0]?.identifier || m.inboxId || '';
                 const isMe = addr.toLowerCase() === walletAddress?.toLowerCase();
                 const isBeingRemoved = removingAddr === addr;
+                const memberProf = addr ? addressProfiles[addr.toLowerCase()] : null;
+                const memberName = memberProf?.username ? `@${memberProf.username}` : (addr ? `${addr.slice(0, 8)}…${addr.slice(-6)}` : `Member #${idx + 1}`);
+                const memberAvatar = memberProf?.profilePictureCID;
 
                 return (
                   <div
@@ -214,15 +298,38 @@ export default function GroupMembersModal({
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
-                      <span style={{ fontSize: '13px' }}>👾</span>
-                      <span style={{
-                        fontFamily: 'monospace',
-                        fontSize: '0.75rem',
-                        color: isMe ? '#00f0ff' : '#c9d1d9',
-                        fontWeight: isMe ? '600' : 'normal'
+                      <div style={{
+                        width: '24px', height: '24px', borderRadius: '50%',
+                        overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        background: '#21262d', border: '1px solid rgba(255,255,255,0.1)', flexShrink: 0
                       }}>
-                        {addr ? `${addr.slice(0, 8)}…${addr.slice(-6)}` : `Member #${idx + 1}`}
-                      </span>
+                        {memberAvatar ? (
+                          <img 
+                            src={memberAvatar.startsWith('http') ? memberAvatar : `https://ipfs.io/ipfs/${memberAvatar}`} 
+                            alt={memberName} 
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                            onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                          />
+                        ) : (
+                          <span style={{ fontSize: '11px' }}>👾</span>
+                        )}
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                        <span style={{
+                          fontFamily: 'monospace',
+                          fontSize: '0.75rem',
+                          color: isMe ? '#00f0ff' : '#c9d1d9',
+                          fontWeight: isMe ? '600' : 'normal',
+                          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
+                        }}>
+                          {memberName}
+                        </span>
+                        {memberProf?.username && addr && (
+                          <span style={{ fontSize: '0.62rem', color: '#6e7681', fontFamily: 'monospace' }}>
+                            {addr.slice(0, 6)}…{addr.slice(-4)}
+                          </span>
+                        )}
+                      </div>
                       {isMe && (
                         <span style={{
                           fontSize: '0.55rem',

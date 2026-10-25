@@ -176,6 +176,16 @@
   box-shadow: 2px 2px 0 #000, 0 0 14px var(--glow-accent);
 }
 .whatsapp-card-avatar-wrap .avatar.bot-avatar { color: var(--arcade-magenta); box-shadow: 2px 2px 0 #000, 0 0 12px rgba(255, 0, 127, 0.35); }
+.whatsapp-card-avatar-wrap .avatar.group-avatar,
+.whatsapp-header-contact .avatar.group-avatar {
+  border-color: var(--arcade-neon-magenta, #ff007f);
+  box-shadow: 2px 2px 0 #000, 0 0 12px rgba(255, 0, 127, 0.45);
+  background: radial-gradient(circle at 30% 30%, #301934 0%, #161b22 100%);
+}
+.whatsapp-status-dot.group {
+  background: var(--arcade-neon-magenta, #ff007f);
+  box-shadow: 0 0 6px rgba(255, 0, 127, 0.7);
+}
 .whatsapp-status-dot.online { animation: statusBlink 2.4s ease-in-out infinite; }
 .whatsapp-chat-card.active .whatsapp-card-title { color: var(--coffee-accent); }
 .whatsapp-unread-badge { animation: badgePulse 1.8s ease-in-out infinite; }
@@ -480,6 +490,237 @@
 .copilot-palette-item.active { border-left-color: var(--arcade-neon-cyan); }
 
 /* --------------------------------------------------------------------------
+   9.1 Upgraded Time Capsule: Themes, Progress Tracks, Photo Memories & Urgency
+   -------------------------------------------------------------------------- */
+.time-capsule-card {
+  transition: transform 0.15s var(--ease-out), box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.time-capsule-card.theme-chronos {
+  background: linear-gradient(135deg, rgba(255, 209, 102, 0.12) 0%, rgba(10, 11, 16, 0.95) 100%) !important;
+}
+
+.time-capsule-card.theme-birthday {
+  background: linear-gradient(135deg, rgba(255, 0, 127, 0.14) 0%, rgba(255, 209, 102, 0.06) 50%, rgba(10, 11, 16, 0.95) 100%) !important;
+}
+
+.time-capsule-card.theme-classified {
+  background: linear-gradient(135deg, rgba(0, 240, 255, 0.12) 0%, rgba(255, 51, 102, 0.08) 50%, rgba(10, 11, 16, 0.95) 100%) !important;
+}
+
+.time-capsule-card.theme-cosmic {
+  background: linear-gradient(135deg, rgba(176, 38, 255, 0.15) 0%, rgba(0, 240, 255, 0.07) 50%, rgba(10, 11, 16, 0.95) 100%) !important;
+}
+
+/* Progress Track & Fill */
+.capsule-progress-track {
+  width: 100%;
+  height: 8px;
+  background: rgba(0, 0, 0, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+  overflow: hidden;
+  margin: 8px 0 4px;
+}
+
+.capsule-progress-fill {
+  height: 100%;
+  transition: width 0.4s ease;
+  border-radius: 3px;
+  background-size: 16px 16px;
+  background-image: linear-gradient(45deg, rgba(255, 255, 255, 0.15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0.15) 75%, transparent 75%, transparent);
+  animation: xpStripe 1.5s linear infinite;
+}
+
+.capsule-progress-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--font-arcade);
+  font-size: 0.58rem;
+  color: var(--coffee-text-dim);
+  letter-spacing: 0.04em;
+}
+
+/* Urgent Alert Mode (< 60s) */
+.capsule-chest-box.urgent-pulse {
+  animation: chest-urgent 0.5s infinite alternate !important;
+}
+
+@keyframes chest-urgent {
+  0% { transform: scale(1); filter: drop-shadow(0 0 6px rgba(255, 0, 127, 0.6)); }
+  100% { transform: scale(1.08); filter: drop-shadow(0 0 16px rgba(255, 209, 102, 0.9)); }
+}
+
+.countdown-digits.urgent-text {
+  animation: urgentBlink 0.6s infinite alternate;
+}
+
+@keyframes urgentBlink {
+  0% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0.85; transform: scale(1.03); }
+}
+
+/* Photo Memory Unsealed */
+.capsule-revealed-photo-wrap {
+  margin-top: 10px;
+  background: #000;
+  border: 2px solid var(--arcade-neon-green, #39ff14);
+  box-shadow: 0 0 14px rgba(57, 255, 20, 0.3), 3px 3px 0 #000;
+  border-radius: 4px;
+  padding: 6px;
+  text-align: center;
+}
+
+.capsule-revealed-photo {
+  max-width: 100%;
+  max-height: 220px;
+  object-fit: cover;
+  border-radius: 2px;
+  cursor: pointer;
+  display: block;
+  margin: 0 auto;
+  transition: transform 0.15s ease;
+}
+
+.capsule-revealed-photo:hover {
+  transform: scale(1.02);
+}
+
+.photo-revealed-caption {
+  display: block;
+  font-size: 0.58rem;
+  color: var(--arcade-neon-green, #39ff14);
+  letter-spacing: 0.06em;
+  margin-top: 5px;
+}
+
+.capsule-eth-claimed-banner {
+  margin-top: 8px;
+  padding: 6px 10px;
+  background: rgba(255, 209, 102, 0.15);
+  border: 1px solid var(--arcade-gold, #ffd166);
+  border-radius: 3px;
+  font-size: 0.66rem;
+  color: var(--arcade-gold, #ffd166);
+  text-align: center;
+}
+
+.capsule-open-btn.secondary {
+  background: var(--coffee-card);
+  color: #fff;
+  border: 1px solid var(--arcade-neon-cyan, #00f0ff);
+  box-shadow: 2px 2px 0 #000;
+  font-size: 0.7rem;
+  padding: 6px 12px;
+}
+
+.capsule-open-btn.secondary:hover {
+  background: rgba(0, 240, 255, 0.15);
+  box-shadow: 3px 3px 0 #000, 0 0 10px rgba(0, 240, 255, 0.4);
+}
+
+/* Modal Themes Grid */
+.capsule-theme-selector-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.capsule-theme-pill {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 2px solid transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: left;
+  transition: transform 0.12s ease, border-color 0.15s ease, background 0.15s ease;
+}
+
+.capsule-theme-pill:hover {
+  transform: translateY(-2px);
+}
+
+.capsule-theme-pill.active {
+  box-shadow: 2px 2px 0 #000;
+}
+
+.theme-pill-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.theme-pill-name {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.theme-pill-tag {
+  font-size: 0.58rem;
+  color: var(--coffee-text-muted);
+}
+
+.capsule-recipient-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  font-size: 0.75rem;
+  color: #e2e8f0;
+}
+
+.capsule-attach-photo-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px dashed rgba(255, 255, 255, 0.25);
+  border-radius: 4px;
+  color: var(--coffee-text-muted);
+  font-size: 0.76rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.capsule-attach-photo-btn:hover {
+  border-color: var(--arcade-neon-cyan, #00f0ff);
+  color: #fff;
+  background: rgba(0, 240, 255, 0.08);
+}
+
+.capsule-modal-photo-preview {
+  position: relative;
+  background: #000;
+  border: 2px solid var(--arcade-gold, #ffd166);
+  border-radius: 4px;
+  padding: 4px;
+  text-align: center;
+}
+
+.capsule-modal-photo-preview img {
+  max-height: 120px;
+  max-width: 100%;
+  object-fit: cover;
+  border-radius: 2px;
+}
+
+.photo-preview-badge {
+  display: block;
+  font-size: 0.6rem;
+  color: var(--arcade-gold, #ffd166);
+  margin-top: 4px;
+}
+
+/* --------------------------------------------------------------------------
    10. Keyframes
    -------------------------------------------------------------------------- */
 @keyframes bubbleIn {
@@ -524,13 +765,688 @@
 }
 
 /* --------------------------------------------------------------------------
-   11. Responsive + accessibility
+   11. Comprehensive Mobile Adaptations (Smartphones & Tablets <= 768px / <= 480px)
    -------------------------------------------------------------------------- */
 @media (max-width: 768px) {
-  .whatsapp-bubble { max-width: 88%; }
-  .whatsapp-messages-stream { padding: 16px 12px; }
-  .whatsapp-chat-card:hover { transform: none; }
-  .modal-card { max-height: calc(100vh - 16px); }
+  html, body {
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100vw !important;
+    height: 100dvh !important;
+    min-height: 100dvh !important;
+    overflow: hidden !important;
+    position: fixed !important;
+    inset: 0 !important;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  .app-container {
+    width: 100vw !important;
+    height: 100dvh !important;
+    max-width: 100vw !important;
+    border-radius: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    position: absolute !important;
+    inset: 0 !important;
+  }
+
+  /* 11.1 Single-Pane Navigation Switching */
+  .whatsapp-sidebar {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    min-width: 100vw !important;
+  }
+
+  .app-container.has-active-chat .whatsapp-sidebar {
+    display: none !important;
+  }
+
+  .app-container.has-active-chat .whatsapp-chat-area {
+    display: flex !important;
+    width: 100vw !important;
+    height: 100dvh !important;
+  }
+
+  .app-container.no-active-chat .whatsapp-sidebar {
+    display: flex !important;
+    width: 100vw !important;
+    height: 100dvh !important;
+  }
+
+  .app-container.no-active-chat .whatsapp-chat-area {
+    display: none !important;
+  }
+
+  .mobile-back-btn {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 34px !important;
+    height: 34px !important;
+    min-width: 34px !important;
+    font-size: 1.15rem !important;
+    border-radius: 4px !important;
+    background: var(--coffee-card) !important;
+    border: 1px solid var(--arcade-neon-cyan, #00f0ff) !important;
+    color: var(--arcade-neon-cyan, #00f0ff) !important;
+    cursor: pointer !important;
+    flex-shrink: 0 !important;
+    transition: transform 0.08s ease, background 0.12s ease;
+  }
+
+  .mobile-back-btn:active {
+    transform: scale(0.92);
+    background: rgba(0, 240, 255, 0.15) !important;
+  }
+
+  /* 11.2 Active Chat Header */
+  .whatsapp-active-header {
+    height: 58px !important;
+    padding: 0 10px !important;
+    padding-top: env(safe-area-inset-top, 0px) !important;
+  }
+
+  .whatsapp-header-inner {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 6px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .whatsapp-header-left {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    flex: 1 !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .whatsapp-header-contact {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    flex: 1 !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .whatsapp-header-contact .avatar {
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px !important;
+    font-size: 0.75rem !important;
+    flex-shrink: 0 !important;
+  }
+
+  .whatsapp-header-meta {
+    flex: 1 !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .whatsapp-header-name {
+    font-size: 0.74rem !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  .whatsapp-header-members-subtitle {
+    font-size: 0.58rem !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  .whatsapp-status {
+    font-size: 0.65rem !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  .whatsapp-header-actions {
+    flex-shrink: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+  }
+
+  /* Collapse secondary header dApp buttons to preserve counterparty info */
+  .whatsapp-header-actions .tip-action,
+  .whatsapp-header-actions .duel-action,
+  .whatsapp-header-actions .capsule-action {
+    display: none !important;
+  }
+
+  .whatsapp-icon-action {
+    width: 34px !important;
+    height: 34px !important;
+    min-width: 34px !important;
+    padding: 0 !important;
+  }
+
+  /* 11.3 Message Bubbles & Feed */
+  .whatsapp-messages-stream {
+    padding: 12px 10px !important;
+    gap: 10px !important;
+  }
+
+  .whatsapp-bubble {
+    max-width: 90% !important;
+    padding: 8px 12px !important;
+    word-break: break-word !important;
+    overflow-wrap: anywhere !important;
+  }
+
+  .whatsapp-chat-card:hover {
+    transform: none !important;
+  }
+
+  /* Interactive cards inside mobile bubbles */
+  .arcade-duel-card,
+  .time-capsule-card,
+  .crypto-request-card,
+  .crypto-receipt,
+  .copilot-widget-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    margin: 4px 0 !important;
+  }
+
+  .duel-moves-row {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 4px !important;
+  }
+
+  .duel-move-btn {
+    padding: 6px 4px !important;
+    font-size: 0.66rem !important;
+  }
+
+  /* 11.4 Mobile Composer */
+  .whatsapp-composer-container {
+    padding: 8px 10px calc(8px + env(safe-area-inset-bottom, 0px)) 10px !important;
+    background: rgba(14, 10, 24, 0.96) !important;
+  }
+
+  .whatsapp-composer-form {
+    gap: 6px !important;
+    width: 100% !important;
+  }
+
+  /* Hide secondary shortcuts to keep 75%+ screen width for text input */
+  .whatsapp-composer-icon.composer-extra-btn {
+    display: none !important;
+  }
+
+  .whatsapp-composer-icon {
+    width: 34px !important;
+    height: 34px !important;
+    min-width: 34px !important;
+    padding: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex-shrink: 0 !important;
+  }
+
+  .whatsapp-input-field {
+    /* Critical iOS rule: font-size >= 16px eliminates automatic Safari zoom on focus */
+    font-size: 16px !important;
+    padding: 8px 12px !important;
+    min-height: 40px !important;
+    border-radius: 6px !important;
+  }
+
+  .whatsapp-send-btn {
+    width: 40px !important;
+    height: 40px !important;
+    min-width: 40px !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* 11.5 Sidebar Top Header & Filter Navigation */
+  .whatsapp-sidebar-header {
+    padding: 10px 12px !important;
+    padding-top: calc(10px + env(safe-area-inset-top, 0px)) !important;
+  }
+
+  .whatsapp-filter-pills {
+    overflow-x: auto !important;
+    flex-wrap: nowrap !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+    padding-bottom: 2px !important;
+  }
+
+  .whatsapp-filter-pills::-webkit-scrollbar {
+    display: none;
+  }
+
+  .whatsapp-filter-pill {
+    flex-shrink: 0 !important;
+    white-space: nowrap !important;
+  }
+
+  /* 11.6 Modals as Native Mobile Bottom Sheets */
+  .modal-overlay {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    height: 100dvh !important;
+    display: flex !important;
+    align-items: flex-end !important;
+    justify-content: center !important;
+    padding: 0 !important;
+    z-index: 1000 !important;
+    background: rgba(0, 0, 0, 0.78) !important;
+    backdrop-filter: blur(8px) !important;
+  }
+
+  .modal-card,
+  .create-group-modal,
+  .group-members-modal {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    border-radius: 20px 20px 0 0 !important;
+    border-bottom: none !important;
+    border-left: none !important;
+    border-right: none !important;
+    max-height: 86dvh !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding: 20px 16px calc(24px + env(safe-area-inset-bottom, 0px)) 16px !important;
+    animation: mobileSheetUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  }
+
+  .modal-card input,
+  .create-group-modal input,
+  .group-members-modal input {
+    font-size: 16px !important;
+  }
+
+  /* 11.7 Contact Drawer Full Screen on Mobile */
+  .contact-drawer-panel {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    height: 100dvh !important;
+    border-radius: 0 !important;
+    border: none !important;
+  }
+
+  /* 11.8 WebRTC Voice & Video Full Screen */
+  .call-overlay {
+    padding: 0 !important;
+  }
+
+  .call-modal-card {
+    width: 100vw !important;
+    height: 100dvh !important;
+    max-width: 100vw !important;
+    max-height: 100dvh !important;
+    border-radius: 0 !important;
+    border: none !important;
+  }
+}
+
+/* Extra Small Phones (<= 480px) */
+@media (max-width: 480px) {
+  .whatsapp-active-header {
+    height: 54px !important;
+    padding: 0 6px !important;
+  }
+
+  .whatsapp-header-actions .cipher-action {
+    display: none !important;
+  }
+
+  .whatsapp-icon-action {
+    width: 32px !important;
+    height: 32px !important;
+    min-width: 32px !important;
+  }
+
+  .whatsapp-bubble {
+    max-width: 93% !important;
+  }
+
+  .whatsapp-sidebar-rank span:last-child {
+    display: none !important;
+  }
+
+  .whatsapp-sidebar-header .whatsapp-header-actions {
+    gap: 2px !important;
+  }
+
+  .whatsapp-icon-btn {
+    width: 32px !important;
+    height: 32px !important;
+    min-width: 32px !important;
+  }
+}
+
+@keyframes mobileSheetUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   12. Mobile Arcade Hub & Mobile Header Menu Bottom-Sheets
+   -------------------------------------------------------------------------- */
+.mobile-arcade-hub-btn {
+  display: none !important;
+}
+
+@media (max-width: 768px) {
+  .mobile-arcade-hub-btn {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px !important;
+    border-radius: 6px !important;
+    background: rgba(255, 0, 127, 0.12) !important;
+    border: 1.5px solid var(--arcade-neon-magenta, #ff007f) !important;
+    box-shadow: 0 0 10px rgba(255, 0, 127, 0.3) !important;
+    transition: transform 0.08s ease, box-shadow 0.12s ease !important;
+  }
+
+  .mobile-arcade-hub-btn:active {
+    transform: scale(0.92) !important;
+    background: rgba(255, 0, 127, 0.25) !important;
+  }
+
+  .mobile-sheet-overlay {
+    background: rgba(0, 0, 0, 0.78) !important;
+    backdrop-filter: blur(8px) !important;
+  }
+
+  .mobile-sheet-handle-bar {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    padding: 2px 0 10px;
+    cursor: pointer;
+  }
+
+  .mobile-sheet-handle {
+    width: 40px;
+    height: 4px;
+    border-radius: 2px;
+    background: rgba(255, 255, 255, 0.25);
+  }
+
+  /* Arcade Hub Drawer */
+  .mobile-arcade-hub-sheet {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    border-radius: 22px 22px 0 0 !important;
+    background: linear-gradient(180deg, #181128 0%, #0c0816 100%) !important;
+    border: none !important;
+    border-top: 2px solid var(--arcade-neon-magenta, #ff007f) !important;
+    box-shadow: 0 -10px 35px rgba(255, 0, 127, 0.35) !important;
+    padding: 12px 14px calc(24px + env(safe-area-inset-bottom, 0px)) 14px !important;
+    animation: mobileSheetUp 0.24s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  }
+
+  .mobile-arcade-hub-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding-bottom: 10px;
+    margin-bottom: 12px;
+  }
+
+  .hub-title-box {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .hub-title {
+    font-size: 0.88rem;
+    color: var(--arcade-neon-magenta, #ff007f);
+    margin: 0;
+    letter-spacing: 0.05em;
+  }
+
+  .hub-subtitle {
+    font-size: 0.65rem;
+    color: var(--coffee-text-muted);
+    margin: 2px 0 0;
+  }
+
+  .mobile-arcade-hub-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    max-height: 56dvh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 2px;
+  }
+
+  .hub-action-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1.5px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 10px 8px;
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    cursor: pointer;
+    transition: transform 0.1s ease, border-color 0.12s ease, background 0.12s ease;
+    min-height: 94px;
+  }
+
+  .hub-action-card:active {
+    transform: scale(0.95);
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  .hub-action-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 6px;
+  }
+
+  .hub-action-icon-wrap {
+    width: 36px;
+    height: 36px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1.5px solid;
+    flex-shrink: 0;
+  }
+
+  .hub-action-badge {
+    font-size: 0.52rem;
+    padding: 2px 4px;
+    border-radius: 3px;
+    border: 1px solid;
+    letter-spacing: 0.04em;
+    font-weight: 700;
+  }
+
+  .hub-action-body {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .hub-action-name {
+    font-size: 0.68rem;
+    font-weight: 700;
+    line-height: 1.2;
+    display: block;
+    letter-spacing: 0.03em;
+  }
+
+  .hub-action-desc {
+    font-size: 0.56rem;
+    color: var(--coffee-text-muted);
+    line-height: 1.25;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .mobile-hub-footer-hint {
+    margin-top: 10px;
+    padding: 8px 10px;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+    font-size: 0.68rem;
+    color: var(--coffee-text-muted);
+    text-align: center;
+  }
+
+  .mobile-hub-footer-hint code {
+    color: var(--arcade-neon-cyan, #00f0ff);
+    font-weight: 700;
+  }
+
+  /* Header Overflow Menu Sheet */
+  .mobile-header-menu-sheet {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    border-radius: 22px 22px 0 0 !important;
+    background: linear-gradient(180deg, #151222 0%, #0c0916 100%) !important;
+    border: none !important;
+    border-top: 2px solid var(--arcade-gold, #ffd166) !important;
+    box-shadow: 0 -10px 35px rgba(255, 209, 102, 0.3) !important;
+    padding: 12px 14px calc(24px + env(safe-area-inset-bottom, 0px)) 14px !important;
+    animation: mobileSheetUp 0.24s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  }
+
+  .mobile-header-menu-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding-bottom: 10px;
+    margin-bottom: 10px;
+  }
+
+  .mobile-header-menu-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 60dvh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .mobile-menu-item {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.12s ease, transform 0.08s ease;
+  }
+
+  .mobile-menu-item:active {
+    transform: scale(0.98);
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  .mobile-menu-item.danger {
+    border-color: rgba(255, 0, 127, 0.3);
+  }
+
+  .menu-item-icon {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .menu-item-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .menu-item-title {
+    font-size: 0.74rem;
+    color: #fff;
+    letter-spacing: 0.03em;
+  }
+
+  .menu-item-desc {
+    font-size: 0.62rem;
+    color: var(--coffee-text-muted);
+  }
+
+  .timer-selector-item {
+    cursor: default;
+  }
+
+  .timer-selector-item:active {
+    transform: none;
+  }
+
+  .timer-pills-row {
+    display: flex;
+    gap: 6px;
+    margin-top: 6px;
+  }
+
+  .timer-pill-btn {
+    padding: 4px 10px;
+    font-family: var(--font-arcade);
+    font-size: 0.66rem;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 4px;
+    color: #fff;
+    cursor: pointer;
+    transition: all 0.12s ease;
+  }
+
+  .timer-pill-btn.active {
+    border-color: var(--arcade-gold, #ffd166);
+    background: rgba(255, 209, 102, 0.2);
+    color: var(--arcade-gold, #ffd166);
+    font-weight: 700;
+    box-shadow: 0 0 8px rgba(255, 209, 102, 0.3);
+  }
+}
+
+@media (max-width: 360px) {
+  .mobile-arcade-hub-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

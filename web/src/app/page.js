@@ -39,6 +39,8 @@ import PollCard from '@/components/PollCard';
 import GiftPacketCard from '@/components/GiftPacketCard';
 import CreateGroupModal from '@/components/CreateGroupModal';
 import GroupMembersModal from '@/components/GroupMembersModal';
+import MobileArcadeHub from '@/components/MobileArcadeHub';
+import MobileHeaderMenu from '@/components/MobileHeaderMenu';
 import { applyInteraction, giftClaimList, buildChatExport, downloadTextFile } from '@/utils/interactions';
 import {
   executeCoinFlip,
@@ -209,6 +211,9 @@ export default function Home() {
   // XMTP Groups State
   const [showCreateGroupModal, setShowCreateGroupModal] = useState(false);
   const [showGroupMembersModal, setShowGroupMembersModal] = useState(false);
+  // Mobile UI Action Hub & Header Menu States
+  const [showMobileArcadeHub, setShowMobileArcadeHub] = useState(false);
+  const [showMobileHeaderMenu, setShowMobileHeaderMenu] = useState(false);
   // groupMembersCache: { [convoId]: GroupMember[] } – cached after first load
   const [groupMembersCache, setGroupMembersCache] = useState({});
 
@@ -273,6 +278,38 @@ export default function Home() {
 
   // 1. Custom Nicknames Address Book
   const [customNicknames, setCustomNicknames] = useState({});
+
+  // Group Avatars Store (persisted locally and synced with XMTP group imageUrl)
+  const [groupAvatars, setGroupAvatars] = useState({});
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('blockchat_group_avatars');
+      if (saved) setGroupAvatars(JSON.parse(saved));
+    } catch (e) {}
+  }, []);
+
+  const handleUpdateGroupAvatar = async (groupId, avatarUrl) => {
+    const clean = (avatarUrl || '').trim();
+    setGroupAvatars(prev => {
+      const updated = { ...prev, [groupId]: clean };
+      try {
+        localStorage.setItem('blockchat_group_avatars', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+
+    if (activeConversation && activeConversation.id === groupId) {
+      activeConversation.imageUrl = clean;
+      if (typeof activeConversation.updateImageUrl === 'function') {
+        try {
+          await activeConversation.updateImageUrl(clean);
+        } catch (e) {
+          console.warn('Could not update XMTP group imageUrl', e);
+        }
+      }
+      setConversations(prev => [...prev]);
+    }
+  };
 
   // 2. Per-Chat Drafts Memory
   const [chatDrafts, setChatDrafts] = useState({});
@@ -908,7 +945,15 @@ export default function Home() {
   };
 
   // Timelocked Capsule Handlers (enforced on-chain by TimeCapsuleVault)
-  const handleSendTimeCapsule = async ({ title, sealedText, durationSeconds, ethAmount = '0' }) => {
+  const handleSendTimeCapsule = async ({ 
+    title, 
+    sealedText, 
+    durationSeconds, 
+    ethAmount = '0', 
+    theme = 'chronos', 
+    media = null, 
+    recipient = null 
+  }) => {
     if (!signer || !provider) {
       throw new Error('Connect a wallet to seal a capsule on-chain.');
     }
@@ -917,25 +962,53 @@ export default function Home() {
       throw new Error('TimeCapsuleVault is not deployed on this network. Run: npx hardhat run scripts/deploy.js --network <network>');
     }
 
-    // In the solo BlockBot chat the bot has no wallet, so seal the capsule to yourself.
-    const recipient = activeConversation?.isDemoBot
-      ? walletAddress
-      : activeConversation?.peerAddress;
-    if (!recipient || !ethers.isAddress(recipient)) {
-      throw new Error('This conversation has no valid recipient wallet address.');
+    // Support group chats, demo bot, and 1v1
+    const targetRecipient = recipient || (
+      activeConversation?.isDemoBot
+        ? walletAddress
+        : activeConversation?.peerAddress
+    );
+    if (!targetRecipient || !ethers.isAddress(targetRecipient)) {
+      throw new Error('Please select a valid recipient wallet address for this capsule.');
     }
 
+    const nowSec = Math.floor(Date.now() / 1000);
     const latestBlock = await provider.getBlock('latest');
-    const unlockSec = Number(latestBlock.timestamp) + Math.max(5, Math.round(durationSeconds));
+    const blockSec = Number(latestBlock?.timestamp || nowSec);
+    const baseSec = Math.max(nowSec, blockSec);
+    const unlockSec = baseSec + Math.max(10, Math.round(durationSeconds));
+
+    // Query on-chain nonce to prevent MetaMask nonce desync on Localhost
+    let currentNonce = undefined;
+    try {
+      currentNonce = await provider.getTransactionCount(walletAddress, 'latest');
+    } catch {}
 
     const contract = new ethers.Contract(vaultAddr, TIME_CAPSULE_VAULT_ABI, signer);
-    const tx = await contract.createCapsule(
-      recipient,
-      unlockSec,
-      title || 'Timelocked Vault',
-      sealedText,
-      { value: ethers.parseEther(String(ethAmount || '0')) }
-    );
+    const txOptions = {
+      value: ethers.parseEther(String(ethAmount || '0')),
+      gasLimit: 350000
+    };
+    if (typeof currentNonce === 'number') {
+      txOptions.nonce = currentNonce;
+    }
+
+    let tx;
+    try {
+      tx = await contract.createCapsule(
+        targetRecipient,
+        unlockSec,
+        title || 'Timelocked Vault',
+        sealedText,
+        txOptions
+      );
+    } catch (err) {
+      const errMsg = err?.data?.message || err?.error?.message || err?.reason || err?.shortMessage || err?.message || '';
+      if (errMsg.toLowerCase().includes('nonce') || err?.code === -32603) {
+        throw new Error('MetaMask nonce out of sync with Hardhat node. To fix: In MetaMask open Settings → Advanced → Clear activity tab data / Reset account.');
+      }
+      throw err;
+    }
     const receipt = await tx.wait();
 
     let onChainCapsuleId = null;
@@ -956,9 +1029,12 @@ export default function Home() {
       type: 'time_capsule',
       capsuleId,
       title: title || 'Timelocked Vault',
+      theme: theme || 'chronos',
+      hasMedia: Boolean(media),
+      media: media || null,
       unlockTimestamp: unlockSec * 1000,
       senderAddress: walletAddress,
-      recipient,
+      recipient: targetRecipient,
       createdAt: Date.now(),
       durationSeconds,
       isOnChain: true,
@@ -1000,10 +1076,10 @@ export default function Home() {
         } catch {}
       }
     } catch (err) {
-      // Already opened earlier (e.g. after a reload): the recipient can still read the payload.
-      if (String(err?.message || '').includes('AlreadyOpened') || err?.revert?.name === 'AlreadyOpened') {
+      // If already opened, or if caller is sender (open() is recipient-only to claim ETH), view payload via getPayload
+      try {
         payloadText = await contract.getPayload(data.onChainCapsuleId);
-      } else {
+      } catch (innerErr) {
         throw err;
       }
     }
@@ -1938,6 +2014,14 @@ export default function Home() {
     if (!peerAddr || !ethers.isAddress(peerAddr)) return;
     const key = peerAddr.toLowerCase();
 
+    // Guard: Never assign a group conversation ID to an individual member's profile
+    const shouldMapConvo = (cId) => {
+      if (!cId) return false;
+      const lower = cId.toLowerCase();
+      if (lower.startsWith('group-') || lower.startsWith('demo-') || lower.includes('syndicate') || lower.includes('group')) return false;
+      return true;
+    };
+
     // 1. Check local cache (populate immediately so UI updates without lag)
     try {
       const cached = localStorage.getItem(`profile_${key}`);
@@ -1946,7 +2030,7 @@ export default function Home() {
         if (pData?.username) {
           setAddressProfiles(prev => {
             const next = { ...prev, [key]: pData };
-            if (convoId) next[convoId.toLowerCase()] = pData;
+            if (shouldMapConvo(convoId)) next[convoId.toLowerCase()] = pData;
             return next;
           });
         }
@@ -1988,7 +2072,7 @@ export default function Home() {
           const ensProf = { username: peerEns, profilePictureCID: '', isRegistered: true };
           setAddressProfiles(prev => {
             const next = { ...prev, [key]: ensProf };
-            if (convoId) next[convoId.toLowerCase()] = ensProf;
+            if (shouldMapConvo(convoId)) next[convoId.toLowerCase()] = ensProf;
             return next;
           });
           return;
@@ -2011,7 +2095,7 @@ export default function Home() {
         };
         setAddressProfiles(prev => {
           const next = { ...prev, [key]: pData };
-          if (convoId) next[convoId.toLowerCase()] = pData;
+          if (shouldMapConvo(convoId)) next[convoId.toLowerCase()] = pData;
           return next;
         });
         try {
@@ -2083,7 +2167,8 @@ export default function Home() {
               mems.forEach(m => {
                 const addr = getAddressFromMember(m);
                 if (addr && addr.toLowerCase() !== myAddr?.toLowerCase()) {
-                  fetchPeerProfile(addr, explicitProvider, explicitChainId, c.id);
+                  // Do not pass c.id so group id is never mapped to member profile!
+                  fetchPeerProfile(addr, explicitProvider, explicitChainId);
                 }
               });
             } catch (e) {}
@@ -2135,7 +2220,8 @@ export default function Home() {
             mems.forEach(m => {
               const addr = getAddressFromMember(m);
               if (addr && addr.toLowerCase() !== myAddr?.toLowerCase()) {
-                fetchPeerProfile(addr, providerRef.current || provider, chainIdRef.current || chainId, c.id);
+                // Do not pass c.id so group id is never mapped to member profile!
+                fetchPeerProfile(addr, providerRef.current || provider, chainIdRef.current || chainId);
               }
             });
           } catch (e) {}
@@ -2191,7 +2277,8 @@ export default function Home() {
   }, [messages, provider, chainId]);
 
   // Create XMTP Group
-  const handleCreateXmtpGroup = async ({ groupName, members }) => {
+  const handleCreateXmtpGroup = async ({ groupName, members, groupAvatar }) => {
+    const cleanAvatar = (groupAvatar || '').trim();
     if (xmtpClient) {
       const { IdentifierKind } = await import('@xmtp/browser-sdk');
 
@@ -2211,9 +2298,20 @@ export default function Home() {
       }
 
       // Create the group on-chain via XMTP protocol
-      const group = await xmtpClient.conversations.createGroupWithIdentifiers(identifiers, {
-        name: groupName
-      });
+      const groupOptions = { name: groupName };
+      if (cleanAvatar) groupOptions.imageUrl = cleanAvatar;
+
+      const group = await xmtpClient.conversations.createGroupWithIdentifiers(identifiers, groupOptions);
+      if (cleanAvatar) {
+        group.imageUrl = cleanAvatar;
+        setGroupAvatars(prev => {
+          const updated = { ...prev, [group.id]: cleanAvatar };
+          try {
+            localStorage.setItem('blockchat_group_avatars', JSON.stringify(updated));
+          } catch (e) {}
+          return updated;
+        });
+      }
 
       // Load member list eagerly
       try {
@@ -2244,6 +2342,7 @@ export default function Home() {
       isGroup: true,
       groupName: groupName,
       name: groupName,
+      imageUrl: cleanAvatar || '',
       isDemoBot: true,
       createdAt: new Date().toISOString(),
       sendText: async (t) => {},
@@ -2258,6 +2357,16 @@ export default function Home() {
       ],
       stream: async function* () {}
     };
+
+    if (cleanAvatar) {
+      setGroupAvatars(prev => {
+        const updated = { ...prev, [demoGroupId]: cleanAvatar };
+        try {
+          localStorage.setItem('blockchat_group_avatars', JSON.stringify(updated));
+        } catch (e) {}
+        return updated;
+      });
+    }
 
     setGroupMembersCache(prev => ({ ...prev, [demoGroupId]: groupMembersList }));
     setConversations(prev => [newGroup, ...prev]);
@@ -2456,7 +2565,8 @@ export default function Home() {
             }
           };
 
-          const xmtp = await Client.create(xmtpSigner, { env: "dev", dbEncryptionKey: getDbEncryptionKey() });
+          const xmtpEnv = process.env.NEXT_PUBLIC_XMTP_ENV || "dev";
+          const xmtp = await Client.create(xmtpSigner, { env: xmtpEnv, dbEncryptionKey: getDbEncryptionKey() });
           setXmtpClient(xmtp);
           loadConversations(xmtp, address, detectedChainId, ethProvider);
         } catch (xmtpError) {
@@ -3898,32 +4008,28 @@ export default function Home() {
     if (convo.isGroup === true) return true;
     if (convo.isGroup === false) return false;
 
-    // 2. Explicit direct-message indicators
-    // - Dm class instance from @xmtp/browser-sdk
+    // 2. Class check from @xmtp/browser-sdk
+    if (convo.constructor?.name === 'Group') return true;
     if (convo.constructor?.name === 'Dm') return false;
-    // - Has peerInboxId function (only on Dm, never on Group)
+
+    // 3. Group-only methods in @xmtp/browser-sdk
+    if (typeof convo.addMembersByIdentifiers === 'function') return true;
+    if (typeof convo.updateName === 'function') return true;
+    if (typeof convo.updateImageUrl === 'function') return true;
+    if (typeof convo.updateDescription === 'function') return true;
+
+    // 4. DM-only methods in @xmtp/browser-sdk
     if (typeof convo.peerInboxId === 'function') return false;
-    // - Has duplicateDms function (only on Dm, never on Group)
     if (typeof convo.duplicateDms === 'function') return false;
-    // - Direct 1-on-1 contact with peerAddress and no explicit groupName
-    if (convo.peerAddress && !convo.groupName) return false;
-    // - Demo bot (BlockBot AI)
-    if (convo.isDemoBot && !convo.groupName) return false;
-    // - Metadata explicitly indicates DM (0)
+
+    // 5. Metadata checks
+    if (convo.metadata?.conversationType === 1 || convo.metadata?.conversationType === 'group') return true;
     if (convo.metadata?.conversationType === 0 || convo.metadata?.conversationType === 'dm') return false;
 
-    // 3. Positive group indicators
-    // - Group class instance from @xmtp/browser-sdk
-    if (convo.constructor?.name === 'Group') return true;
-    // - Has non-empty groupName
+    // 6. Name / bot / address heuristics
     if (Boolean(convo.groupName)) return true;
-    // - Group-only methods in @xmtp/browser-sdk
-    if (typeof convo.updateName === 'function') return true;
-    if (typeof convo.updateDescription === 'function') return true;
-    if (typeof convo.updateImageUrl === 'function') return true;
-    if (typeof convo.addMembersByIdentifiers === 'function') return true;
-    // - Metadata explicitly indicates Group (1)
-    if (convo.metadata?.conversationType === 1 || convo.metadata?.conversationType === 'group') return true;
+    if (convo.isDemoBot && !convo.groupName) return false;
+    if (convo.peerAddress && !convo.groupName && !convo.name) return false;
 
     return false;
   };
@@ -3959,11 +4065,12 @@ export default function Home() {
   const filteredConversations = useMemo(() => {
     return conversations
       .filter(convo => {
-        const peerAddr = convo.peerAddress;
-        const peerProf = (peerAddr && addressProfiles[peerAddr.toLowerCase()]) || addressProfiles[convo.id?.toLowerCase()];
-        const displayId = peerAddr || convo.id || '';
-        const customNick = (peerAddr && customNicknames[peerAddr.toLowerCase()]) || customNicknames[convo.id?.toLowerCase()] || '';
-        const name = peerProf?.username || displayId;
+        const isGroup = isGroupConversation(convo);
+        const peerAddr = isGroup ? null : convo.peerAddress;
+        const peerProf = !isGroup ? ((peerAddr && addressProfiles[peerAddr.toLowerCase()]) || addressProfiles[convo.id?.toLowerCase()]) : null;
+        const displayId = isGroup ? (convo.groupName || convo.name || convo.id || '') : (peerAddr || convo.id || '');
+        const customNick = !isGroup ? ((peerAddr && customNicknames[peerAddr.toLowerCase()]) || customNicknames[convo.id?.toLowerCase()] || '') : '';
+        const name = isGroup ? (convo.groupName || convo.name || 'Group Chat') : (peerProf?.username || displayId);
         const q = searchQuery.toLowerCase();
         const matchesSearch = name.toLowerCase().includes(q) || 
                               customNick.toLowerCase().includes(q) || 
@@ -4190,14 +4297,18 @@ export default function Home() {
         {/* WhatsApp Conversations List */}
         <div className="whatsapp-chat-list chat-list">
           {filteredConversations.map(convo => {
-            const peerAddr = convo.peerAddress;
-            const peerProf = (peerAddr && addressProfiles[peerAddr.toLowerCase()]) || addressProfiles[convo.id?.toLowerCase()];
-            const displayId = peerAddr || convo.id || "Unknown";
-            const displayName = getContactDisplayName(peerAddr || displayId, peerProf);
-            const customNick = (peerAddr && customNicknames[peerAddr.toLowerCase()]) || customNicknames[convo.id?.toLowerCase()];
-            const avatarChar = (customNick || peerProf?.username || displayId).substring(displayId.startsWith('0x') && !customNick ? 2 : 0, displayId.startsWith('0x') && !customNick ? 4 : 2).toUpperCase();
+            const isGroup = isGroupConversation(convo);
+            const peerAddr = isGroup ? null : convo.peerAddress;
+            const peerProf = !isGroup ? ((peerAddr && addressProfiles[peerAddr.toLowerCase()]) || addressProfiles[convo.id?.toLowerCase()]) : null;
+            const displayId = isGroup ? (convo.groupName || convo.name || convo.id || "Group Chat") : (peerAddr || convo.id || "Unknown");
+            const displayName = isGroup ? (convo.groupName || convo.name || "Group Chat") : getContactDisplayName(peerAddr || displayId, peerProf);
+            const customNick = !isGroup ? ((peerAddr && customNicknames[peerAddr.toLowerCase()]) || customNicknames[convo.id?.toLowerCase()]) : null;
+            const avatarChar = isGroup 
+              ? (displayName.replace(/[^a-zA-Z0-9]/g, '').slice(0, 2) || 'GP').toUpperCase()
+              : (customNick || peerProf?.username || displayId).substring(displayId.startsWith('0x') && !customNick ? 2 : 0, displayId.startsWith('0x') && !customNick ? 4 : 2).toUpperCase();
+            const groupAvatarUrl = isGroup ? (convo.imageUrl || convo.groupAvatar || groupAvatars[convo.id]) : null;
             const isPinned = !!pinnedConvos[convo.id];
-            const isBot = !isGroupConversation(convo) && (convo.isDemoBot || displayId.toLowerCase().includes('bot'));
+            const isBot = !isGroup && (convo.isDemoBot || displayId.toLowerCase().includes('bot'));
             const isSelected = activeConversation?.id === convo.id;
             const draftText = chatDrafts[convo.id];
             const unreadCount = unreadCounts[convo.id] || 0;
@@ -4209,26 +4320,36 @@ export default function Home() {
                 onClick={() => selectConversation(convo)}
               >
                 <div className="whatsapp-card-avatar-wrap">
-                  <div className={`avatar ${isBot ? 'bot-avatar' : ''}`}>
-                    {peerProf?.profilePictureCID ? (
+                  <div className={`avatar ${isGroup ? 'group-avatar' : ''} ${isBot ? 'bot-avatar' : ''}`}>
+                    {isGroup ? (
+                      groupAvatarUrl ? (
+                        <img 
+                          src={groupAvatarUrl.startsWith('http') ? groupAvatarUrl : `https://ipfs.io/ipfs/${groupAvatarUrl}`} 
+                          alt={displayName} 
+                          onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                        />
+                      ) : (
+                        <PixelAlien size={20} color="var(--arcade-neon-magenta, #ff007f)" />
+                      )
+                    ) : peerProf?.profilePictureCID ? (
                       <img 
                         src={peerProf.profilePictureCID.startsWith('http') ? peerProf.profilePictureCID : `https://ipfs.io/ipfs/${peerProf.profilePictureCID}`} 
                         alt="Avatar" 
                       />
-                    ) : isGroupConversation(convo) ? (
-                      <PixelAlien size={20} color="var(--arcade-neon-magenta, #ff007f)" />
+                    ) : isBot ? (
+                      <PixelRobot size={20} color="var(--arcade-neon-cyan, #00f0ff)" />
                     ) : (
                       avatarChar || "??"
                     )}
                   </div>
-                  <span className={`whatsapp-status-dot ${isBot ? 'bot' : 'online'}`}></span>
+                  <span className={`whatsapp-status-dot ${isBot ? 'bot' : isGroup ? 'group' : 'online'}`}></span>
                 </div>
 
                 <div className="whatsapp-card-content">
                   <div className="whatsapp-card-row-top">
                     <span className="whatsapp-card-title">
-                      {isGroupConversation(convo) ? (convo.groupName || convo.name || displayName) : displayName}
-                      {isGroupConversation(convo) ? (
+                      {displayName}
+                      {isGroup ? (
                         <span className="whatsapp-group-tag">GROUP</span>
                       ) : isBot ? (
                         <span className="whatsapp-bot-tag">BOT</span>
@@ -4321,13 +4442,17 @@ export default function Home() {
             {/* Active Header */}
             <div className="whatsapp-active-header">
               {(() => {
-                const peerAddr = activeConversation.peerAddress;
-                const peerProf = (peerAddr && addressProfiles[peerAddr.toLowerCase()]) || addressProfiles[activeConversation.id?.toLowerCase()];
-                const displayId = peerAddr || activeConversation.id || "Unknown";
-                const displayName = getContactDisplayName(peerAddr || displayId, peerProf);
-                const customNick = (peerAddr && customNicknames[peerAddr.toLowerCase()]) || customNicknames[activeConversation.id?.toLowerCase()];
-                const isBot = !isGroupConversation(activeConversation) && (activeConversation.isDemoBot || displayId.toLowerCase().includes('bot'));
-                const avatarChar = (customNick || peerProf?.username || displayId).substring(displayId.startsWith('0x') && !customNick ? 2 : 0, displayId.startsWith('0x') && !customNick ? 4 : 2).toUpperCase();
+                const isGroup = isGroupConversation(activeConversation);
+                const peerAddr = isGroup ? null : activeConversation.peerAddress;
+                const peerProf = !isGroup ? ((peerAddr && addressProfiles[peerAddr.toLowerCase()]) || addressProfiles[activeConversation.id?.toLowerCase()]) : null;
+                const displayId = isGroup ? (activeConversation.groupName || activeConversation.name || activeConversation.id || "Group Chat") : (peerAddr || activeConversation.id || "Unknown");
+                const displayName = isGroup ? (activeConversation.groupName || activeConversation.name || "Group Chat") : getContactDisplayName(peerAddr || displayId, peerProf);
+                const customNick = !isGroup ? ((peerAddr && customNicknames[peerAddr.toLowerCase()]) || customNicknames[activeConversation.id?.toLowerCase()]) : null;
+                const isBot = !isGroup && (activeConversation.isDemoBot || displayId.toLowerCase().includes('bot'));
+                const avatarChar = isGroup
+                  ? (displayName.replace(/[^a-zA-Z0-9]/g, '').slice(0, 2) || 'GP').toUpperCase()
+                  : (customNick || peerProf?.username || displayId).substring(displayId.startsWith('0x') && !customNick ? 2 : 0, displayId.startsWith('0x') && !customNick ? 4 : 2).toUpperCase();
+                const groupAvatarUrl = isGroup ? (activeConversation.imageUrl || activeConversation.groupAvatar || groupAvatars[activeConversation.id]) : null;
 
                 return (
                   <div className="whatsapp-header-inner">
@@ -4348,17 +4473,27 @@ export default function Home() {
 
                       <div 
                         className="whatsapp-header-contact"
-                        onClick={() => setShowContactDrawer(true)}
-                        title="View contact info"
+                        onClick={() => isGroup ? setShowGroupMembersModal(true) : setShowContactDrawer(true)}
+                        title={isGroup ? "View group details and members" : "View contact info"}
                       >
-                        <div className="avatar">
-                          {peerProf?.profilePictureCID ? (
+                        <div className={`avatar ${isGroup ? 'group-avatar' : ''} ${isBot ? 'bot-avatar' : ''}`}>
+                          {isGroup ? (
+                            groupAvatarUrl ? (
+                              <img 
+                                src={groupAvatarUrl.startsWith('http') ? groupAvatarUrl : `https://ipfs.io/ipfs/${groupAvatarUrl}`} 
+                                alt={displayName} 
+                                onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                              />
+                            ) : (
+                              <PixelAlien size={22} color="var(--arcade-neon-magenta, #ff007f)" />
+                            )
+                          ) : peerProf?.profilePictureCID ? (
                             <img 
                               src={peerProf.profilePictureCID.startsWith('http') ? peerProf.profilePictureCID : `https://ipfs.io/ipfs/${peerProf.profilePictureCID}`} 
                               alt="Avatar" 
                             />
-                          ) : isGroupConversation(activeConversation) ? (
-                            <PixelAlien size={22} color="var(--arcade-neon-magenta, #ff007f)" />
+                          ) : isBot ? (
+                            <PixelRobot size={22} color="var(--arcade-neon-cyan, #00f0ff)" />
                           ) : (
                             avatarChar || "??"
                           )}
@@ -4366,8 +4501,8 @@ export default function Home() {
 
                         <div className="whatsapp-header-meta">
                           <h3 className="whatsapp-header-name">
-                            <span>{isGroupConversation(activeConversation) ? (activeConversation.groupName || activeConversation.name || displayName) : displayName}</span>
-                            {isGroupConversation(activeConversation) ? (
+                            <span>{displayName}</span>
+                            {isGroup ? (
                               <span className="whatsapp-group-tag">GROUP</span>
                             ) : isBot ? (
                               <span className="whatsapp-bot-tag">BOT</span>
@@ -4540,8 +4675,14 @@ export default function Home() {
                       <button 
                         type="button" 
                         className="whatsapp-icon-action" 
-                        title="Contact Details"
-                        onClick={() => setShowContactDrawer(true)}
+                        title="Conversation Controls & Options"
+                        onClick={() => {
+                          if (window.innerWidth <= 768) {
+                            setShowMobileHeaderMenu(true);
+                          } else {
+                            isGroup ? setShowGroupMembersModal(true) : setShowContactDrawer(true);
+                          }
+                        }}
                       >
                         <PixelMore size={18} color="#d8e2ec" />
                       </button>
@@ -4862,6 +5003,7 @@ export default function Home() {
                               onOpenCapsule={handleOpenTimeCapsule}
                               onPlayFanfare={playReceiveChime}
                               onAddXp={addArcadeXp}
+                              onOpenLightbox={(img) => setLightboxImage(img)}
                             />
                           )}
 
@@ -5116,9 +5258,19 @@ export default function Home() {
                           <PixelClip size={20} color="#00f0ff" />
                         </button>
 
+                        {/* Mobile Arcade Actions Hub Button */}
+                        <button
+                          type="button"
+                          className="whatsapp-composer-icon mobile-arcade-hub-btn"
+                          title="Arcade Actions & Web3 dApps"
+                          onClick={() => setShowMobileArcadeHub(true)}
+                        >
+                          <PixelGamepad size={20} color="var(--arcade-neon-magenta, #ff007f)" />
+                        </button>
+
                         <button 
                           type="button" 
-                          className="whatsapp-composer-icon" 
+                          className="whatsapp-composer-icon composer-extra-btn" 
                           title="Send ETH Tip or Request ETH"
                           onClick={() => {
                             setCryptoModalPreset({ mode: 'send', amount: '', note: '' });
@@ -5130,7 +5282,7 @@ export default function Home() {
 
                         <button 
                           type="button" 
-                          className="whatsapp-composer-icon" 
+                          className="whatsapp-composer-icon composer-extra-btn" 
                           title="1v1 Arcade Duel (Cypher RPS)"
                           onClick={() => handleSendDuelChallenge('0')}
                         >
@@ -5139,7 +5291,7 @@ export default function Home() {
 
                         <button 
                           type="button" 
-                          className="whatsapp-composer-icon" 
+                          className="whatsapp-composer-icon composer-extra-btn" 
                           title="Timelocked Vault Capsule"
                           onClick={() => setShowTimeCapsuleModal(true)}
                         >
@@ -5242,7 +5394,7 @@ export default function Home() {
       )}
 
       {/* WhatsApp Contact Info Slide-Out Drawer */}
-      {showContactDrawer && activeConversation && (
+      {showContactDrawer && activeConversation && !isGroupConversation(activeConversation) && (
         <ContactInfoDrawer 
           peerAddress={activeConversation.peerAddress}
           peerName={addressProfiles[activeConversation.peerAddress?.toLowerCase()]?.username || addressProfiles[activeConversation.id?.toLowerCase()]?.username || ensName}
@@ -5354,6 +5506,10 @@ export default function Home() {
           isOpen={showTimeCapsuleModal}
           onClose={() => setShowTimeCapsuleModal(false)}
           onSendCapsule={handleSendTimeCapsule}
+          activeConversation={activeConversation}
+          walletAddress={walletAddress}
+          groupMembers={groupMembersCache[activeConversation?.id] || []}
+          addressProfiles={addressProfiles}
         />
       )}
 
@@ -5385,10 +5541,13 @@ export default function Home() {
       {showGroupMembersModal && activeConversation && (
         <GroupMembersModal
           groupName={activeConversation.groupName || activeConversation.name || 'Group Chat'}
+          groupAvatar={activeConversation.imageUrl || activeConversation.groupAvatar || groupAvatars[activeConversation.id]}
           members={groupMembersCache[activeConversation.id] || []}
           walletAddress={walletAddress}
+          addressProfiles={addressProfiles}
           onAddMember={handleAddGroupMember}
           onRemoveMember={handleRemoveGroupMember}
+          onUpdateGroupAvatar={(avatarUrl) => handleUpdateGroupAvatar(activeConversation.id, avatarUrl)}
           onClose={() => setShowGroupMembersModal(false)}
         />
       )}
@@ -5400,6 +5559,51 @@ export default function Home() {
           onComplete={() => setLevelUpEvent(null)}
         />
       )}
+
+      {/* Mobile Arcade Hub Slide-Up Drawer */}
+      <MobileArcadeHub
+        isOpen={showMobileArcadeHub}
+        onClose={() => setShowMobileArcadeHub(false)}
+        onOpenSendCrypto={() => {
+          setCryptoModalPreset({ mode: 'send', amount: '', note: '' });
+          setShowSendCryptoModal(true);
+        }}
+        onOpenRequestCrypto={() => {
+          setCryptoModalPreset({ mode: 'request', amount: '', note: '' });
+          setShowSendCryptoModal(true);
+        }}
+        onOpenDuel={(wager) => handleSendDuelChallenge(wager || '0')}
+        onOpenTimeCapsule={() => setShowTimeCapsuleModal(true)}
+        onOpenCipher={() => setShowCipherModal(true)}
+        onSetDisappearingTimer={(timer) => setDisappearingTimer(timer)}
+        disappearingTimer={disappearingTimer}
+        onExecuteCommand={(cmd) => {
+          setInputValue(cmd);
+        }}
+        isGroup={isGroupConversation(activeConversation)}
+      />
+
+      {/* Mobile Header Menu Slide-Up Sheet */}
+      <MobileHeaderMenu
+        isOpen={showMobileHeaderMenu}
+        onClose={() => setShowMobileHeaderMenu(false)}
+        isGroup={isGroupConversation(activeConversation)}
+        peerName={activeConversation ? getContactDisplayName(activeConversation.peerAddress || activeConversation.id, addressProfiles[activeConversation.peerAddress?.toLowerCase()]) : ''}
+        peerAddress={activeConversation?.peerAddress}
+        onOpenSearch={() => setShowInChatSearch(true)}
+        onOpenGroupMembers={() => setShowGroupMembersModal(true)}
+        onOpenContactDetails={() => setShowContactDrawer(true)}
+        onOpenCipher={() => setShowCipherModal(true)}
+        disappearingTimer={disappearingTimer}
+        onSetDisappearingTimer={(timer) => setDisappearingTimer(timer)}
+        onExportChat={() => {
+          const text = buildChatExport(messages, activeConversation);
+          downloadTextFile(`chat_${Date.now()}.txt`, text);
+        }}
+        onClearChat={() => {
+          setMessages([]);
+        }}
+      />
     </div>
   );
 }

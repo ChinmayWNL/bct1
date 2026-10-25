@@ -1,28 +1,128 @@
 'use client';
-import { useState } from 'react';
-import { PixelHourglass, PixelChest, PixelLock } from './PixelIcons';
+import { useState, useRef } from 'react';
+import { PixelHourglass, PixelChest, PixelLock, PixelZap, PixelAlien, PixelCamera } from './PixelIcons';
 
 const DURATION_PRESETS = [
   { label: '⚡ 30s (Test)', seconds: 30 },
-  { label: '⏱️ 2 Mins', seconds: 120 },
-  { label: '⏳ 10 Mins', seconds: 600 },
-  { label: '🔒 1 Hour', seconds: 3600 }
+  { label: '⏱️ 5 Mins', seconds: 300 },
+  { label: '⏳ 1 Hour', seconds: 3600 },
+  { label: '🌅 24 Hours', seconds: 86400 },
+  { label: '📅 7 Days', seconds: 604800 }
+];
+
+const VAULT_THEMES = [
+  {
+    id: 'chronos',
+    label: 'Chronos Vault',
+    icon: '⏳',
+    color: '#ffd166',
+    borderGlow: 'rgba(255, 209, 102, 0.4)',
+    tag: 'ANCIENT GOLDEN TIME-LOCK'
+  },
+  {
+    id: 'birthday',
+    label: 'Celebration Box',
+    icon: '🎁',
+    color: '#ff007f',
+    borderGlow: 'rgba(255, 0, 127, 0.45)',
+    tag: 'BIRTHDAY / HOLIDAY SURPRISE'
+  },
+  {
+    id: 'classified',
+    label: 'Classified Dossier',
+    icon: '🕵️',
+    color: '#00f0ff',
+    borderGlow: 'rgba(0, 240, 255, 0.45)',
+    tag: 'TOP-SECRET ALPHA / LEAK'
+  },
+  {
+    id: 'cosmic',
+    label: 'Cosmic Memory',
+    icon: '🔮',
+    color: '#b026ff',
+    borderGlow: 'rgba(176, 38, 255, 0.45)',
+    tag: 'ASTRAL TIME TRAVEL / LETTER'
+  }
 ];
 
 export default function TimeCapsuleModal({
   isOpen,
   onClose,
-  onSendCapsule
+  onSendCapsule,
+  activeConversation,
+  walletAddress,
+  groupMembers = [],
+  addressProfiles = {}
 }) {
   const [selectedDuration, setSelectedDuration] = useState(30);
   const [customMinutes, setCustomMinutes] = useState('');
+  const [customDateTime, setCustomDateTime] = useState('');
+  const [selectedTheme, setSelectedTheme] = useState('chronos');
   const [title, setTitle] = useState('');
   const [sealedText, setSealedText] = useState('');
   const [ethAmount, setEthAmount] = useState('');
+  const [photoData, setPhotoData] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const fileInputRef = useRef(null);
+
+  const isGroup = Boolean(
+    activeConversation &&
+    (activeConversation.isGroup ||
+      Boolean(activeConversation.groupName) ||
+      (activeConversation.name && !activeConversation.peerAddress))
+  );
+
+  // Recipient selection (in group chats)
+  const [selectedRecipient, setSelectedRecipient] = useState(() => {
+    if (!isGroup) return activeConversation?.peerAddress || walletAddress || '';
+    // In group, default to first non-self member or self
+    const nonSelf = groupMembers.find(m => {
+      const addr = m.accountIdentifiers?.[0]?.identifier || m.inboxId || '';
+      return addr && addr.toLowerCase() !== (walletAddress || '').toLowerCase();
+    });
+    const addr = nonSelf?.accountIdentifiers?.[0]?.identifier || nonSelf?.inboxId;
+    return addr || walletAddress || '';
+  });
 
   if (!isOpen) return null;
+
+  const currentTheme = VAULT_THEMES.find(t => t.id === selectedTheme) || VAULT_THEMES[0];
+
+  const handleImageSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      setErrorMsg('Please select a valid image file (PNG, JPG, WebP).');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        // Compress to max 360px dimension to ensure it fits comfortably on-chain
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        const maxDim = 360;
+        if (width > height && width > maxDim) {
+          height = Math.round((height * maxDim) / width);
+          width = maxDim;
+        } else if (height > maxDim) {
+          width = Math.round((width * maxDim) / height);
+          height = maxDim;
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.65);
+        setPhotoData(compressedDataUrl);
+      };
+      img.src = event.target.result;
+    };
+    reader.readAsDataURL(file);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -32,25 +132,45 @@ export default function TimeCapsuleModal({
     }
 
     let durationSeconds = selectedDuration;
-    if (customMinutes && parseFloat(customMinutes) > 0) {
+    if (customDateTime) {
+      const chosenMs = new Date(customDateTime).getTime();
+      const diffSec = Math.round((chosenMs - Date.now()) / 1000);
+      if (diffSec < 10) {
+        setErrorMsg('Custom date and time must be at least 10 seconds in the future.');
+        return;
+      }
+      durationSeconds = diffSec;
+    } else if (customMinutes && parseFloat(customMinutes) > 0) {
       durationSeconds = Math.round(parseFloat(customMinutes) * 60);
     }
 
     const unlockTimestamp = Date.now() + (durationSeconds * 1000);
 
+    // Encode lightweight on-chain payload (secret text + theme metadata)
+    // Photo memories are transmitted securely in the capsule message payload to avoid EVM storage limits
+    const onChainPayload = JSON.stringify({
+      text: sealedText.trim(),
+      theme: selectedTheme,
+      hasMedia: Boolean(photoData)
+    });
+
     setIsSubmitting(true);
     setErrorMsg('');
     try {
       await onSendCapsule({
-        title: title.trim(),
-        sealedText: sealedText.trim(),
+        title: title.trim() || currentTheme.label,
+        sealedText: onChainPayload,
         unlockTimestamp,
         durationSeconds,
-        ethAmount: ethAmount && parseFloat(ethAmount) > 0 ? ethAmount : '0'
+        ethAmount: ethAmount && parseFloat(ethAmount) > 0 ? ethAmount : '0',
+        theme: selectedTheme,
+        media: photoData || null,
+        recipient: selectedRecipient || (isGroup ? walletAddress : (activeConversation?.peerAddress || walletAddress))
       });
       setSealedText('');
       setTitle('');
       setEthAmount('');
+      setPhotoData(null);
       onClose();
     } catch (err) {
       setErrorMsg(err?.reason || err?.shortMessage || err?.message || 'Transaction failed');
@@ -61,114 +181,252 @@ export default function TimeCapsuleModal({
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-card capsule-modal-card" onClick={(e) => e.stopPropagation()}>
+      <div 
+        className="modal-card capsule-modal-card" 
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          borderColor: currentTheme.color,
+          boxShadow: `0 0 25px ${currentTheme.borderGlow}, 4px 4px 0 #000`
+        }}
+      >
         <div className="modal-header">
-          <div className="brand-title" style={{ fontSize: '1.05rem', fontFamily: 'var(--font-arcade)' }}>
-            <PixelHourglass size={18} color="var(--arcade-gold)" />
+          <div className="brand-title" style={{ fontSize: '1rem', fontFamily: 'var(--font-arcade)', color: currentTheme.color, display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '1.25rem' }}>{currentTheme.icon}</span>
             <span>SEAL TIMELOCKED CAPSULE</span>
           </div>
           <button className="modal-close-btn" onClick={onClose}>✕</button>
         </div>
 
-        <form onSubmit={handleSubmit}>
-          {/* Preset Duration Buttons */}
-          <div className="theme-section-title" style={{ fontFamily: 'var(--font-arcade)', fontSize: '0.72rem', marginTop: '10px' }}>
-            SELECT UNLOCK DURATION
-          </div>
-          <div className="capsule-preset-grid">
-            {DURATION_PRESETS.map((p) => (
-              <button
-                key={p.seconds}
-                type="button"
-                className={`capsule-preset-btn ${selectedDuration === p.seconds && !customMinutes ? 'active' : ''}`}
-                onClick={() => {
-                  setSelectedDuration(p.seconds);
-                  setCustomMinutes('');
-                }}
-              >
-                {p.label}
-              </button>
-            ))}
-          </div>
-
-          <div className="custom-duration-row">
-            <span style={{ fontSize: '0.75rem', color: 'var(--coffee-text-muted)' }}>Or custom minutes:</span>
-            <input
-              type="number"
-              min="0.5"
-              step="0.5"
-              placeholder="e.g. 5"
-              className="coffee-modal-input small"
-              value={customMinutes}
-              onChange={(e) => {
-                setCustomMinutes(e.target.value);
-              }}
-              style={{ width: '90px' }}
-            />
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          {/* 1. Vault Theme Selector */}
+          <div>
+            <div className="theme-section-title font-arcade" style={{ fontSize: '0.7rem', marginBottom: '8px', color: 'var(--arcade-gold)' }}>
+              1. CHOOSE VAULT STYLE & THEME
+            </div>
+            <div className="capsule-theme-selector-grid">
+              {VAULT_THEMES.map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  className={`capsule-theme-pill ${selectedTheme === t.id ? 'active' : ''}`}
+                  onClick={() => setSelectedTheme(t.id)}
+                  style={{
+                    borderColor: selectedTheme === t.id ? t.color : 'rgba(255, 255, 255, 0.1)',
+                    background: selectedTheme === t.id ? `color-mix(in srgb, ${t.color} 18%, #14101e)` : 'rgba(20, 16, 30, 0.85)'
+                  }}
+                >
+                  <span style={{ fontSize: '1.15rem' }}>{t.icon}</span>
+                  <div className="theme-pill-text">
+                    <span className="theme-pill-name font-arcade" style={{ color: selectedTheme === t.id ? t.color : '#e2e8f0' }}>{t.label}</span>
+                    <span className="theme-pill-tag">{t.tag}</span>
+                  </div>
+                </button>
+              ))}
+            </div>
           </div>
 
-          {/* Capsule Title / Teaser */}
-          <div style={{ marginTop: '14px' }}>
-            <label className="theme-section-title" style={{ fontFamily: 'var(--font-arcade)', fontSize: '0.72rem', display: 'block', marginBottom: '6px' }}>
-              CAPSULE TEASER / HINT (OPTIONAL)
+          {/* 2. Recipient Selector in Groups or 1v1 */}
+          {isGroup ? (
+            <div>
+              <div className="theme-section-title font-arcade" style={{ fontSize: '0.7rem', marginBottom: '6px', color: 'var(--arcade-neon-magenta)' }}>
+                2. DEDICATE VAULT TO (GROUP MEMBER)
+              </div>
+              <div className="capsule-recipient-picker">
+                <select
+                  className="coffee-modal-input"
+                  value={selectedRecipient}
+                  onChange={(e) => setSelectedRecipient(e.target.value)}
+                  style={{ fontFamily: 'var(--font-arcade)', fontSize: '0.75rem', cursor: 'pointer' }}
+                >
+                  <option value={walletAddress}>🎁 Myself (Future Self Note / Vault)</option>
+                  {groupMembers.map((m, idx) => {
+                    const addr = m.accountIdentifiers?.[0]?.identifier || m.inboxId || '';
+                    if (!addr || addr.toLowerCase() === (walletAddress || '').toLowerCase()) return null;
+                    const prof = addressProfiles[addr.toLowerCase()];
+                    const name = prof?.username ? `@${prof.username}` : `${addr.slice(0, 6)}…${addr.slice(-4)}`;
+                    return (
+                      <option key={addr || idx} value={addr}>
+                        👤 {name} ({addr.slice(0, 8)}…)
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+            </div>
+          ) : (
+            <div className="capsule-recipient-badge">
+              <PixelLock size={14} color={currentTheme.color} />
+              <span>
+                Sealed for: <strong>{activeConversation?.isDemoBot ? 'Myself (Future Self Memory)' : (activeConversation?.peerAddress ? `${activeConversation.peerAddress.slice(0, 6)}…${activeConversation.peerAddress.slice(-4)}` : 'Recipient')}</strong>
+              </span>
+            </div>
+          )}
+
+          {/* 3. Unlock Duration & Date Picker */}
+          <div>
+            <div className="theme-section-title font-arcade" style={{ fontSize: '0.7rem', marginBottom: '8px', color: 'var(--arcade-neon-cyan)' }}>
+              3. SELECT UNLOCK TIMELOCK
+            </div>
+            <div className="capsule-preset-grid">
+              {DURATION_PRESETS.map((p) => (
+                <button
+                  key={p.seconds}
+                  type="button"
+                  className={`capsule-preset-btn ${selectedDuration === p.seconds && !customMinutes && !customDateTime ? 'active' : ''}`}
+                  onClick={() => {
+                    setSelectedDuration(p.seconds);
+                    setCustomMinutes('');
+                    setCustomDateTime('');
+                  }}
+                  style={{
+                    borderColor: selectedDuration === p.seconds && !customMinutes && !customDateTime ? currentTheme.color : undefined
+                  }}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="capsule-custom-time-row" style={{ marginTop: '8px', display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ fontSize: '0.74rem', color: 'var(--coffee-text-muted)' }}>Minutes:</span>
+                <input
+                  type="number"
+                  min="0.5"
+                  step="0.5"
+                  placeholder="e.g. 15"
+                  className="coffee-modal-input small"
+                  value={customMinutes}
+                  onChange={(e) => {
+                    setCustomMinutes(e.target.value);
+                    setCustomDateTime('');
+                  }}
+                  style={{ width: '85px', fontSize: '0.8rem' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ fontSize: '0.74rem', color: 'var(--coffee-text-muted)' }}>Or Calendar Date:</span>
+                <input
+                  type="datetime-local"
+                  className="coffee-modal-input small"
+                  value={customDateTime}
+                  onChange={(e) => {
+                    setCustomDateTime(e.target.value);
+                    setCustomMinutes('');
+                  }}
+                  style={{ fontSize: '0.76rem', padding: '6px 8px' }}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* 4. Capsule Title / Hint */}
+          <div>
+            <label className="theme-section-title font-arcade" style={{ fontSize: '0.7rem', display: 'block', marginBottom: '6px' }}>
+              4. CAPSULE TEASER / HINT (OPTIONAL)
             </label>
             <input
               type="text"
               className="coffee-modal-input"
-              placeholder="e.g. Secret Alpha for NFT Mint..."
-              maxLength={60}
+              placeholder={`e.g. ${currentTheme.tag.toLowerCase()}...`}
+              maxLength={80}
               value={title}
               onChange={(e) => setTitle(e.target.value)}
             />
           </div>
 
-          {/* Secret Message Payload */}
-          <div style={{ marginTop: '14px' }}>
-            <label className="theme-section-title" style={{ fontFamily: 'var(--font-arcade)', fontSize: '0.72rem', display: 'block', marginBottom: '6px' }}>
-              SECRET MESSAGE PAYLOAD (SEALED)
+          {/* 5. Secret Message Payload */}
+          <div>
+            <label className="theme-section-title font-arcade" style={{ fontSize: '0.7rem', display: 'block', marginBottom: '6px' }}>
+              5. SECRET MESSAGE (SEALED UNTIL UNLOCK)
             </label>
             <textarea
               className="coffee-modal-input"
-              rows={4}
-              placeholder="Type your secret message, private key phrase, or confession..."
+              rows={3}
+              placeholder="Type confidential wishes, future instructions, private keys, or alpha..."
               value={sealedText}
               onChange={(e) => setSealedText(e.target.value)}
               required
             />
           </div>
 
-          {/* Optional ETH gift locked in the vault */}
-          <div style={{ marginTop: '14px' }}>
-            <label className="theme-section-title" style={{ fontFamily: 'var(--font-arcade)', fontSize: '0.72rem', display: 'block', marginBottom: '6px' }}>
-              LOCK ETH GIFT INSIDE (OPTIONAL)
+          {/* 6. Photo / Memory Attachment (Optional) */}
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+              <label className="theme-section-title font-arcade" style={{ fontSize: '0.7rem' }}>
+                6. ATTACH PHOTO MEMORY (OPTIONAL)
+              </label>
+              {photoData && (
+                <button
+                  type="button"
+                  className="remove-photo-text-btn"
+                  onClick={() => setPhotoData(null)}
+                  style={{ background: 'none', border: 'none', color: '#ff007f', fontSize: '0.72rem', cursor: 'pointer' }}
+                >
+                  ✕ Remove Photo
+                </button>
+              )}
+            </div>
+
+            <input
+              type="file"
+              ref={fileInputRef}
+              accept="image/*"
+              style={{ display: 'none' }}
+              onChange={handleImageSelect}
+            />
+
+            {photoData ? (
+              <div className="capsule-modal-photo-preview">
+                <img src={photoData} alt="Memory Preview" />
+                <span className="photo-preview-badge font-arcade">📷 MEMORY PHOTO SEALED</span>
+              </div>
+            ) : (
+              <button
+                type="button"
+                className="capsule-attach-photo-btn"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <span>📷</span>
+                <span>Attach Photo Memory (Sealed in Vault)</span>
+              </button>
+            )}
+          </div>
+
+          {/* 7. Optional Locked ETH Gift */}
+          <div>
+            <label className="theme-section-title font-arcade" style={{ fontSize: '0.7rem', display: 'block', marginBottom: '6px' }}>
+              7. LOCK ETH GIFT INSIDE (OPTIONAL)
             </label>
             <input
               type="number"
               min="0"
               step="0.001"
               className="coffee-modal-input"
-              placeholder="0.00 ETH released to recipient at unlock"
+              placeholder="0.00 ETH released to recipient upon unlock"
               value={ethAmount}
               onChange={(e) => setEthAmount(e.target.value)}
             />
           </div>
 
           <div className="capsule-security-note">
-            <PixelLock size={14} color="var(--arcade-gold)" />
-            <span>The TimeCapsuleVault smart contract enforces the unlock time on-chain. Nobody can open it early, and any ETH is released to the recipient only at unlock.</span>
+            <PixelLock size={14} color={currentTheme.color} />
+            <span>Smart contract strictly locks this payload and ETH on Ethereum. Nobody (including the UI) can open it early.</span>
           </div>
 
           {errorMsg && (
-            <div className="capsule-security-note" style={{ borderColor: 'var(--arcade-neon-magenta, #ff007f)', color: 'var(--arcade-neon-magenta, #ff007f)' }}>
+            <div className="capsule-security-note error">
               <span>⚠ {errorMsg}</span>
             </div>
           )}
 
-          <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+          <div style={{ marginTop: '8px', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
             <button
               type="button"
               className="coffee-btn-secondary"
               onClick={onClose}
+              disabled={isSubmitting}
             >
               CANCEL
             </button>
@@ -176,7 +434,12 @@ export default function TimeCapsuleModal({
               type="submit"
               className="modal-btn-primary"
               disabled={isSubmitting || !sealedText.trim()}
-              style={{ fontFamily: 'var(--font-arcade)', fontSize: '0.78rem' }}
+              style={{
+                fontFamily: 'var(--font-arcade)',
+                fontSize: '0.76rem',
+                borderColor: currentTheme.color,
+                boxShadow: `2px 2px 0 #000, 0 0 14px ${currentTheme.borderGlow}`
+              }}
             >
               {isSubmitting ? '⏳ CONFIRM IN WALLET...' : '🔒 SEAL ON-CHAIN & DISPATCH'}
             </button>
