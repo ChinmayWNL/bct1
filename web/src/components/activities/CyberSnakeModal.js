@@ -26,6 +26,8 @@ export default function CyberSnakeModal({
   const [isGameOver, setIsGameOver] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [food, setFood] = useState({ x: 10, y: 10, type: FOOD_TYPES[0] });
+  const [combo, setCombo] = useState(1);
+  const lastEatTimeRef = useRef(0);
 
   const snakeRef = useRef([
     { x: 10, y: 10 },
@@ -35,6 +37,8 @@ export default function CyberSnakeModal({
   const dirRef = useRef({ x: 0, y: -1 });
   const nextDirRef = useRef({ x: 0, y: -1 });
   const gameLoopRef = useRef(null);
+  const particlesRef = useRef([]);
+  const touchStartRef = useRef({ x: 0, y: 0 });
 
   // Load high score
   useEffect(() => {
@@ -44,12 +48,15 @@ export default function CyberSnakeModal({
     } catch (e) {}
   }, []);
 
-  // Web Audio Synth for retro sound effects
+  // Web Audio Synth for retro sound effects with auto-resume
   const playRetroSound = useCallback((type) => {
     try {
       const AudioContext = window.AudioContext || window.webkitAudioContext;
       if (!AudioContext) return;
       const ctx = new AudioContext();
+      if (ctx.state === 'suspended') {
+        ctx.resume();
+      }
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.connect(gain);
@@ -59,19 +66,25 @@ export default function CyberSnakeModal({
       if (type === 'eat') {
         osc.type = 'square';
         osc.frequency.setValueAtTime(440, now);
-        osc.frequency.exponentialRampToValueAtTime(880, now + 0.1);
+        osc.frequency.exponentialRampToValueAtTime(880, now + 0.09);
         gain.gain.setValueAtTime(0.12, now);
-        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.09);
         osc.start(now);
-        osc.stop(now + 0.1);
+        osc.stop(now + 0.09);
+        if (typeof navigator !== 'undefined' && navigator.vibrate) {
+          navigator.vibrate(18);
+        }
       } else if (type === 'die') {
         osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(300, now);
-        osc.frequency.exponentialRampToValueAtTime(80, now + 0.35);
-        gain.gain.setValueAtTime(0.2, now);
+        osc.frequency.setValueAtTime(320, now);
+        osc.frequency.exponentialRampToValueAtTime(70, now + 0.35);
+        gain.gain.setValueAtTime(0.22, now);
         gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
         osc.start(now);
         osc.stop(now + 0.35);
+        if (typeof navigator !== 'undefined' && navigator.vibrate) {
+          navigator.vibrate([40, 60, 80]);
+        }
       }
     } catch (err) {}
   }, []);
@@ -100,7 +113,9 @@ export default function CyberSnakeModal({
     ];
     dirRef.current = { x: 0, y: -1 };
     nextDirRef.current = { x: 0, y: -1 };
+    particlesRef.current = [];
     setScore(0);
+    setCombo(1);
     setIsGameOver(false);
     setIsPlaying(true);
     spawnFood(snakeRef.current);
@@ -136,6 +151,39 @@ export default function CyberSnakeModal({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, isGameOver, startGame]);
 
+  // Touch Swipe Gesture Navigation
+  const handleTouchStart = (e) => {
+    if (!e.touches || !e.touches[0]) return;
+    touchStartRef.current = {
+      x: e.touches[0].clientX,
+      y: e.touches[0].clientY
+    };
+  };
+
+  const handleTouchEnd = (e) => {
+    if (!isPlaying || isGameOver || !e.changedTouches || !e.changedTouches[0]) return;
+    const touch = e.changedTouches[0];
+    const dx = touch.clientX - touchStartRef.current.x;
+    const dy = touch.clientY - touchStartRef.current.y;
+    const absX = Math.abs(dx);
+    const absY = Math.abs(dy);
+
+    if (Math.max(absX, absY) < 18) return; // Ignore small taps
+
+    const cur = dirRef.current;
+    if (absX > absY) {
+      if (dx > 0 && cur.x === 0) nextDirRef.current = { x: 1, y: 0 };
+      else if (dx < 0 && cur.x === 0) nextDirRef.current = { x: -1, y: 0 };
+    } else {
+      if (dy > 0 && cur.y === 0) nextDirRef.current = { x: 0, y: 1 };
+      else if (dy < 0 && cur.y === 0) nextDirRef.current = { x: 0, y: -1 };
+    }
+  };
+
+  // Dynamic game speed based on score (progressive difficulty ramp)
+  const currentSpeed = Math.max(65, 120 - Math.floor(score / 50) * 10);
+  const speedMultiplier = (120 / currentSpeed).toFixed(1);
+
   // Main Game Loop
   useEffect(() => {
     if (!isOpen || !isPlaying || isGameOver) return;
@@ -165,8 +213,37 @@ export default function CyberSnakeModal({
       // Check Food Collision
       if (head.x === food.x && head.y === food.y) {
         playRetroSound('eat');
+
+        // Combo multiplier if eaten within 3.5s
+        const now = Date.now();
+        const timeDiff = now - lastEatTimeRef.current;
+        let nextCombo = 1;
+        if (timeDiff < 3500) {
+          nextCombo = Math.min(4, combo + 1);
+        }
+        setCombo(nextCombo);
+        lastEatTimeRef.current = now;
+
+        const earnedPoints = food.type.points * nextCombo;
+
+        // Spawn explosion particles
+        for (let i = 0; i < 14; i++) {
+          const angle = Math.random() * Math.PI * 2;
+          const spd = Math.random() * 3.5 + 1;
+          particlesRef.current.push({
+            x: food.x * CELL_SIZE + CELL_SIZE / 2,
+            y: food.y * CELL_SIZE + CELL_SIZE / 2,
+            vx: Math.cos(angle) * spd,
+            vy: Math.sin(angle) * spd,
+            color: food.type.color,
+            size: Math.random() * 3 + 2,
+            life: 1.0,
+            decay: Math.random() * 0.06 + 0.04
+          });
+        }
+
         setScore(prev => {
-          const next = prev + food.type.points;
+          const next = prev + earnedPoints;
           if (next > highScore) {
             setHighScore(next);
             try { localStorage.setItem('blockchat_snake_highscore', String(next)); } catch (e) {}
@@ -180,11 +257,11 @@ export default function CyberSnakeModal({
 
       snakeRef.current = snake;
       drawCanvas();
-    }, 110);
+    }, currentSpeed);
 
     gameLoopRef.current = interval;
     return () => clearInterval(interval);
-  }, [isOpen, isPlaying, isGameOver, food, highScore, playRetroSound, spawnFood]);
+  }, [isOpen, isPlaying, isGameOver, food, highScore, currentSpeed, combo, playRetroSound, spawnFood]);
 
   const handleGameOver = () => {
     playRetroSound('die');
@@ -195,7 +272,7 @@ export default function CyberSnakeModal({
     }
   };
 
-  // Canvas Renderer
+  // Canvas Renderer with glowing trail & particles
   const drawCanvas = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -207,7 +284,7 @@ export default function CyberSnakeModal({
     ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
 
     // Draw retro grid lines
-    ctx.strokeStyle = 'rgba(0, 240, 255, 0.06)';
+    ctx.strokeStyle = 'rgba(0, 240, 255, 0.05)';
     ctx.lineWidth = 1;
     for (let i = 0; i <= CANVAS_SIZE; i += CELL_SIZE) {
       ctx.beginPath();
@@ -220,10 +297,31 @@ export default function CyberSnakeModal({
       ctx.stroke();
     }
 
-    // Draw Food with glowing shadow
+    // Draw active explosion particles
+    const aliveParticles = [];
+    particlesRef.current.forEach(p => {
+      p.x += p.vx;
+      p.y += p.vy;
+      p.life -= p.decay;
+      if (p.life > 0) {
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, p.life);
+        ctx.fillStyle = p.color;
+        ctx.shadowColor = p.color;
+        ctx.shadowBlur = 6;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+        aliveParticles.push(p);
+      }
+    });
+    particlesRef.current = aliveParticles;
+
+    // Draw Food with pulsing glowing aura
     ctx.save();
     ctx.shadowColor = food.type.color;
-    ctx.shadowBlur = 10;
+    ctx.shadowBlur = 14;
     ctx.fillStyle = food.type.color;
     ctx.beginPath();
     ctx.arc(
@@ -236,7 +334,7 @@ export default function CyberSnakeModal({
     ctx.fill();
     ctx.restore();
 
-    // Draw Snake
+    // Draw Snake with neon gradient & directional eyes
     const snake = snakeRef.current;
     snake.forEach((seg, idx) => {
       const isHead = idx === 0;
@@ -244,9 +342,9 @@ export default function CyberSnakeModal({
       if (isHead) {
         ctx.fillStyle = '#39ff14';
         ctx.shadowColor = '#39ff14';
-        ctx.shadowBlur = 12;
+        ctx.shadowBlur = 14;
       } else {
-        const gradientRatio = idx / snake.length;
+        const gradientRatio = idx / Math.max(1, snake.length);
         ctx.fillStyle = gradientRatio > 0.5 ? '#10b981' : '#00f0ff';
         ctx.shadowBlur = 0;
       }
@@ -258,21 +356,32 @@ export default function CyberSnakeModal({
         CELL_SIZE - 2
       );
 
-      // Pixel eye on head
+      // Cyber eyes on snake head facing moving direction
       if (isHead) {
-        ctx.fillStyle = '#000000';
-        ctx.fillRect(
-          seg.x * CELL_SIZE + 4,
-          seg.y * CELL_SIZE + 4,
-          3,
-          3
-        );
+        const curDir = dirRef.current;
+        ctx.fillStyle = '#050505';
+        let eye1X, eye1Y, eye2X, eye2Y;
+        if (curDir.x === 1) { // Moving Right
+          eye1X = seg.x * CELL_SIZE + CELL_SIZE - 5; eye1Y = seg.y * CELL_SIZE + 3;
+          eye2X = seg.x * CELL_SIZE + CELL_SIZE - 5; eye2Y = seg.y * CELL_SIZE + CELL_SIZE - 6;
+        } else if (curDir.x === -1) { // Moving Left
+          eye1X = seg.x * CELL_SIZE + 2; eye1Y = seg.y * CELL_SIZE + 3;
+          eye2X = seg.x * CELL_SIZE + 2; eye2Y = seg.y * CELL_SIZE + CELL_SIZE - 6;
+        } else if (curDir.y === 1) { // Moving Down
+          eye1X = seg.x * CELL_SIZE + 3; eye1Y = seg.y * CELL_SIZE + CELL_SIZE - 5;
+          eye2X = seg.x * CELL_SIZE + CELL_SIZE - 6; eye2Y = seg.y * CELL_SIZE + CELL_SIZE - 5;
+        } else { // Moving Up (default)
+          eye1X = seg.x * CELL_SIZE + 3; eye1Y = seg.y * CELL_SIZE + 2;
+          eye2X = seg.x * CELL_SIZE + CELL_SIZE - 6; eye2Y = seg.y * CELL_SIZE + 2;
+        }
+        ctx.fillRect(eye1X, eye1Y, 3, 3);
+        ctx.fillRect(eye2X, eye2Y, 3, 3);
       }
       ctx.restore();
     });
   }, [food]);
 
-  // Draw on mount/updates
+  // Initial draw
   useEffect(() => {
     drawCanvas();
   }, [drawCanvas]);
@@ -290,6 +399,18 @@ export default function CyberSnakeModal({
     }
   };
 
+  const handleDpadPress = (dx, dy) => {
+    if (!isPlaying && !isGameOver) {
+      startGame();
+    }
+    const cur = dirRef.current;
+    if (dx !== 0 && cur.x === 0) nextDirRef.current = { x: dx, y: 0 };
+    if (dy !== 0 && cur.y === 0) nextDirRef.current = { x: 0, y: dy };
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      navigator.vibrate(15);
+    }
+  };
+
   return (
     <div className="arcade-activities-overlay" onClick={onClose}>
       <div 
@@ -304,19 +425,28 @@ export default function CyberSnakeModal({
             </div>
             <div>
               <div className="activities-main-title font-arcade">CYBER SNAKE ARCADE</div>
-              <div className="activities-subtitle">Eat crypto tokens, dodge the cyber grid walls!</div>
+              <div className="activities-subtitle">Eat crypto tokens, dodge walls • Swipe or D-Pad to steer!</div>
             </div>
           </div>
-          <button type="button" className="activities-close-btn font-arcade" onClick={onClose}>
+          <button type="button" className="activities-close-btn font-arcade" onClick={onClose} aria-label="Close Snake">
             ✕ ESC
           </button>
         </div>
 
-        {/* Score Marquee */}
+        {/* Score & Multiplier Bar */}
         <div className="snake-score-bar font-arcade">
           <div className="score-item">
             <span className="label">SCORE:</span>
             <span className="value current">{score}</span>
+          </div>
+          {combo > 1 && (
+            <div className="score-item combo-item">
+              <span className="value combo-badge">⚡ {combo}x COMBO</span>
+            </div>
+          )}
+          <div className="score-item">
+            <span className="label">SPEED:</span>
+            <span className="value speed">{speedMultiplier}x</span>
           </div>
           <div className="score-item">
             <PixelTrophy size={14} color="#ffd166" />
@@ -325,8 +455,12 @@ export default function CyberSnakeModal({
           </div>
         </div>
 
-        {/* Game Canvas Container */}
-        <div className="snake-canvas-wrap">
+        {/* Game Canvas Container with Swipe Listeners */}
+        <div 
+          className="snake-canvas-wrap"
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+        >
           <canvas
             ref={canvasRef}
             width={CANVAS_SIZE}
@@ -336,9 +470,9 @@ export default function CyberSnakeModal({
 
           {!isPlaying && !isGameOver && (
             <div className="snake-overlay-card">
-              <div className="snake-overlay-title font-arcade">CYBER SNAKE v1.0</div>
+              <div className="snake-overlay-title font-arcade">CYBER SNAKE v2.0</div>
               <p className="snake-overlay-desc">
-                Use Arrow Keys or WASD to navigate. Gobble glowing ETH and crypto orbs to grow!
+                Arrow Keys, WASD, Swipe or touch the D-Pad. Eat crypto orbs to trigger score combos and level up your speed!
               </p>
               <button 
                 type="button" 
@@ -382,7 +516,8 @@ export default function CyberSnakeModal({
             <button
               type="button"
               className="dpad-btn up"
-              onClick={() => { if (dirRef.current.y === 0) nextDirRef.current = { x: 0, y: -1 }; }}
+              onClick={() => handleDpadPress(0, -1)}
+              aria-label="Move Up"
             >
               ▲
             </button>
@@ -391,7 +526,8 @@ export default function CyberSnakeModal({
             <button
               type="button"
               className="dpad-btn left"
-              onClick={() => { if (dirRef.current.x === 0) nextDirRef.current = { x: -1, y: 0 }; }}
+              onClick={() => handleDpadPress(-1, 0)}
+              aria-label="Move Left"
             >
               ◀
             </button>
@@ -399,7 +535,8 @@ export default function CyberSnakeModal({
             <button
               type="button"
               className="dpad-btn right"
-              onClick={() => { if (dirRef.current.x === 0) nextDirRef.current = { x: 1, y: 0 }; }}
+              onClick={() => handleDpadPress(1, 0)}
+              aria-label="Move Right"
             >
               ▶
             </button>
@@ -408,7 +545,8 @@ export default function CyberSnakeModal({
             <button
               type="button"
               className="dpad-btn down"
-              onClick={() => { if (dirRef.current.y === 0) nextDirRef.current = { x: 0, y: 1 }; }}
+              onClick={() => handleDpadPress(0, 1)}
+              aria-label="Move Down"
             >
               ▼
             </button>

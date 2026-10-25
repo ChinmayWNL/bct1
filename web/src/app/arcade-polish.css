@@ -1561,6 +1561,75 @@
   line-height: 1.4;
 }
 
+/* Activities Filter & Search Bar */
+.activities-filter-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 6px 0;
+}
+
+.activities-tabs-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.act-tab-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+  color: var(--coffee-text-muted);
+  font-size: 0.68rem;
+  padding: 6px 11px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.act-tab-btn:hover {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+.act-tab-btn.active {
+  background: rgba(0, 240, 255, 0.18);
+  border-color: #00f0ff;
+  color: #00f0ff;
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.35);
+}
+
+.activities-search-wrap {
+  flex: 1;
+  min-width: 150px;
+}
+
+.activities-search-input {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-size: 0.72rem;
+  color: #fff;
+  outline: none;
+  transition: all 0.15s ease;
+}
+
+.activities-search-input:focus {
+  border-color: #00f0ff;
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.4);
+}
+
+.no-activities-found {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 30px;
+  color: var(--coffee-text-muted);
+  font-size: 0.8rem;
+}
+
 /* Activities 3x2 Grid */
 .activities-grid {
   display: grid;
@@ -1717,21 +1786,40 @@
   font-size: 1rem;
 }
 
+.score-item.combo-item {
+  animation: pulseGlow 0.8s infinite alternate;
+}
+
+.combo-badge {
+  color: var(--arcade-neon-magenta, #ff007f);
+  font-weight: 800;
+  font-size: 0.82rem;
+  text-shadow: 0 0 10px rgba(255, 0, 127, 0.7);
+}
+
+.score-item .value.speed {
+  color: var(--arcade-neon-cyan, #00f0ff);
+  font-weight: 800;
+}
+
 .snake-canvas-wrap {
   position: relative;
-  width: 360px;
-  height: 360px;
+  width: 100%;
+  max-width: 360px;
+  aspect-ratio: 1 / 1;
   margin: 0 auto;
   border: 2px solid #39ff14;
   border-radius: 8px;
   overflow: hidden;
-  box-shadow: 0 0 20px rgba(57, 255, 20, 0.2);
+  box-shadow: 0 0 20px rgba(57, 255, 20, 0.25);
+  touch-action: none;
 }
 
 .snake-canvas {
   display: block;
   width: 100%;
   height: 100%;
+  object-fit: contain;
 }
 
 .snake-overlay-card {
@@ -1874,6 +1962,41 @@
   animation: shake 0.25s ease-in-out;
 }
 
+/* Wordle Mini Stats */
+.wordle-stats-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(0, 240, 255, 0.2);
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin: 4px 0 8px 0;
+}
+
+.stat-pill {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.stat-label {
+  font-size: 0.62rem;
+  color: var(--coffee-text-muted);
+}
+
+.stat-num {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #fff;
+}
+
+.glow-gold {
+  color: var(--arcade-gold, #ffd166);
+  text-shadow: 0 0 8px rgba(255, 209, 102, 0.6);
+}
+
 .wordle-board {
   display: flex;
   flex-direction: column;
@@ -1885,6 +2008,17 @@
 .wordle-row {
   display: flex;
   gap: 6px;
+}
+
+.wordle-row.row-shaking {
+  animation: shake 0.3s ease-in-out;
+}
+
+@keyframes wordleFlip {
+  0% { transform: rotateX(0deg); }
+  45% { transform: rotateX(90deg); }
+  55% { transform: rotateX(90deg); }
+  100% { transform: rotateX(0deg); }
 }
 
 .wordle-cell {
@@ -1902,10 +2036,14 @@
   transition: all 0.15s ease;
 }
 
+.wordle-cell.flipped {
+  animation: wordleFlip 0.45s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
 .wordle-cell.active {
   border-color: #00f0ff;
   box-shadow: 0 0 8px rgba(0, 240, 255, 0.4);
-  transform: scale(1.04);
+  transform: scale(1.05);
 }
 
 .wordle-cell.correct {
@@ -2012,6 +2150,7 @@
   display: flex;
   justify-content: center;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .wordle-share-btn {
@@ -2024,6 +2163,23 @@
   border-radius: 6px;
   cursor: pointer;
   box-shadow: 0 0 12px rgba(34, 197, 94, 0.5);
+}
+
+.wordle-copy-btn {
+  background: rgba(0, 240, 255, 0.15);
+  color: #00f0ff;
+  border: 1px solid #00f0ff;
+  font-size: 0.74rem;
+  font-weight: 800;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.wordle-copy-btn:hover {
+  background: rgba(0, 240, 255, 0.3);
+  box-shadow: 0 0 12px rgba(0, 240, 255, 0.5);
 }
 
 .wordle-replay-btn {
@@ -2105,6 +2261,16 @@
   position: relative;
   flex-shrink: 0;
   animation: popIn 0.15s ease-out;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.blackjack-card.dealt {
+  animation: cardDeal 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes cardDeal {
+  0% { transform: translateY(-24px) scale(0.85); opacity: 0; }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
 }
 
 .blackjack-card.hidden {
@@ -2116,10 +2282,23 @@
 }
 
 .card-back {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.card-back .back-emblem {
+  font-size: 1.1rem;
+}
+
+.card-back .back-text {
   color: #38bdf8;
-  font-size: 0.7rem;
+  font-size: 0.58rem;
   font-weight: 800;
   text-align: center;
+  letter-spacing: 0.04em;
 }
 
 .card-face {
@@ -2157,16 +2336,22 @@
   box-shadow: 0 0 12px rgba(255, 209, 102, 0.4);
 }
 
-.blackjack-outcome.player, .blackjack-outcome.blackjack {
+.blackjack-outcome.player, .blackjack-outcome.blackjack, .blackjack-outcome.charlie {
   border-color: #22c55e;
   color: #22c55e;
-  box-shadow: 0 0 12px rgba(34, 197, 94, 0.5);
+  box-shadow: 0 0 14px rgba(34, 197, 94, 0.6);
 }
 
 .blackjack-outcome.dealer {
   border-color: #ef4444;
   color: #ef4444;
   box-shadow: 0 0 12px rgba(239, 68, 68, 0.5);
+}
+
+.dealer-thinking-tag {
+  font-size: 0.68rem;
+  color: #00f0ff;
+  animation: pulseGlow 0.6s infinite alternate;
 }
 
 .blackjack-controls {
@@ -2187,6 +2372,12 @@
   color: var(--coffee-text-muted);
 }
 
+.chip-buttons-wrap {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
 .chip-btn {
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 209, 102, 0.35);
@@ -2205,6 +2396,13 @@
   box-shadow: 0 0 10px rgba(255, 209, 102, 0.6);
 }
 
+.chip-btn.chip-add {
+  background: rgba(0, 240, 255, 0.15);
+  border-color: #00f0ff;
+  color: #00f0ff;
+  font-weight: 700;
+}
+
 .action-buttons-row {
   display: flex;
   gap: 8px;
@@ -2221,6 +2419,12 @@
   border-radius: 6px;
   cursor: pointer;
   box-shadow: 0 0 14px rgba(255, 209, 102, 0.5);
+  transition: all 0.15s ease;
+}
+
+.deal-btn:hover {
+  transform: scale(1.02);
+  box-shadow: 0 0 20px rgba(255, 209, 102, 0.8);
 }
 
 .share-btn {
@@ -2265,6 +2469,25 @@
   box-shadow: 0 0 12px rgba(239, 68, 68, 0.5);
 }
 
+.action-btn.double {
+  flex: 1;
+  background: var(--arcade-gold, #ffd166);
+  color: #000;
+  border: none;
+  font-size: 0.82rem;
+  font-weight: 800;
+  padding: 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  box-shadow: 0 0 14px rgba(255, 209, 102, 0.5);
+  transition: all 0.15s ease;
+}
+
+.action-btn.double:hover {
+  transform: scale(1.02);
+  box-shadow: 0 0 20px rgba(255, 209, 102, 0.8);
+}
+
 /* 12.5 Pixel Sketch (Pictionary) Modal */
 .sketch-modal {
   max-width: 480px;
@@ -2305,6 +2528,63 @@
   cursor: pointer;
 }
 
+/* Sketch Toolbar */
+.sketch-tools-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 0, 127, 0.25);
+  border-radius: 6px;
+  padding: 6px 10px;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.tool-btn-group {
+  display: flex;
+  gap: 5px;
+}
+
+.tool-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #fff;
+  font-size: 0.65rem;
+  padding: 5px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.tool-btn:hover {
+  background: rgba(255, 0, 127, 0.2);
+  border-color: #ff007f;
+}
+
+.tool-btn.active {
+  background: #ff007f;
+  color: #fff;
+  font-weight: 800;
+  border-color: #ff007f;
+  box-shadow: 0 0 10px rgba(255, 0, 127, 0.6);
+}
+
+.tool-btn.undo-btn {
+  border-color: var(--arcade-neon-cyan, #00f0ff);
+  color: #00f0ff;
+}
+
+.tool-btn.clear-btn {
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+.tool-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
 .sketch-grid-container {
   display: flex;
   justify-content: center;
@@ -2342,6 +2622,8 @@
 .palette-colors {
   display: flex;
   gap: 6px;
+  flex-wrap: wrap;
+  justify-content: center;
 }
 
 .palette-swatch {
@@ -2715,7 +2997,19 @@
 .ttt-cell.win-cell {
   background: rgba(255, 209, 102, 0.25);
   border-color: #ffd166;
-  box-shadow: 0 0 10px rgba(255, 209, 102, 0.5);
+  box-shadow: 0 0 16px rgba(255, 209, 102, 0.7);
+  animation: pulseGlow 0.8s infinite alternate;
+}
+
+.cell-ghost {
+  opacity: 0.35;
+  filter: blur(0.5px);
+  animation: ghostPulse 0.8s infinite alternate;
+}
+
+@keyframes ghostPulse {
+  0% { transform: scale(0.92); opacity: 0.25; }
+  100% { transform: scale(1.08); opacity: 0.5; }
 }
 
 .cell-x {
@@ -2763,6 +3057,67 @@
   background: #00f0ff;
   color: #000;
   box-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
+}
+
+/* Responsive Game Modals for Mobile Viewports */
+@media (max-width: 640px) {
+  .arcade-activities-modal {
+    width: 95vw;
+    max-height: 92vh;
+    padding: 16px;
+    margin: 8px auto;
+  }
+
+  .activities-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .snake-modal, .wordle-modal, .blackjack-modal, .sketch-modal {
+    max-width: 96vw;
+    padding: 14px;
+    margin: 0 auto;
+  }
+
+  .snake-canvas-wrap {
+    max-width: 290px;
+  }
+
+  .wordle-cell {
+    width: 38px;
+    height: 38px;
+    font-size: 1.1rem;
+  }
+
+  .key-btn {
+    height: 36px;
+    min-width: 24px;
+    padding: 0 4px;
+    font-size: 0.68rem;
+  }
+
+  .key-btn.special {
+    min-width: 38px;
+    font-size: 0.6rem;
+  }
+
+  .blackjack-card {
+    width: 58px;
+    height: 82px;
+  }
+
+  .card-suit {
+    font-size: 1.15rem;
+  }
+
+  .cards-row {
+    min-height: 84px;
+  }
+
+  .pixel-canvas-16 {
+    width: 256px;
+    height: 256px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

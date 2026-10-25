@@ -9,7 +9,14 @@ const WORD_LIST = [
   'YIELD', 'SWAPS', 'DEGEN', 'WHALE', 'BUILD',
   'CYBER', 'PIXEL', 'ROBOT', 'LAYER', 'ORACL',
   'ALPHA', 'NONCE', 'LOGIC', 'ARRAY', 'INDEX',
-  'PROXY', 'RELAY', 'SOLID', 'HASHY', 'EPOCH'
+  'PROXY', 'RELAY', 'SOLID', 'HASHY', 'EPOCH',
+  'SATOS', 'EVMOS', 'ASSET', 'DRAWS', 'CIPHR',
+  'LEDGR', 'TRUST', 'COINS', 'STATE', 'SLOTS',
+  'TRADE', 'BURNR', 'PUMPS', 'DUMPS', 'FLOOR',
+  'SHIBA', 'DAPPS', 'MINTY', 'SCALE', 'ZEROK',
+  'STAKR', 'FARMS', 'BRIDG', 'ROOTS', 'LEAFS',
+  'TREES', 'TXGAS', 'SIGNS', 'KEYS', 'PEERS',
+  'GWEI', 'UNISW', 'CURVE', 'ETHER', 'BITCO'
 ];
 
 const KEYBOARD_ROWS = [
@@ -30,6 +37,32 @@ export default function CyberWordleModal({
   const [currentGuess, setCurrentGuess] = useState('');
   const [gameStatus, setGameStatus] = useState('in_progress'); // 'in_progress' | 'won' | 'lost'
   const [errorMessage, setErrorMessage] = useState('');
+  const [isShaking, setIsShaking] = useState(false);
+  const [stats, setStats] = useState({ played: 0, won: 0, streak: 0, maxStreak: 0 });
+  const [copiedNotification, setCopiedNotification] = useState(false);
+
+  // Load stats from localStorage
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('blockchat_wordle_stats');
+      if (saved) setStats(JSON.parse(saved));
+    } catch {}
+  }, []);
+
+  const updateStats = useCallback((won) => {
+    setStats(prev => {
+      const next = {
+        played: prev.played + 1,
+        won: prev.won + (won ? 1 : 0),
+        streak: won ? prev.streak + 1 : 0,
+        maxStreak: won ? Math.max(prev.maxStreak, prev.streak + 1) : prev.maxStreak
+      };
+      try {
+        localStorage.setItem('blockchat_wordle_stats', JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+  }, []);
 
   // Start new round
   const startNewGame = useCallback(() => {
@@ -39,6 +72,7 @@ export default function CyberWordleModal({
     setCurrentGuess('');
     setGameStatus('in_progress');
     setErrorMessage('');
+    setIsShaking(false);
   }, []);
 
   useEffect(() => {
@@ -96,12 +130,14 @@ export default function CyberWordleModal({
     return statuses;
   }, [guesses, targetWord, getLetterStatuses]);
 
-  // Audio effects
+  // Audio synthesizer effects with audio unlock
   const playWordleSound = useCallback((type) => {
     try {
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
       if (!AudioCtx) return;
       const ctx = new AudioCtx();
+      if (ctx.state === 'suspended') ctx.resume();
+
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.connect(gain);
@@ -115,6 +151,7 @@ export default function CyberWordleModal({
         gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
         osc.start(now);
         osc.stop(now + 0.05);
+        if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(10);
       } else if (type === 'win') {
         osc.type = 'sine';
         osc.frequency.setValueAtTime(523.25, now);
@@ -125,6 +162,7 @@ export default function CyberWordleModal({
         gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
         osc.start(now);
         osc.stop(now + 0.5);
+        if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate([30, 50, 80]);
       } else if (type === 'error') {
         osc.type = 'sawtooth';
         osc.frequency.setValueAtTime(160, now);
@@ -132,6 +170,7 @@ export default function CyberWordleModal({
         gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
         osc.start(now);
         osc.stop(now + 0.15);
+        if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(40);
       }
     } catch (e) {}
   }, []);
@@ -142,9 +181,13 @@ export default function CyberWordleModal({
 
     if (key === 'ENTER') {
       if (currentGuess.length < 5) {
-        setErrorMessage('Must be 5 letters!');
+        setErrorMessage('Needs 5 letters!');
+        setIsShaking(true);
         playWordleSound('error');
-        setTimeout(() => setErrorMessage(''), 1500);
+        setTimeout(() => {
+          setErrorMessage('');
+          setIsShaking(false);
+        }, 1200);
         return;
       }
 
@@ -154,13 +197,17 @@ export default function CyberWordleModal({
 
       if (currentGuess === targetWord) {
         setGameStatus('won');
+        updateStats(true);
         playWordleSound('win');
-        if (onAddXp) onAddXp(100, 'Cyber Wordle Solved');
+        if (onAddXp) onAddXp(120, 'Cyber Wordle Decrypted');
         if (onPlayChime) onPlayChime();
       } else if (newGuesses.length >= 6) {
         setGameStatus('lost');
+        updateStats(false);
         playWordleSound('error');
-        if (onAddXp) onAddXp(25, 'Wordle Attempt');
+        if (onAddXp) onAddXp(25, 'Wordle Run');
+      } else {
+        playWordleSound('type');
       }
     } else if (key === 'BACKSPACE' || key === '⌫') {
       setCurrentGuess(prev => prev.slice(0, -1));
@@ -169,7 +216,7 @@ export default function CyberWordleModal({
       setCurrentGuess(prev => prev + key);
       playWordleSound('type');
     }
-  }, [currentGuess, gameStatus, guesses, onAddXp, onPlayChime, playWordleSound, targetWord]);
+  }, [currentGuess, gameStatus, guesses, onAddXp, onPlayChime, playWordleSound, targetWord, updateStats]);
 
   // Physical keyboard listener
   useEffect(() => {
@@ -193,7 +240,7 @@ export default function CyberWordleModal({
   if (!isOpen) return null;
 
   // Build Discord-style emoji share grid
-  const handleShareResult = () => {
+  const getShareText = () => {
     const rows = guesses.map(guess => {
       const statuses = getLetterStatuses(guess, targetWord);
       return statuses.map(s => {
@@ -203,13 +250,27 @@ export default function CyberWordleModal({
       }).join('');
     });
 
-    const shareText = `🟩 CYBER WORDLE ${gameStatus === 'won' ? `${guesses.length}/6` : 'X/6'}\n${rows.join('\n')}\nSecret: ${gameStatus === 'won' ? 'SOLVED! 🏆' : targetWord}`;
-    
+    return `🟩 CYBER WORDLE ${gameStatus === 'won' ? `${guesses.length}/6` : 'X/6'}\n${rows.join('\n')}\nTerm: ${gameStatus === 'won' ? 'SOLVED! 🏆' : targetWord}`;
+  };
+
+  const handleShareResult = () => {
+    const shareText = getShareText();
     if (onShareToChat) {
       onShareToChat(shareText);
       onClose();
     }
   };
+
+  const handleCopyGrid = () => {
+    const shareText = getShareText();
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(shareText);
+      setCopiedNotification(true);
+      setTimeout(() => setCopiedNotification(false), 2000);
+    }
+  };
+
+  const winRate = stats.played > 0 ? Math.round((stats.won / stats.played) * 100) : 0;
 
   return (
     <div className="arcade-activities-overlay" onClick={onClose}>
@@ -225,12 +286,32 @@ export default function CyberWordleModal({
             </div>
             <div>
               <div className="activities-main-title font-arcade">CYBER WORDLE</div>
-              <div className="activities-subtitle">Decipher the 5-letter Web3 cryptographic term in 6 tries</div>
+              <div className="activities-subtitle">Decipher the 5-letter Web3 term in 6 tries</div>
             </div>
           </div>
-          <button type="button" className="activities-close-btn font-arcade" onClick={onClose}>
+          <button type="button" className="activities-close-btn font-arcade" onClick={onClose} aria-label="Close Wordle">
             ✕ ESC
           </button>
+        </div>
+
+        {/* Player Mini Stats */}
+        <div className="wordle-stats-bar font-arcade">
+          <div className="stat-pill">
+            <span className="stat-label">PLAYED</span>
+            <span className="stat-num">{stats.played}</span>
+          </div>
+          <div className="stat-pill">
+            <span className="stat-label">WIN %</span>
+            <span className="stat-num">{winRate}%</span>
+          </div>
+          <div className="stat-pill">
+            <span className="stat-label">STREAK</span>
+            <span className="stat-num glow-gold">{stats.streak} 🔥</span>
+          </div>
+          <div className="stat-pill">
+            <span className="stat-label">BEST</span>
+            <span className="stat-num">{stats.maxStreak}</span>
+          </div>
         </div>
 
         {/* Status / Error Toast */}
@@ -238,22 +319,35 @@ export default function CyberWordleModal({
           <div className="wordle-toast font-arcade">{errorMessage}</div>
         )}
 
-        {/* Wordle 6x5 Grid */}
+        {/* 6x5 Wordle Letter Grid */}
         <div className="wordle-board">
-          {Array.from({ length: 6 }).map((_, rowIndex) => {
-            const isCurrentRow = rowIndex === guesses.length;
-            const guess = guesses[rowIndex] || (isCurrentRow ? currentGuess : '');
-            const evaluation = guesses[rowIndex] ? getLetterStatuses(guesses[rowIndex], targetWord) : [];
+          {Array(6).fill(null).map((_, rowIdx) => {
+            const isCompletedRow = rowIdx < guesses.length;
+            const isCurrentRow = rowIdx === guesses.length;
+            const guess = isCompletedRow 
+              ? guesses[rowIdx] 
+              : isCurrentRow 
+                ? currentGuess 
+                : '';
+            const statuses = isCompletedRow ? getLetterStatuses(guess, targetWord) : [];
 
             return (
-              <div key={rowIndex} className="wordle-row">
-                {Array.from({ length: 5 }).map((_, colIndex) => {
-                  const letter = guess[colIndex] || '';
-                  const status = evaluation[colIndex] || (letter ? 'active' : 'empty');
+              <div 
+                key={rowIdx} 
+                className={`wordle-row ${isCurrentRow && isShaking ? 'row-shaking' : ''}`}
+              >
+                {Array(5).fill(null).map((_, colIdx) => {
+                  const letter = guess[colIdx] || '';
+                  const status = statuses[colIdx] || '';
+                  const hasLetter = Boolean(letter);
+
                   return (
-                    <div 
-                      key={colIndex} 
-                      className={`wordle-cell ${status} font-arcade`}
+                    <div
+                      key={colIdx}
+                      className={`wordle-cell ${status} ${hasLetter && isCurrentRow ? 'active' : ''} ${isCompletedRow ? 'flipped' : ''}`}
+                      style={{
+                        animationDelay: isCompletedRow ? `${colIdx * 120}ms` : '0ms'
+                      }}
                     >
                       {letter}
                     </div>
@@ -264,18 +358,19 @@ export default function CyberWordleModal({
           })}
         </div>
 
-        {/* Win / Loss Banner */}
+        {/* Game Completed Result Card */}
         {gameStatus !== 'in_progress' && (
           <div className="wordle-result-banner font-arcade">
             {gameStatus === 'won' ? (
               <div className="win-message">
-                <span>🎉 DECRYPTED IN {guesses.length}/6 TRIES! (+100 XP)</span>
+                ★ ACCESS GRANTED! Solved in {guesses.length}/6 ★
               </div>
             ) : (
               <div className="loss-message">
-                <span>💀 OUT OF ATTEMPTS! THE WORD WAS: <strong>{targetWord}</strong></span>
+                ⚠ CIPHER LOCKED! Secret word was: <strong>{targetWord}</strong>
               </div>
             )}
+
             <div className="wordle-action-row">
               <button 
                 type="button" 
@@ -286,30 +381,38 @@ export default function CyberWordleModal({
               </button>
               <button 
                 type="button" 
+                className="wordle-copy-btn font-arcade"
+                onClick={handleCopyGrid}
+              >
+                {copiedNotification ? 'COPIED! ✓' : 'COPY GRID 📋'}
+              </button>
+              <button 
+                type="button" 
                 className="wordle-replay-btn font-arcade"
                 onClick={startNewGame}
               >
-                NEXT WORD 🔄
+                NEXT CIPHER 🔄
               </button>
             </div>
           </div>
         )}
 
-        {/* Virtual Keyboard */}
+        {/* Touch-Friendly Virtual QWERTY Keyboard */}
         <div className="wordle-keyboard">
           {KEYBOARD_ROWS.map((row, rIdx) => (
             <div key={rIdx} className="keyboard-row">
-              {row.map((k) => {
-                const status = keyStatuses[k] || '';
-                const isSpecial = k === 'ENTER' || k === '⌫';
+              {row.map((key) => {
+                const status = keyStatuses[key] || '';
+                const isSpecial = key === 'ENTER' || key === '⌫';
                 return (
                   <button
-                    key={k}
+                    key={key}
                     type="button"
-                    className={`key-btn ${status} ${isSpecial ? 'special' : ''} font-arcade`}
-                    onClick={() => handleKey(k)}
+                    className={`key-btn ${isSpecial ? 'special' : ''} ${status} font-arcade`}
+                    onClick={() => handleKey(key)}
+                    aria-label={`Key ${key}`}
                   >
-                    {k}
+                    {key}
                   </button>
                 );
               })}

@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { PixelGamepad, PixelTrophy, PixelSwords, PixelCoin, PixelZap } from './PixelIcons';
 
 export const ACTIVITIES = [
@@ -7,6 +7,7 @@ export const ACTIVITIES = [
     id: 'snake',
     name: 'CYBER SNAKE',
     category: 'ARCADE ACTION',
+    typeGroup: 'solo',
     emoji: '🐍',
     badge: 'HOT 🔥',
     description: 'Classic 8-bit snake in a retro neon grid. Gobble crypto orbs, avoid walls, and challenge friends to beat your high score in chat!',
@@ -17,36 +18,29 @@ export const ACTIVITIES = [
     id: 'wordle',
     name: 'CYBER WORDLE',
     category: 'PUZZLE & TECH',
+    typeGroup: 'solo',
     emoji: '🟩',
     badge: 'DAILY',
     description: 'Guess the secret 5-letter blockchain or cypherpunk term in 6 tries with colored hints. Share your emoji score grid into the chat!',
     color: '#00f0ff',
-    xpReward: '+100 XP'
+    xpReward: '+120 XP'
   },
   {
     id: 'blackjack',
     name: 'CYBER 21 (BLACKJACK)',
     category: 'CASINO DUEL',
+    typeGroup: 'solo',
     emoji: '🃏',
-    badge: 'PVP & DEALER',
+    badge: 'DOUBLE DOWN ⚡',
     description: 'Hit, Stand, or Double Down at the neon felt table. Beat the dealer to 21 without busting to stack arcade chips and XP!',
     color: '#ffd166',
-    xpReward: '+120 XP'
-  },
-  {
-    id: 'sketch',
-    name: 'PIXEL PICTIONARY',
-    category: 'CREATIVE & SOCIAL',
-    emoji: '🎨',
-    badge: 'DISCORD FAV',
-    description: 'Draw 8-bit pixel art on a 16x16 canvas with retro palettes. Send the sketch mystery into chat for your peers to guess the secret word!',
-    color: '#ff007f',
-    xpReward: '+100 XP'
+    xpReward: '+150 XP'
   },
   {
     id: 'tictactoe',
     name: 'CYBER TIC-TAC-TOE',
     category: 'STRATEGY DUEL',
+    typeGroup: 'pvp',
     emoji: '❌⭕',
     badge: 'TURN-BASED',
     description: 'Fast head-to-head 3x3 neon grid battle. Place your cyber tokens in turn-based chat rounds to claim victory lines!',
@@ -57,6 +51,7 @@ export const ACTIVITIES = [
     id: 'rps',
     name: 'CYPHER RPS DUEL',
     category: 'ON-CHAIN ESCROW',
+    typeGroup: 'pvp',
     emoji: '✊',
     badge: 'ETH BOUNTY',
     description: 'Rock-Paper-Scissors with Keccak-256 commit-reveal escrow. Lock ETH wagers on-chain and settle provably fair bouts!',
@@ -64,9 +59,21 @@ export const ACTIVITIES = [
     xpReward: '+100 XP + ETH'
   },
   {
+    id: 'sketch',
+    name: 'PIXEL PICTIONARY',
+    category: 'CREATIVE & SOCIAL',
+    typeGroup: 'social',
+    emoji: '🎨',
+    badge: 'DISCORD FAV',
+    description: 'Draw 8-bit pixel art on a 16x16 canvas with flood fill & undo. Send the sketch mystery into chat for peers to guess!',
+    color: '#ff007f',
+    xpReward: '+100 XP'
+  },
+  {
     id: 'capsule',
     name: 'TIME CAPSULE VAULT',
     category: 'TIMELOCKED ESCROW',
+    typeGroup: 'social',
     emoji: '⏳',
     badge: 'SMART CONTRACT',
     description: 'Seal secret messages, photos, and ETH bounties in a cryptographic time vault that only unlocks in the future!',
@@ -75,12 +82,32 @@ export const ACTIVITIES = [
   }
 ];
 
+const TABS = [
+  { id: 'all', label: 'ALL GAMES' },
+  { id: 'solo', label: 'SOLO ARCADE' },
+  { id: 'pvp', label: 'PVP DUELS' },
+  { id: 'social', label: 'CREATIVE & VAULT' }
+];
+
 export default function ArcadeActivitiesModal({
   isOpen,
   onClose,
   onSelectActivity
 }) {
   const [hoveredActivity, setHoveredActivity] = useState(null);
+  const [selectedTab, setSelectedTab] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredActivities = useMemo(() => {
+    return ACTIVITIES.filter(act => {
+      const matchesTab = selectedTab === 'all' || act.typeGroup === selectedTab;
+      const matchesQuery = !searchQuery.trim() || 
+        act.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        act.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        act.description.toLowerCase().includes(searchQuery.toLowerCase());
+      return matchesTab && matchesQuery;
+    });
+  }, [selectedTab, searchQuery]);
 
   if (!isOpen) return null;
 
@@ -99,7 +126,7 @@ export default function ArcadeActivitiesModal({
             <div>
               <div className="activities-main-title font-arcade">ARCADE ACTIVITIES HUB</div>
               <div className="activities-subtitle">
-                Launch multiplayer mini-games and social challenges right in your chat
+                Launch interactive multiplayer games & cryptographic challenges in chat
               </div>
             </div>
           </div>
@@ -115,15 +142,40 @@ export default function ArcadeActivitiesModal({
 
         {/* Featured Activity Banner */}
         <div className="activities-banner">
-          <div className="banner-badge font-arcade">🚀 DISCORD-STYLE ACTIVITIES</div>
+          <div className="banner-badge font-arcade">🚀 DISCORD-STYLE ACTIVITIES SUITE</div>
           <div className="banner-desc">
-            Play solo high-score challenges, battle 1-on-1 with friends, or challenge <strong>BlockBot AI</strong> to instant matches with zero wait time!
+            Play solo high-score runs, battle 1-on-1 with friends, or challenge <strong>BlockBot AI</strong> to instant matches with zero wait time!
+          </div>
+        </div>
+
+        {/* Filter Tabs & Search Bar */}
+        <div className="activities-filter-bar">
+          <div className="activities-tabs-row">
+            {TABS.map(tab => (
+              <button
+                key={tab.id}
+                type="button"
+                className={`act-tab-btn font-arcade ${selectedTab === tab.id ? 'active' : ''}`}
+                onClick={() => setSelectedTab(tab.id)}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+          <div className="activities-search-wrap">
+            <input
+              type="text"
+              className="activities-search-input font-arcade"
+              placeholder="Search activity..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
           </div>
         </div>
 
         {/* Activities Grid */}
         <div className="activities-grid">
-          {ACTIVITIES.map((act) => {
+          {filteredActivities.map((act) => {
             const isHovered = hoveredActivity === act.id;
             return (
               <div
@@ -159,16 +211,22 @@ export default function ArcadeActivitiesModal({
                     type="button" 
                     className="activity-launch-btn font-arcade"
                   >
-                    LAUNCH ▶
+                    PLAY ▶
                   </button>
                 </div>
               </div>
             );
           })}
+
+          {filteredActivities.length === 0 && (
+            <div className="no-activities-found font-arcade">
+              <span>No activities found matching &quot;{searchQuery}&quot;</span>
+            </div>
+          )}
         </div>
 
         {/* Footer info */}
-        <div className="activities-footer-note">
+        <div className="activities-footer-note font-arcade">
           <span>🎮 All games are synchronized with live chat state and reward on-chain XP ranks</span>
         </div>
       </div>

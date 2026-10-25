@@ -32,6 +32,7 @@ export default function TicTacToeCard({
   onPlayChime
 }) {
   const [submittingIdx, setSubmittingIdx] = useState(null);
+  const [hoveredIdx, setHoveredIdx] = useState(null);
 
   const board = gameData.board || Array(9).fill(null);
   const status = gameData.status || 'active'; // 'active' | 'resolved'
@@ -62,10 +63,38 @@ export default function TicTacToeCard({
 
   const isUserWinner = winnerSymbol === mySymbol;
 
+  // Retro sound synthesizer for move placement
+  const playMoveSound = (symbol) => {
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      if (ctx.state === 'suspended') ctx.resume();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      const now = ctx.currentTime;
+      osc.type = symbol === 'X' ? 'triangle' : 'sine';
+      osc.frequency.setValueAtTime(symbol === 'X' ? 440 : 554.37, now);
+      osc.frequency.exponentialRampToValueAtTime(symbol === 'X' ? 880 : 783.99, now + 0.08);
+      gain.gain.setValueAtTime(0.09, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+      osc.start(now);
+      osc.stop(now + 0.08);
+
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        navigator.vibrate(15);
+      }
+    } catch (e) {}
+  };
+
   // Move handler
   const handleCellClick = async (idx) => {
     if (!isMyTurn || board[idx] || isResolved || submittingIdx !== null) return;
     setSubmittingIdx(idx);
+    playMoveSound(mySymbol);
 
     const nextBoard = [...board];
     nextBoard[idx] = mySymbol;
@@ -119,7 +148,7 @@ export default function TicTacToeCard({
               <span>VICTORY! YOU TOOK THE LINE (+100 XP)</span>
             </span>
           ) : (
-            <span className="outcome defeat">💀 ROUND CONCLUDED</span>
+            <span className="outcome defeat">💀 ROUND CONCLUDED (WINNER: {winnerSymbol})</span>
           )
         ) : isMyTurn ? (
           <span className="turn-indicator your-turn">
@@ -132,12 +161,13 @@ export default function TicTacToeCard({
         )}
       </div>
 
-      {/* 3x3 Grid */}
+      {/* 3x3 Grid with Ghost Preview on Hover */}
       <div className="ttt-grid">
         {board.map((cell, idx) => {
           const isWinningCell = winningCombo.includes(idx);
           const isEmpty = !cell;
           const canClick = isMyTurn && isEmpty && !isResolved;
+          const isHovered = hoveredIdx === idx && canClick;
 
           return (
             <button
@@ -146,9 +176,17 @@ export default function TicTacToeCard({
               className={`ttt-cell ${cell || ''} ${isWinningCell ? 'win-cell' : ''} ${canClick ? 'clickable' : ''} font-arcade`}
               disabled={!canClick}
               onClick={() => handleCellClick(idx)}
+              onMouseEnter={() => setHoveredIdx(idx)}
+              onMouseLeave={() => setHoveredIdx(null)}
+              aria-label={`Cell ${idx + 1}`}
             >
               {cell === 'X' && <span className="cell-x">✕</span>}
               {cell === 'O' && <span className="cell-o">◯</span>}
+              {!cell && isHovered && (
+                <span className={`cell-ghost ${mySymbol === 'X' ? 'cell-x' : 'cell-o'}`}>
+                  {mySymbol === 'X' ? '✕' : '◯'}
+                </span>
+              )}
             </button>
           );
         })}

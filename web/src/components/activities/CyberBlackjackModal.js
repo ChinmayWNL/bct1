@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { PixelCoin, PixelTrophy, PixelZap } from '../PixelIcons';
 
 const SUITS = [
@@ -57,8 +57,10 @@ export default function CyberBlackjackModal({
   const [dealerHand, setDealerHand] = useState([]);
   const [gameState, setGameState] = useState('betting'); // 'betting' | 'playing' | 'dealer_turn' | 'resolved'
   const [bet, setBet] = useState(50);
+  const [activeWager, setActiveWager] = useState(50);
   const [resultMessage, setResultMessage] = useState('');
-  const [winner, setWinner] = useState(null); // 'player' | 'dealer' | 'push' | 'blackjack'
+  const [winner, setWinner] = useState(null); // 'player' | 'dealer' | 'push' | 'blackjack' | 'charlie'
+  const [isDealingDealer, setIsDealingDealer] = useState(false);
 
   // Audio synthesizer for card flips and victory
   const playCardSound = useCallback((type) => {
@@ -66,6 +68,8 @@ export default function CyberBlackjackModal({
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
       if (!AudioCtx) return;
       const ctx = new AudioCtx();
+      if (ctx.state === 'suspended') ctx.resume();
+
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.connect(gain);
@@ -74,20 +78,38 @@ export default function CyberBlackjackModal({
       const now = ctx.currentTime;
       if (type === 'deal') {
         osc.type = 'triangle';
-        osc.frequency.setValueAtTime(400, now);
-        osc.frequency.exponentialRampToValueAtTime(150, now + 0.08);
+        osc.frequency.setValueAtTime(420, now);
+        osc.frequency.exponentialRampToValueAtTime(140, now + 0.08);
         gain.gain.setValueAtTime(0.08, now);
         gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
         osc.start(now);
         osc.stop(now + 0.08);
+        if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(12);
+      } else if (type === 'chip') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(720, now);
+        osc.frequency.exponentialRampToValueAtTime(1100, now + 0.04);
+        gain.gain.setValueAtTime(0.06, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.04);
+        osc.start(now);
+        osc.stop(now + 0.04);
       } else if (type === 'win') {
         osc.type = 'square';
         osc.frequency.setValueAtTime(587.33, now);
         osc.frequency.setValueAtTime(880, now + 0.12);
         gain.gain.setValueAtTime(0.12, now);
-        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
         osc.start(now);
-        osc.stop(now + 0.3);
+        osc.stop(now + 0.35);
+        if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate([30, 40, 70]);
+      } else if (type === 'bust') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(220, now);
+        osc.frequency.exponentialRampToValueAtTime(80, now + 0.25);
+        gain.gain.setValueAtTime(0.14, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+        osc.start(now);
+        osc.stop(now + 0.25);
       }
     } catch (e) {}
   }, []);
@@ -106,9 +128,11 @@ export default function CyberBlackjackModal({
     setDeck(newDeck);
     setPlayerHand(pHand);
     setDealerHand(dHand);
+    setActiveWager(bet);
     setGameState('playing');
     setWinner(null);
     setResultMessage('');
+    setIsDealingDealer(false);
 
     playCardSound('deal');
 
@@ -119,14 +143,14 @@ export default function CyberBlackjackModal({
     if (pScore === 21) {
       if (dScore === 21) {
         setWinner('push');
-        setResultMessage('Both hold 21! Push / Stalemate 🤝');
+        setResultMessage('Both hold Natural 21! Stand-off Push 🤝');
         setGameState('resolved');
       } else {
         setWinner('blackjack');
         setResultMessage('NATURAL BLACKJACK! PAYS 3:2! 🏆');
         setGameState('resolved');
         playCardSound('win');
-        if (onAddXp) onAddXp(bet * 2, 'Cyber Blackjack Natural');
+        if (onAddXp) onAddXp(Math.round(bet * 2.5), 'Cyber Blackjack Natural');
         if (onPlayChime) onPlayChime();
       }
     }
@@ -146,53 +170,98 @@ export default function CyberBlackjackModal({
     const score = calculateHandScore(newHand);
     if (score > 21) {
       setWinner('dealer');
-      setResultMessage(`Bust (${score})! Dealer takes the round 💀`);
+      setResultMessage(`Bust (${score})! Dealer claims the pot 💀`);
       setGameState('resolved');
+      playCardSound('bust');
+    } else if (newHand.length === 5 && score <= 21) {
+      // 5-Card Charlie bonus
+      setWinner('charlie');
+      setResultMessage('5-CARD CHARLIE! Instant Victory! 🌟');
+      setGameState('resolved');
+      playCardSound('win');
+      if (onAddXp) onAddXp(activeWager * 2, '5-Card Charlie');
+      if (onPlayChime) onPlayChime();
     }
   };
 
-  // Player Stands -> Dealer plays
+  // Double Down: Double bet, take exactly 1 card, then stand
+  const handleDoubleDown = () => {
+    if (gameState !== 'playing' || playerHand.length !== 2) return;
+    const currentDeck = [...deck];
+    if (currentDeck.length === 0) return;
+    const card = currentDeck.pop();
+    const newHand = [...playerHand, card];
+    const newWager = activeWager * 2;
+    setActiveWager(newWager);
+    setDeck(currentDeck);
+    setPlayerHand(newHand);
+    playCardSound('deal');
+
+    const score = calculateHandScore(newHand);
+    if (score > 21) {
+      setWinner('dealer');
+      setResultMessage(`Bust on Double Down (${score})! Dealer wins 💀`);
+      setGameState('resolved');
+      playCardSound('bust');
+    } else {
+      // Proceed to dealer resolution with new hand
+      resolveDealerTurn(newHand, currentDeck, newWager);
+    }
+  };
+
+  // Suspenseful dealer step-by-step turn
+  const resolveDealerTurn = (finalPlayerHand, remainingDeck, currentWager) => {
+    setGameState('dealer_turn');
+    setIsDealingDealer(true);
+
+    let curDeck = [...remainingDeck];
+    let dHand = [...dealerHand];
+
+    const playDealerStep = () => {
+      let dScore = calculateHandScore(dHand);
+      if (dScore < 17 && curDeck.length > 0) {
+        const nextCard = curDeck.pop();
+        dHand.push(nextCard);
+        setDealerHand([...dHand]);
+        setDeck([...curDeck]);
+        playCardSound('deal');
+        setTimeout(playDealerStep, 500);
+      } else {
+        // Final evaluation
+        setIsDealingDealer(false);
+        const pScore = calculateHandScore(finalPlayerHand);
+        const finalDealerScore = calculateHandScore(dHand);
+
+        if (finalDealerScore > 21) {
+          setWinner('player');
+          setResultMessage(`Dealer busts (${finalDealerScore})! YOU WIN! +${currentWager} XP 🏆`);
+          playCardSound('win');
+          if (onAddXp) onAddXp(currentWager, 'Blackjack Win');
+          if (onPlayChime) onPlayChime();
+        } else if (pScore > finalDealerScore) {
+          setWinner('player');
+          setResultMessage(`Victory! Your ${pScore} beats Dealer's ${finalDealerScore}! +${currentWager} XP 🏆`);
+          playCardSound('win');
+          if (onAddXp) onAddXp(currentWager, 'Blackjack Win');
+          if (onPlayChime) onPlayChime();
+        } else if (finalDealerScore > pScore) {
+          setWinner('dealer');
+          setResultMessage(`Dealer wins with ${finalDealerScore} vs your ${pScore} 💀`);
+          playCardSound('bust');
+        } else {
+          setWinner('push');
+          setResultMessage(`Tied at ${pScore}! Stand-off Push 🤝`);
+        }
+        setGameState('resolved');
+      }
+    };
+
+    setTimeout(playDealerStep, 400);
+  };
+
   const handleStand = () => {
     if (gameState !== 'playing') return;
-    setGameState('dealer_turn');
-
-    let currentDeck = [...deck];
-    let dHand = [...dealerHand];
-    let dScore = calculateHandScore(dHand);
-
-    // Dealer hits until >= 17
-    while (dScore < 17 && currentDeck.length > 0) {
-      const card = currentDeck.pop();
-      dHand.push(card);
-      dScore = calculateHandScore(dHand);
-    }
-
-    setDeck(currentDeck);
-    setDealerHand(dHand);
-
-    const pScore = calculateHandScore(playerHand);
-
-    if (dScore > 21) {
-      setWinner('player');
-      setResultMessage(`Dealer busts (${dScore})! YOU WIN! +${bet} XP 🏆`);
-      playCardSound('win');
-      if (onAddXp) onAddXp(bet, 'Blackjack Win');
-      if (onPlayChime) onPlayChime();
-    } else if (pScore > dScore) {
-      setWinner('player');
-      setResultMessage(`High Hand! ${pScore} beats ${dScore}! YOU WIN! +${bet} XP 🏆`);
-      playCardSound('win');
-      if (onAddXp) onAddXp(bet, 'Blackjack Win');
-      if (onPlayChime) onPlayChime();
-    } else if (dScore > pScore) {
-      setWinner('dealer');
-      setResultMessage(`Dealer wins with ${dScore} vs your ${pScore} 💀`);
-    } else {
-      setWinner('push');
-      setResultMessage(`Tied at ${pScore}! Stand-off push 🤝`);
-    }
-
-    setGameState('resolved');
+    resolveDealerTurn(playerHand, deck, activeWager);
   };
 
   if (!isOpen) return null;
@@ -204,10 +273,15 @@ export default function CyberBlackjackModal({
 
   const handleShareToChat = () => {
     if (onShareToChat) {
-      const text = `🃏 CYBER 21 RESULT: ${winner === 'player' || winner === 'blackjack' ? 'VICTORY 🏆' : 'ROUND PLAYED'}\nPlayer: ${playerScore} pts | Dealer: ${calculateHandScore(dealerHand)} pts\n${resultMessage}`;
+      const text = `🃏 CYBER 21 RESULT: ${winner === 'player' || winner === 'blackjack' || winner === 'charlie' ? 'VICTORY 🏆' : 'ROUND PLAYED'}\nPlayer: ${playerScore} pts | Dealer: ${calculateHandScore(dealerHand)} pts | Wager: ${activeWager} XP\n${resultMessage}`;
       onShareToChat(text);
       onClose();
     }
+  };
+
+  const handleAddChip = (amount) => {
+    playCardSound('chip');
+    setBet(prev => Math.min(1000, prev + amount));
   };
 
   return (
@@ -224,28 +298,32 @@ export default function CyberBlackjackModal({
             </div>
             <div>
               <div className="activities-main-title font-arcade">CYBER 21 (BLACKJACK)</div>
-              <div className="activities-subtitle">Reach 21 without busting. Beat the dealer to stack XP!</div>
+              <div className="activities-subtitle">Hit, Stand or Double Down • Beat BlockBot AI to stack chips!</div>
             </div>
           </div>
-          <button type="button" className="activities-close-btn font-arcade" onClick={onClose}>
+          <button type="button" className="activities-close-btn font-arcade" onClick={onClose} aria-label="Close Cyber 21">
             ✕ ESC
           </button>
         </div>
 
-        {/* Blackjack Table Arena */}
+        {/* Blackjack Felt Table Arena */}
         <div className="blackjack-table">
           {/* Dealer Area */}
           <div className="table-area dealer">
             <div className="area-title-bar font-arcade">
-              <span>DEALER HAND {gameState !== 'betting' && `(${gameState === 'playing' ? `${dealerScore} + ?` : dealerScore})`}</span>
+              <span>DEALER (BLOCKBOT AI) {gameState !== 'betting' && `(${gameState === 'playing' ? `${dealerScore} + ?` : dealerScore})`}</span>
+              {isDealingDealer && <span className="dealer-thinking-tag glow-cyan font-arcade">DEALING...</span>}
             </div>
             <div className="cards-row">
               {dealerHand.map((card, idx) => {
                 const isHidden = gameState === 'playing' && idx === 1;
                 return (
-                  <div key={card.id || idx} className={`blackjack-card ${isHidden ? 'hidden' : ''}`}>
+                  <div key={card.id || idx} className={`blackjack-card ${isHidden ? 'hidden' : 'dealt'}`}>
                     {isHidden ? (
-                      <div className="card-back font-arcade">🤖 21</div>
+                      <div className="card-back font-arcade">
+                        <span className="back-emblem">🤖</span>
+                        <span className="back-text">CYBER 21</span>
+                      </div>
                     ) : (
                       <div className="card-face" style={{ color: card.suit.color }}>
                         <div className="card-corner top font-arcade">{card.value}</div>
@@ -257,7 +335,7 @@ export default function CyberBlackjackModal({
                 );
               })}
               {dealerHand.length === 0 && (
-                <div className="empty-hand-placeholder font-arcade">AWAITING DEAL...</div>
+                <div className="empty-hand-placeholder font-arcade">PLACE CHIPS & DEAL HAND</div>
               )}
             </div>
           </div>
@@ -273,11 +351,11 @@ export default function CyberBlackjackModal({
           <div className="table-area player">
             <div className="area-title-bar font-arcade">
               <span>YOUR HAND {gameState !== 'betting' && `(${playerScore})`}</span>
-              <span className="bet-indicator">WAGER: {bet} XP</span>
+              <span className="bet-indicator">POT: {activeWager} XP</span>
             </div>
             <div className="cards-row">
               {playerHand.map((card, idx) => (
-                <div key={card.id || idx} className="blackjack-card">
+                <div key={card.id || idx} className="blackjack-card dealt">
                   <div className="card-face" style={{ color: card.suit.color }}>
                     <div className="card-corner top font-arcade">{card.value}</div>
                     <div className="card-suit">{card.suit.symbol}</div>
@@ -286,7 +364,7 @@ export default function CyberBlackjackModal({
                 </div>
               ))}
               {playerHand.length === 0 && (
-                <div className="empty-hand-placeholder font-arcade">SELECT WAGER & DEAL</div>
+                <div className="empty-hand-placeholder font-arcade">CHOOSE BET TO ENTER FELT</div>
               )}
             </div>
           </div>
@@ -297,17 +375,30 @@ export default function CyberBlackjackModal({
           {gameState === 'betting' || gameState === 'resolved' ? (
             <div className="betting-controls">
               <div className="chip-picker font-arcade">
-                <span>CHIPS:</span>
-                {[25, 50, 100, 250].map((amount) => (
+                <span className="chip-label">WAGER:</span>
+                <div className="chip-buttons-wrap">
+                  {[25, 50, 100, 250].map((amount) => (
+                    <button
+                      key={amount}
+                      type="button"
+                      className={`chip-btn ${bet === amount ? 'active' : ''}`}
+                      onClick={() => {
+                        playCardSound('chip');
+                        setBet(amount);
+                      }}
+                    >
+                      {amount}
+                    </button>
+                  ))}
                   <button
-                    key={amount}
                     type="button"
-                    className={`chip-btn ${bet === amount ? 'active' : ''}`}
-                    onClick={() => setBet(amount)}
+                    className="chip-btn chip-add"
+                    onClick={() => handleAddChip(50)}
+                    title="Add +50 to Bet"
                   >
-                    {amount}
+                    +50
                   </button>
-                ))}
+                </div>
               </div>
               <div className="action-buttons-row">
                 <button
@@ -315,7 +406,7 @@ export default function CyberBlackjackModal({
                   className="deal-btn font-arcade"
                   onClick={startDeal}
                 >
-                  DEAL HAND ▶
+                  DEAL HAND ({bet} XP) ▶
                 </button>
                 {gameState === 'resolved' && (
                   <button
@@ -346,6 +437,17 @@ export default function CyberBlackjackModal({
               >
                 STAND ✋
               </button>
+              {playerHand.length === 2 && (
+                <button
+                  type="button"
+                  className="action-btn double font-arcade"
+                  disabled={gameState !== 'playing'}
+                  onClick={handleDoubleDown}
+                  title="Double Wager, Get 1 Card, and Stand"
+                >
+                  DOUBLE 2x ⚡
+                </button>
+              )}
             </div>
           )}
         </div>

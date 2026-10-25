@@ -92,9 +92,32 @@ export default function ArcadeDuelCard({
   const challengerName = isChallenger ? 'YOU (P1)' : formatShort(duelData.challenger);
   const opponentName = isOpponent ? 'YOU (P2)' : (duelData.opponent ? formatShort(duelData.opponent) : 'Player 2');
 
+  const playDuelMoveSound = () => {
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      if (ctx.state === 'suspended') ctx.resume();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      const now = ctx.currentTime;
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(350, now);
+      osc.frequency.exponentialRampToValueAtTime(700, now + 0.08);
+      gain.gain.setValueAtTime(0.1, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+      osc.start(now);
+      osc.stop(now + 0.08);
+      if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(20);
+    } catch {}
+  };
+
   // Challenger picks initial hand
   const handleChallengerPick = async (moveId) => {
     if (isSubmitting) return;
+    playDuelMoveSound();
     setSelectedMove(moveId);
     setIsSubmitting(true);
     try {
@@ -109,6 +132,7 @@ export default function ArcadeDuelCard({
   // Opponent picks defending hand
   const handleOpponentPick = async (moveId) => {
     if (isSubmitting) return;
+    playDuelMoveSound();
     setSelectedMove(moveId);
     setIsSubmitting(true);
     try {
