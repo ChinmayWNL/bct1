@@ -17,6 +17,7 @@ export default function MobileArcadeHub({
   onOpenSendCrypto,
   onOpenRequestCrypto,
   onOpenDuel,
+  onOpenActivities,
   onOpenTimeCapsule,
   onOpenCipher,
   onSetDisappearingTimer,
@@ -40,15 +41,16 @@ export default function MobileArcadeHub({
       }
     },
     {
-      id: 'duel',
-      title: '1v1 Cypher Duel',
-      subtitle: 'Rock-Paper-Scissors with ETH wager',
-      icon: <PixelSwords size={24} color="#ff007f" />,
+      id: 'activities',
+      title: 'Arcade Activities',
+      subtitle: 'Mini-games: Snake, Wordle, 21, Pictionary & Duels',
+      icon: <PixelGamepad size={24} color="#ff007f" />,
       color: '#ff007f',
-      badge: 'PVP',
+      badge: 'GAMES 🎮',
       onClick: () => {
         onClose();
-        onOpenDuel('0');
+        if (onOpenActivities) onOpenActivities();
+        else onOpenDuel('0');
       }
     },
     {

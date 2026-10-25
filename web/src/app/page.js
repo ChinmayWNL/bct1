@@ -31,6 +31,14 @@ import PixelCoinBurst from '@/components/PixelCoinBurst';
 import LevelUpToast from '@/components/LevelUpToast';
 import PlayfairLockModal from '@/components/PlayfairLockModal';
 import ArcadeDuelCard, { determineRpsWinner } from '@/components/ArcadeDuelCard';
+import ArcadeActivitiesModal from '@/components/ArcadeActivitiesModal';
+import CyberSnakeModal from '@/components/activities/CyberSnakeModal';
+import CyberWordleModal from '@/components/activities/CyberWordleModal';
+import CyberBlackjackModal from '@/components/activities/CyberBlackjackModal';
+import PixelSketchModal from '@/components/activities/PixelSketchModal';
+import SketchGuessCard from '@/components/activities/SketchGuessCard';
+import SnakeChallengeCard from '@/components/activities/SnakeChallengeCard';
+import TicTacToeCard, { checkTicTacToeWinner } from '@/components/TicTacToeCard';
 import TimeCapsuleCard from '@/components/TimeCapsuleCard';
 import TimeCapsuleModal from '@/components/TimeCapsuleModal';
 import CopilotPalette from '@/components/CopilotPalette';
@@ -201,6 +209,13 @@ export default function Home() {
   const [showCopilotPalette, setShowCopilotPalette] = useState(false);
   const activeDuelCommitmentsRef = useRef({});
   const [openedCapsulesMap, setOpenedCapsulesMap] = useState({});
+
+  // Arcade Activities Suite State (Discord-style activities)
+  const [showActivitiesModal, setShowActivitiesModal] = useState(false);
+  const [showSnakeModal, setShowSnakeModal] = useState(false);
+  const [showWordleModal, setShowWordleModal] = useState(false);
+  const [showBlackjackModal, setShowBlackjackModal] = useState(false);
+  const [showSketchModal, setShowSketchModal] = useState(false);
   // On-chain invoice status keyed by onChainInvoiceId: { paidCount, maxPayers, cancelled, paidByMe }
   const [invoiceStatus, setInvoiceStatus] = useState({});
   // On-chain gift packet status keyed by onChainPacketId: { claimedCount, slots, expiresAt, refunded, remaining, claims, mine }
@@ -941,6 +956,152 @@ export default function Home() {
       }));
     } catch (err) {
       alert("Could not claim timeout: " + (err.reason || err.message));
+    }
+  };
+
+  // Discord-Style Arcade Activities Suite Handlers
+  const handleSelectActivity = (actId) => {
+    if (actId === 'snake') setShowSnakeModal(true);
+    else if (actId === 'wordle') setShowWordleModal(true);
+    else if (actId === 'blackjack') setShowBlackjackModal(true);
+    else if (actId === 'sketch') setShowSketchModal(true);
+    else if (actId === 'tictactoe') handleSendTicTacToe();
+    else if (actId === 'rps') handleSendDuelChallenge('0');
+  };
+
+  const handleSendTicTacToe = async () => {
+    if (!activeConversation) return;
+    const gameId = `ttt_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const payload = {
+      type: 'tictactoe',
+      gameId,
+      challenger: walletAddress || (userProfile?.username ? `@${userProfile.username}` : 'Player 1'),
+      challengerInboxId: xmtpClient?.inboxId || 'user-inbox',
+      opponent: activeConversation.peerAddress || 'Player 2',
+      opponentInboxId: activeConversation.peerAddress || 'peer-inbox',
+      board: Array(9).fill(null),
+      turn: 'X',
+      status: 'active',
+      winner: null,
+      timestamp: Date.now()
+    };
+    await broadcastJsonPayload(payload, 'Challenged you to Cyber Tic-Tac-Toe! ❌⭕');
+    addArcadeXp(10, 'Tic-Tac-Toe Created');
+  };
+
+  const handleMakeTicTacToeMove = async ({ gameId, board, turn, status, winner }) => {
+    const payload = {
+      type: 'tictactoe',
+      action: 'move',
+      gameId,
+      board,
+      turn,
+      status,
+      winner,
+      timestamp: Date.now()
+    };
+
+    setMessages(prev => prev.map(m => {
+      const d = parseMessageData(m);
+      if (d.type === 'tictactoe' && d.gameId === gameId) {
+        return {
+          ...m,
+          content: `[JSON_MSG]${JSON.stringify({
+            ...d,
+            board,
+            turn,
+            status,
+            winner
+          })}`
+        };
+      }
+      return m;
+    }));
+
+    if (activeConversation && !activeConversation.isDemoBot) {
+      try {
+        await activeConversation.sendText(`[JSON_MSG]${JSON.stringify(payload)}`);
+      } catch (err) {
+        console.warn("Failed to broadcast TicTacToe move:", err);
+      }
+    } else if (activeConversation?.isDemoBot && status !== 'resolved') {
+      triggerBotReply('', 'tictactoe_turn', { gameId, board });
+    }
+  };
+
+  const handleSendSnakeChallenge = async ({ score }) => {
+    if (!activeConversation) return;
+    const challengeId = `snake_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const payload = {
+      type: 'snake_challenge',
+      challengeId,
+      challenger: walletAddress || (userProfile?.username ? `@${userProfile.username}` : 'Player 1'),
+      challengerScore: score,
+      status: 'open',
+      opponentScore: 0,
+      timestamp: Date.now()
+    };
+    await broadcastJsonPayload(payload, `Cyber Snake Challenge: Can you beat ${score} pts? 🐍`);
+    addArcadeXp(20, 'Snake Challenge Sent');
+    if (activeConversation?.isDemoBot) {
+      triggerBotReply('', 'snake_challenge', { challengeId, targetScore: score });
+    }
+  };
+
+  const handleAcceptSnakeChallenge = (challengeId, targetScore) => {
+    setShowSnakeModal(true);
+  };
+
+  const handleSendSketch = async ({ pixels, secretWord, hint }) => {
+    if (!activeConversation) return;
+    const sketchId = `sketch_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const payload = {
+      type: 'sketch_guess',
+      sketchId,
+      creator: walletAddress || (userProfile?.username ? `@${userProfile.username}` : 'Player 1'),
+      pixels,
+      secretWord,
+      hint,
+      solved: false,
+      solvedBy: null,
+      timestamp: Date.now()
+    };
+    await broadcastJsonPayload(payload, `Pixel Pictionary Drawing! Guess the word (${hint}) 🎨`);
+    addArcadeXp(25, 'Pixel Sketch Broadcasted');
+    if (activeConversation?.isDemoBot) {
+      triggerBotReply('', 'sketch_guess', { sketchId, secretWord });
+    }
+  };
+
+  const handleSolveSketch = async (sketchId, solver) => {
+    const payload = {
+      type: 'sketch_guess',
+      action: 'solve',
+      sketchId,
+      solved: true,
+      solvedBy: solver,
+      timestamp: Date.now()
+    };
+
+    setMessages(prev => prev.map(m => {
+      const d = parseMessageData(m);
+      if (d.type === 'sketch_guess' && d.sketchId === sketchId) {
+        return {
+          ...m,
+          content: `[JSON_MSG]${JSON.stringify({
+            ...d,
+            solved: true,
+            solvedBy: solver
+          })}`
+        };
+      }
+      return m;
+    }));
+
+    if (activeConversation && !activeConversation.isDemoBot) {
+      try {
+        await activeConversation.sendText(`[JSON_MSG]${JSON.stringify(payload)}`);
+      } catch (e) {}
     }
   };
 
@@ -2906,6 +3067,63 @@ export default function Home() {
       }
       return true;
     }
+    if (data.type === 'tictactoe' && data.action === 'move') {
+      setMessages(prev => prev.map(m => {
+        const d = parseMessageData(m);
+        if (d.type === 'tictactoe' && d.gameId === data.gameId) {
+          return {
+            ...m,
+            content: `[JSON_MSG]${JSON.stringify({
+              ...d,
+              board: data.board || d.board,
+              turn: data.turn || d.turn,
+              status: data.status || d.status,
+              winner: data.winner !== undefined ? data.winner : d.winner
+            })}`
+          };
+        }
+        return m;
+      }));
+      playReceiveChime();
+      return false;
+    }
+    if (data.type === 'sketch_guess' && data.action === 'solve') {
+      setMessages(prev => prev.map(m => {
+        const d = parseMessageData(m);
+        if (d.type === 'sketch_guess' && d.sketchId === data.sketchId) {
+          return {
+            ...m,
+            content: `[JSON_MSG]${JSON.stringify({
+              ...d,
+              solved: true,
+              solvedBy: data.solvedBy || d.solvedBy
+            })}`
+          };
+        }
+        return m;
+      }));
+      playReceiveChime();
+      return false;
+    }
+    if (data.type === 'snake_challenge' && data.action === 'defend') {
+      setMessages(prev => prev.map(m => {
+        const d = parseMessageData(m);
+        if (d.type === 'snake_challenge' && d.challengeId === data.challengeId) {
+          return {
+            ...m,
+            content: `[JSON_MSG]${JSON.stringify({
+              ...d,
+              opponent: data.opponent || d.opponent,
+              opponentScore: data.opponentScore !== undefined ? data.opponentScore : d.opponentScore,
+              status: 'resolved'
+            })}`
+          };
+        }
+        return m;
+      }));
+      playReceiveChime();
+      return false;
+    }
     return true;
   };
 
@@ -3395,6 +3613,81 @@ export default function Home() {
           replyContent = `Price ticker verified! 📈 Keep stacking those sats and gwei.`;
         } else if (extraData?.widgetType === 'trivia') {
           replyContent = `Trivia battle ready! 👾 Pick your answer wisely for +50 XP.`;
+        }
+      } else if (type === 'tictactoe_turn') {
+        const gameId = extraData?.gameId;
+        const currentBoard = extraData?.board || [];
+        const openSpots = [];
+        currentBoard.forEach((val, idx) => {
+          if (!val) openSpots.push(idx);
+        });
+
+        if (openSpots.length > 0) {
+          const botChoice = openSpots[Math.floor(Math.random() * openSpots.length)];
+          const nextBoard = [...currentBoard];
+          nextBoard[botChoice] = 'O';
+          const evalRes = checkTicTacToeWinner(nextBoard);
+
+          setMessages(prev => prev.map(m => {
+            const d = parseMessageData(m);
+            if (d.type === 'tictactoe' && d.gameId === gameId) {
+              return {
+                ...m,
+                content: `[JSON_MSG]${JSON.stringify({
+                  ...d,
+                  board: nextBoard,
+                  turn: 'X',
+                  status: evalRes ? 'resolved' : 'active',
+                  winner: evalRes?.winner || null
+                })}`
+              };
+            }
+            return m;
+          }));
+
+          if (evalRes?.winner === 'O') {
+            replyContent = "❌⭕ I placed 'O' and took 3-in-a-row! Good game! 🤖";
+            addArcadeXp(25, 'Tic-Tac-Toe Match');
+          } else if (evalRes?.winner === 'draw') {
+            replyContent = "❌⭕ Stated at a draw! Stalemate across the grid. 🤝";
+            addArcadeXp(25, 'Tic-Tac-Toe Draw');
+          } else {
+            replyContent = `❌⭕ I placed my token at cell #${botChoice + 1}. Your turn!`;
+          }
+        }
+      } else if (type === 'sketch_guess') {
+        const sketchId = extraData?.sketchId;
+        const secretWord = extraData?.secretWord || 'ROCKET';
+        handleSolveSketch(sketchId, 'BlockBot AI 🤖');
+        replyContent = `🎨 Eureka! That 16x16 pixel masterpiece is definitely a ${secretWord.toUpperCase()}! 🚀 Fantastic drawing.`;
+        playReceiveChime();
+        addArcadeXp(50, 'Sketch Solved by Bot');
+      } else if (type === 'snake_challenge') {
+        const challengeId = extraData?.challengeId;
+        const targetScore = extraData?.targetScore || 100;
+        const botScore = targetScore + Math.floor(Math.random() * 50) - 20;
+
+        setMessages(prev => prev.map(m => {
+          const d = parseMessageData(m);
+          if (d.type === 'snake_challenge' && d.challengeId === challengeId) {
+            return {
+              ...m,
+              content: `[JSON_MSG]${JSON.stringify({
+                ...d,
+                opponent: 'BlockBot AI 🤖',
+                opponentScore: botScore,
+                status: 'resolved'
+              })}`
+            };
+          }
+          return m;
+        }));
+
+        if (botScore > targetScore) {
+          replyContent = `🐍 Challenge accepted! I just slithered my way to ${botScore} pts! Beat that next time! 🤖`;
+        } else {
+          replyContent = `🐍 Phew! I only managed ${botScore} pts. Your score of ${targetScore} pts is untouchable! 🏆`;
+          addArcadeXp(100, 'Snake Challenge Victory');
         }
       } else if (userMsgText && (userMsgText.toLowerCase().includes('hello') || userMsgText.toLowerCase().includes('hi'))) {
         replyContent = "Greetings! ⚡ Excited to pair with you on decentralized messaging.";
@@ -4635,10 +4928,10 @@ export default function Home() {
                       <button 
                         type="button" 
                         className="whatsapp-icon-action duel-action" 
-                        title="1v1 Arcade Duel (Cypher RPS)"
-                        onClick={() => handleSendDuelChallenge('0')}
+                        title="Arcade Activities & Games (Snake, Wordle, 21, Pictionary & Duels)"
+                        onClick={() => setShowActivitiesModal(true)}
                       >
-                        <PixelSwords size={18} color="#ff007f" />
+                        <PixelGamepad size={18} color="#ff007f" />
                       </button>
 
                       <button 
@@ -4994,6 +5287,42 @@ export default function Home() {
                             />
                           )}
 
+                          {/* Cyber Tic-Tac-Toe Duel Card */}
+                          {msgData.type === 'tictactoe' && (
+                            <TicTacToeCard
+                              gameData={msgData}
+                              currentAddress={walletAddress}
+                              currentInboxId={xmtpClient?.inboxId}
+                              isSent={isSent}
+                              onMakeMove={handleMakeTicTacToeMove}
+                              onStartRematch={handleSendTicTacToe}
+                              onAddXp={addArcadeXp}
+                              onPlayChime={playReceiveChime}
+                            />
+                          )}
+
+                          {/* Pixel Pictionary Guess Card */}
+                          {msgData.type === 'sketch_guess' && (
+                            <SketchGuessCard
+                              cardData={msgData}
+                              currentAddress={walletAddress}
+                              isSent={isSent}
+                              onSolve={handleSolveSketch}
+                              onAddXp={addArcadeXp}
+                              onPlayFanfare={playReceiveChime}
+                            />
+                          )}
+
+                          {/* Cyber Snake Challenge Card */}
+                          {msgData.type === 'snake_challenge' && (
+                            <SnakeChallengeCard
+                              cardData={msgData}
+                              currentAddress={walletAddress}
+                              isSent={isSent}
+                              onAcceptAndPlay={handleAcceptSnakeChallenge}
+                            />
+                          )}
+
                           {/* Timelocked Vault Capsule Card */}
                           {msgData.type === 'time_capsule' && (
                             <TimeCapsuleCard
@@ -5283,10 +5612,10 @@ export default function Home() {
                         <button 
                           type="button" 
                           className="whatsapp-composer-icon composer-extra-btn" 
-                          title="1v1 Arcade Duel (Cypher RPS)"
-                          onClick={() => handleSendDuelChallenge('0')}
+                          title="Arcade Activities & Games (Snake, Wordle, 21, Pictionary & Duels)"
+                          onClick={() => setShowActivitiesModal(true)}
                         >
-                          <PixelSwords size={20} color="#ff007f" />
+                          <PixelGamepad size={20} color="#ff007f" />
                         </button>
 
                         <button 
@@ -5560,6 +5889,44 @@ export default function Home() {
         />
       )}
 
+      {/* Discord-style Arcade Activities Suite Modals */}
+      <ArcadeActivitiesModal
+        isOpen={showActivitiesModal}
+        onClose={() => setShowActivitiesModal(false)}
+        onSelectActivity={handleSelectActivity}
+      />
+
+      <CyberSnakeModal
+        isOpen={showSnakeModal}
+        onClose={() => setShowSnakeModal(false)}
+        onSendChallenge={handleSendSnakeChallenge}
+        onAddXp={addArcadeXp}
+        onPlayChime={playReceiveChime}
+      />
+
+      <CyberWordleModal
+        isOpen={showWordleModal}
+        onClose={() => setShowWordleModal(false)}
+        onShareToChat={(text) => handleSendMessage(text)}
+        onAddXp={addArcadeXp}
+        onPlayChime={playReceiveChime}
+      />
+
+      <CyberBlackjackModal
+        isOpen={showBlackjackModal}
+        onClose={() => setShowBlackjackModal(false)}
+        onShareToChat={(text) => handleSendMessage(text)}
+        onAddXp={addArcadeXp}
+        onPlayChime={playReceiveChime}
+      />
+
+      <PixelSketchModal
+        isOpen={showSketchModal}
+        onClose={() => setShowSketchModal(false)}
+        onSendSketch={handleSendSketch}
+        onPlayChime={playReceiveChime}
+      />
+
       {/* Mobile Arcade Hub Slide-Up Drawer */}
       <MobileArcadeHub
         isOpen={showMobileArcadeHub}
@@ -5573,6 +5940,7 @@ export default function Home() {
           setShowSendCryptoModal(true);
         }}
         onOpenDuel={(wager) => handleSendDuelChallenge(wager || '0')}
+        onOpenActivities={() => setShowActivitiesModal(true)}
         onOpenTimeCapsule={() => setShowTimeCapsuleModal(true)}
         onOpenCipher={() => setShowCipherModal(true)}
         onSetDisappearingTimer={(timer) => setDisappearingTimer(timer)}
