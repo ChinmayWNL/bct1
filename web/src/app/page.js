@@ -967,6 +967,7 @@ export default function Home() {
     else if (actId === 'sketch') setShowSketchModal(true);
     else if (actId === 'tictactoe') handleSendTicTacToe();
     else if (actId === 'rps') handleSendDuelChallenge('0');
+    else if (actId === 'capsule') setShowTimeCapsuleModal(true);
   };
 
   const handleSendTicTacToe = async () => {
@@ -1115,22 +1116,46 @@ export default function Home() {
     media = null, 
     recipient = null 
   }) => {
-    if (!signer || !provider) {
-      throw new Error('Connect a wallet to seal a capsule on-chain.');
+    // If running in demo mode or without a connected wallet, simulate locally
+    if (!signer || !provider || (activeConversation?.isDemoBot && !signer)) {
+      const capsuleId = `cap_demo_${Date.now()}`;
+      const effectiveUser = walletAddress || '0x71C8360537aaC1957e47192070D7C98C0B29b3B1';
+      const payload = {
+        type: 'time_capsule',
+        capsuleId,
+        title: title || 'Timelocked Vault',
+        theme: theme || 'chronos',
+        hasMedia: Boolean(media),
+        media: media || null,
+        sealedText,
+        unlockTimestamp: Date.now() + (durationSeconds * 1000),
+        senderAddress: effectiveUser,
+        recipient: effectiveUser,
+        createdAt: Date.now(),
+        durationSeconds,
+        isOnChain: false,
+        onChainCapsuleId: '1',
+        createTxHash: null,
+        ethAmount: String(ethAmount || '0'),
+        chainId: Number(chainId) || 31337
+      };
+      await broadcastJsonPayload(payload, `Dispatched a timelocked capsule (${durationSeconds}s)`);
+      addArcadeXp(25, 'Time Capsule Sealed');
+      return;
     }
+
     const vaultAddr = getTimeCapsuleVaultAddress(chainId);
     if (!vaultAddr) {
       throw new Error('TimeCapsuleVault is not deployed on this network. Run: npx hardhat run scripts/deploy.js --network <network>');
     }
 
-    // Support group chats, demo bot, and 1v1
-    const targetRecipient = recipient || (
-      activeConversation?.isDemoBot
-        ? walletAddress
-        : activeConversation?.peerAddress
-    );
+    // In demo bot conversations, always lock to the user's wallet so they can open & reclaim ETH
+    let targetRecipient = activeConversation?.isDemoBot
+      ? walletAddress
+      : (recipient || activeConversation?.peerAddress || walletAddress);
+
     if (!targetRecipient || !ethers.isAddress(targetRecipient)) {
-      throw new Error('Please select a valid recipient wallet address for this capsule.');
+      targetRecipient = walletAddress;
     }
 
     const nowSec = Math.floor(Date.now() / 1000);
@@ -1185,7 +1210,6 @@ export default function Home() {
     if (!onChainCapsuleId) throw new Error('Capsule transaction confirmed but no CapsuleCreated event was found.');
 
     const capsuleId = `cap_${onChainCapsuleId}_${Date.now()}`;
-    // The plaintext is NOT sent over chat: only the contract can release it after unlock.
     const payload = {
       type: 'time_capsule',
       capsuleId,
@@ -1215,36 +1239,74 @@ export default function Home() {
       return d.type === 'time_capsule' && d.capsuleId === capsuleId;
     });
     const data = msg ? parseMessageData(msg) : null;
-    if (!data?.onChainCapsuleId) throw new Error('This capsule has no on-chain record.');
-    if (!signer) throw new Error('Connect a wallet to open this capsule.');
+    if (!data) throw new Error('Capsule not found.');
+
+    // If offline / demo mode
+    if (!data.isOnChain || !signer) {
+      setOpenedCapsulesMap(prev => ({ ...prev, [capsuleId]: true }));
+      setMessages(prev => prev.map(m => {
+        const d = parseMessageData(m);
+        if (d.type === 'time_capsule' && d.capsuleId === capsuleId) {
+          return {
+            ...m,
+            content: `[JSON_MSG]${JSON.stringify({ ...d, isOpened: true })}`
+          };
+        }
+        return m;
+      }));
+      return true;
+    }
+
     const vaultAddr = getTimeCapsuleVaultAddress(data.chainId || chainId);
     if (!vaultAddr) throw new Error('TimeCapsuleVault is not deployed on this network.');
 
     const contract = new ethers.Contract(vaultAddr, TIME_CAPSULE_VAULT_ABI, signer);
     let payloadText = null;
     let openTxHash = null;
-    try {
-      const tx = await contract.open(data.onChainCapsuleId);
-      openTxHash = tx.hash;
-      const receipt = await tx.wait();
-      for (const log of receipt.logs) {
+
+    const isDeadRecipient = Boolean(
+      data.recipient && data.recipient.toLowerCase() === '0x000000000000000000000000000000000000dead'
+    );
+    const isRecipient = Boolean(
+      (walletAddress && data.recipient && walletAddress.toLowerCase() === data.recipient.toLowerCase()) &&
+      !isDeadRecipient
+    );
+
+    if (isRecipient) {
+      // Recipient can call open() to claim any attached ETH
+      try {
+        const tx = await contract.open(data.onChainCapsuleId);
+        openTxHash = tx.hash;
+        const receipt = await tx.wait();
+        for (const log of receipt.logs) {
+          try {
+            const parsed = contract.interface.parseLog(log);
+            if (parsed && parsed.name === 'CapsuleOpened') {
+              payloadText = parsed.args.payload;
+              break;
+            }
+          } catch {}
+        }
+      } catch (err) {
+        // If already opened or re-read, read view payload
         try {
-          const parsed = contract.interface.parseLog(log);
-          if (parsed && parsed.name === 'CapsuleOpened') {
-            payloadText = parsed.args.payload;
-            break;
-          }
-        } catch {}
+          payloadText = await contract.getPayload(data.onChainCapsuleId);
+        } catch {
+          throw err;
+        }
       }
-    } catch (err) {
-      // If already opened, or if caller is sender (open() is recipient-only to claim ETH), view payload via getPayload
+    } else {
+      // Sender or reader: call view function getPayload (no gas, no transaction popup, no NotRecipient revert)
       try {
         payloadText = await contract.getPayload(data.onChainCapsuleId);
-      } catch (innerErr) {
-        throw err;
+      } catch (err) {
+        throw new Error(err?.reason || err?.message || 'Could not view capsule payload.');
       }
     }
-    if (payloadText === null) payloadText = await contract.getPayload(data.onChainCapsuleId);
+
+    if (payloadText === null) {
+      payloadText = await contract.getPayload(data.onChainCapsuleId);
+    }
 
     setOpenedCapsulesMap(prev => ({ ...prev, [capsuleId]: true }));
     setMessages(prev => prev.map(m => {
@@ -5327,7 +5389,11 @@ export default function Home() {
                           {msgData.type === 'time_capsule' && (
                             <TimeCapsuleCard
                               capsuleData={{ ...msgData, isOpened: openedCapsulesMap[msgData.capsuleId] || msgData.isOpened }}
-                              isRecipient={Boolean(walletAddress && msgData.recipient && walletAddress.toLowerCase() === msgData.recipient.toLowerCase())}
+                              isRecipient={Boolean(
+                                (walletAddress && msgData.recipient && walletAddress.toLowerCase() === msgData.recipient.toLowerCase()) ||
+                                activeConversation?.isDemoBot ||
+                                (msgData.recipient && msgData.recipient.toLowerCase() === '0x000000000000000000000000000000000000dead')
+                              )}
                               isSent={isSent}
                               onOpenCapsule={handleOpenTimeCapsule}
                               onPlayFanfare={playReceiveChime}

@@ -73,8 +73,9 @@ export default function TimeCapsuleModal({
       (activeConversation.name && !activeConversation.peerAddress))
   );
 
-  // Recipient selection (in group chats)
+  // Recipient selection (in group chats or 1v1)
   const [selectedRecipient, setSelectedRecipient] = useState(() => {
+    if (activeConversation?.isDemoBot) return walletAddress || '';
     if (!isGroup) return activeConversation?.peerAddress || walletAddress || '';
     // In group, default to first non-self member or self
     const nonSelf = groupMembers.find(m => {
@@ -165,7 +166,9 @@ export default function TimeCapsuleModal({
         ethAmount: ethAmount && parseFloat(ethAmount) > 0 ? ethAmount : '0',
         theme: selectedTheme,
         media: photoData || null,
-        recipient: selectedRecipient || (isGroup ? walletAddress : (activeConversation?.peerAddress || walletAddress))
+        recipient: activeConversation?.isDemoBot
+          ? (walletAddress || '0x71C8360537aaC1957e47192070D7C98C0B29b3B1')
+          : (selectedRecipient || (isGroup ? walletAddress : (activeConversation?.peerAddress || walletAddress)))
       });
       setSealedText('');
       setTitle('');

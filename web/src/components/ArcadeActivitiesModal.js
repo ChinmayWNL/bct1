@@ -62,6 +62,16 @@ export const ACTIVITIES = [
     description: 'Rock-Paper-Scissors with Keccak-256 commit-reveal escrow. Lock ETH wagers on-chain and settle provably fair bouts!',
     color: '#ff5533',
     xpReward: '+100 XP + ETH'
+  },
+  {
+    id: 'capsule',
+    name: 'TIME CAPSULE VAULT',
+    category: 'TIMELOCKED ESCROW',
+    emoji: '⏳',
+    badge: 'SMART CONTRACT',
+    description: 'Seal secret messages, photos, and ETH bounties in a cryptographic time vault that only unlocks in the future!',
+    color: '#9d4edd',
+    xpReward: '+100 XP'
   }
 ];
 
