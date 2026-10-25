@@ -8,17 +8,18 @@ export default function CopilotPalette({
   onSelectCommand,
   onClose
 }) {
-  const [selectedIndex, setSelectedIndex] = useState(0);
-
   const cleanQuery = (filterQuery || '').toLowerCase().trim();
   const matchingCommands = COPILOT_COMMANDS.filter(c => {
     if (!cleanQuery || cleanQuery === '/') return true;
     return c.cmd.toLowerCase().includes(cleanQuery) || c.name.toLowerCase().includes(cleanQuery);
   });
 
-  useEffect(() => {
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [prevQuery, setPrevQuery] = useState(cleanQuery);
+  if (cleanQuery !== prevQuery) {
+    setPrevQuery(cleanQuery);
     setSelectedIndex(0);
-  }, [cleanQuery]);
+  }
 
   useEffect(() => {
     const handleKeyDown = (e) => {

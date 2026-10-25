@@ -25,11 +25,13 @@ export default function ContactInfoDrawer({
   const [activeMediaTab, setActiveMediaTab] = useState('media');
   const [copied, setCopied] = useState(false);
   const [nicknameInput, setNicknameInput] = useState(customNickname || '');
-  const [isSavedNickname, setIsSavedNickname] = useState(false);
-
-  useEffect(() => {
+  const [prevNick, setPrevNick] = useState(customNickname);
+  if (customNickname !== prevNick) {
+    setPrevNick(customNickname);
     setNicknameInput(customNickname || '');
-  }, [customNickname]);
+  }
+
+  const displayName = peerName ? `@${peerName}` : `${(peerAddress || '').substring(0, 6)}...${(peerAddress || '').substring((peerAddress || '').length - 4)}`;
 
   const handleCopy = async () => {
     if (!peerAddress) return;
@@ -73,12 +75,10 @@ export default function ContactInfoDrawer({
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `BlockChat_${displayName.replace('@', '')}_${Date.now()}.txt`;
+    a.download = `BlockChat_${displayName.replace('@', '')}_export.txt`;
     a.click();
     URL.revokeObjectURL(url);
   };
-
-  const displayName = peerName ? `@${peerName}` : `${(peerAddress || '').substring(0, 6)}...${(peerAddress || '').substring((peerAddress || '').length - 4)}`;
 
   // Efficient memoized parsing of media, voice notes and starred messages
   const { photos, voiceNotes, starredList } = useMemo(() => {

@@ -150,6 +150,40 @@ function formatRecordingTime(secs) {
   return `${m}:${s < 10 ? '0' : ''}${s}`;
 }
 
+// Group Conversation Identifier - module level to guarantee hoisting & zero TDZ
+export function isGroupConversation(convo) {
+  if (!convo) return false;
+
+  // 1. Explicit group flag (e.g. demo group, local group object)
+  if (convo.isGroup === true) return true;
+  if (convo.isGroup === false) return false;
+
+  // 2. Class check from @xmtp/browser-sdk
+  if (convo.constructor?.name === 'Group') return true;
+  if (convo.constructor?.name === 'Dm') return false;
+
+  // 3. Group-only methods in @xmtp/browser-sdk
+  if (typeof convo.addMembersByIdentifiers === 'function') return true;
+  if (typeof convo.updateName === 'function') return true;
+  if (typeof convo.updateImageUrl === 'function') return true;
+  if (typeof convo.updateDescription === 'function') return true;
+
+  // 4. DM-only methods in @xmtp/browser-sdk
+  if (typeof convo.peerInboxId === 'function') return false;
+  if (typeof convo.duplicateDms === 'function') return false;
+
+  // 5. Metadata checks
+  if (convo.metadata?.conversationType === 1 || convo.metadata?.conversationType === 'group') return true;
+  if (convo.metadata?.conversationType === 0 || convo.metadata?.conversationType === 'dm') return false;
+
+  // 6. Name / bot / address heuristics
+  if (Boolean(convo.groupName)) return true;
+  if (convo.isDemoBot && !convo.groupName) return false;
+  if (convo.peerAddress && !convo.groupName && !convo.name) return false;
+
+  return false;
+}
+
 export default function Home() {
   // Generate or retrieve encryption key for local XMTP DB
   const getDbEncryptionKey = () => {
@@ -291,6 +325,139 @@ export default function Home() {
     setArcadeXp(loadStoredXp());
   }, []);
 
+  // Authentic 8-Bit Web Audio Synthesizer (Zero Assets, Authentic Arcade Cabinet SFX)
+  const playSendPop = () => {
+    if (!soundEnabled || isChatMuted) return;
+    try {
+      if (typeof window === 'undefined') return;
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(880, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(140, ctx.currentTime + 0.075);
+      gain.gain.setValueAtTime(0.18, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.075);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.075);
+    } catch (e) {}
+  };
+
+  const playReceiveChime = () => {
+    if (!soundEnabled || isChatMuted) return;
+    try {
+      if (typeof window === 'undefined') return;
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const notes = [523.25, 659.25, 783.99, 1046.50];
+      notes.forEach((freq, idx) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        const noteStart = ctx.currentTime + idx * 0.055;
+        const noteDur = idx === notes.length - 1 ? 0.16 : 0.05;
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(freq, noteStart);
+        gain.gain.setValueAtTime(0.14, noteStart);
+        gain.gain.exponentialRampToValueAtTime(0.001, noteStart + noteDur);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(noteStart);
+        osc.stop(noteStart + noteDur);
+      });
+    } catch (e) {}
+  };
+
+  const playCoinClink = () => {
+    if (!soundEnabled || isChatMuted) return;
+    try {
+      if (typeof window === 'undefined') return;
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const osc1 = ctx.createOscillator();
+      const gain1 = ctx.createGain();
+      osc1.type = 'square';
+      osc1.frequency.setValueAtTime(987.77, ctx.currentTime);
+      gain1.gain.setValueAtTime(0.18, ctx.currentTime);
+      gain1.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.06);
+      osc1.connect(gain1);
+      gain1.connect(ctx.destination);
+      osc1.start(ctx.currentTime);
+      osc1.stop(ctx.currentTime + 0.06);
+
+      const osc2 = ctx.createOscillator();
+      const gain2 = ctx.createGain();
+      osc2.type = 'square';
+      osc2.frequency.setValueAtTime(1318.51, ctx.currentTime + 0.06);
+      gain2.gain.setValueAtTime(0.2, ctx.currentTime + 0.06);
+      gain2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+      osc2.connect(gain2);
+      gain2.connect(ctx.destination);
+      osc2.start(ctx.currentTime + 0.06);
+      osc2.stop(ctx.currentTime + 0.35);
+    } catch (e) {}
+  };
+
+  const playThemePreviewSound = () => {
+    if (!soundEnabled) return;
+    try {
+      if (typeof window === 'undefined') return;
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      [440, 554.37, 659.25, 880].forEach((freq, idx) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        const startTime = ctx.currentTime + idx * 0.04;
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(freq, startTime);
+        gain.gain.setValueAtTime(0.12, startTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.07);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(startTime);
+        osc.stop(startTime + 0.07);
+      });
+    } catch (e) {}
+  };
+
+  // Backward-compatible alias for existing notification chime calls
+  const playNotificationSound = playReceiveChime;
+
+  // Arcade XP Progression & Coin Burst Audio-Visual Triggers
+  const addArcadeXp = (amount, reason = '') => {
+    setArcadeXp(prev => {
+      const next = prev + amount;
+      saveStoredXp(next);
+      const prevRank = getArcadeRank(prev);
+      const nextRank = getArcadeRank(next);
+      if (nextRank.level > prevRank.level) {
+        setLevelUpEvent({
+          id: Date.now(),
+          level: nextRank.level,
+          title: nextRank.title,
+          badge: nextRank.badge
+        });
+        playReceiveChime();
+      }
+      return next;
+    });
+  };
+
+  const triggerCoinBurst = (amount = '0.01', note = '') => {
+    setCoinBurstEvent({
+      id: Date.now(),
+      amount: amount || '0.01',
+      note
+    });
+    playCoinClink();
+  };
+
   // 1. Custom Nicknames Address Book
   const [customNicknames, setCustomNicknames] = useState({});
 
@@ -314,7 +481,7 @@ export default function Home() {
     });
 
     if (activeConversation && activeConversation.id === groupId) {
-      activeConversation.imageUrl = clean;
+      setActiveConversation(prev => prev ? { ...prev, imageUrl: clean } : null);
       if (typeof activeConversation.updateImageUrl === 'function') {
         try {
           await activeConversation.updateImageUrl(clean);
@@ -322,7 +489,7 @@ export default function Home() {
           console.warn('Could not update XMTP group imageUrl', e);
         }
       }
-      setConversations(prev => [...prev]);
+      setConversations(prev => prev.map(c => c.id === groupId ? { ...c, imageUrl: clean } : c));
     }
   };
 
@@ -358,6 +525,33 @@ export default function Home() {
     messagesRef.current = messages;
   }, [messages]);
 
+  // 3. Real Unread Counts Matrix
+  const [unreadCounts, setUnreadCounts] = useState({});
+
+  // 4. Known Contacts for Safety Warning Banner
+  const [knownContacts, setKnownContacts] = useState({});
+  const [dismissedSafetyBanners, setDismissedSafetyBanners] = useState({});
+
+  // 6. Playfair Cipher Chat Lock
+  // Per-chat settings are persisted ({ [convoId]: { keyHash, encryptOutgoing } }), but the key
+  // itself only lives in memory while a chat is unlocked, so a reload or idle timeout re-locks it.
+  const [cipherSettings, setCipherSettings] = useState({});
+  const [cipherKeys, setCipherKeys] = useState({});
+  const [showCipherModal, setShowCipherModal] = useState(false);
+  const cipherKeysRef = useRef({});
+
+  useEffect(() => {
+    cipherKeysRef.current = cipherKeys;
+  }, [cipherKeys]);
+
+  // 5. Crypto Modal Presets (for 1-click Pay Request)
+  const [cryptoModalPreset, setCryptoModalPreset] = useState({
+    mode: 'send',
+    amount: '',
+    note: '',
+    requestId: null
+  });
+
   // Restore client preferences and commitments after mount (avoids SSR hydration mismatch)
   useEffect(() => {
     try {
@@ -390,33 +584,6 @@ export default function Home() {
       console.warn("Failed to restore local preferences", e);
     }
   }, []);
-
-  // 3. Real Unread Counts Matrix
-  const [unreadCounts, setUnreadCounts] = useState({});
-
-  // 4. Known Contacts for Safety Warning Banner
-  const [knownContacts, setKnownContacts] = useState({});
-  const [dismissedSafetyBanners, setDismissedSafetyBanners] = useState({});
-
-  // 6. Playfair Cipher Chat Lock
-  // Per-chat settings are persisted ({ [convoId]: { keyHash, encryptOutgoing } }), but the key
-  // itself only lives in memory while a chat is unlocked, so a reload or idle timeout re-locks it.
-  const [cipherSettings, setCipherSettings] = useState({});
-  const [cipherKeys, setCipherKeys] = useState({});
-  const [showCipherModal, setShowCipherModal] = useState(false);
-  const cipherKeysRef = useRef({});
-
-  useEffect(() => {
-    cipherKeysRef.current = cipherKeys;
-  }, [cipherKeys]);
-
-  // 5. Crypto Modal Presets (for 1-click Pay Request)
-  const [cryptoModalPreset, setCryptoModalPreset] = useState({
-    mode: 'send',
-    amount: '',
-    note: '',
-    requestId: null
-  });
 
   // Helpers for Nicknames and Safety
   const getContactDisplayName = (addr, defaultProfile) => {
@@ -934,7 +1101,10 @@ export default function Home() {
       }
     }
   };
-  handleRevealDuelMoveRef.current = handleRevealDuelMove;
+
+  useEffect(() => {
+    handleRevealDuelMoveRef.current = handleRevealDuelMove;
+  }, [handleRevealDuelMove]);
 
   const handleClaimDuelTimeout = async (duelId, onChainDuelId) => {
     if (!onChainDuelId || !signer) return;
@@ -1929,143 +2099,6 @@ export default function Home() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
-
-  // Authentic 8-Bit Web Audio Synthesizer (Zero Assets, Authentic Arcade Cabinet SFX)
-  const playSendPop = () => {
-    if (!soundEnabled || isChatMuted) return;
-    try {
-      if (typeof window === 'undefined') return;
-      const AudioCtx = window.AudioContext || window.webkitAudioContext;
-      if (!AudioCtx) return;
-      const ctx = new AudioCtx();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'square';
-      // 8-bit laser blaster zap: 880Hz down to 140Hz in 75ms
-      osc.frequency.setValueAtTime(880, ctx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(140, ctx.currentTime + 0.075);
-      gain.gain.setValueAtTime(0.18, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.075);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start(ctx.currentTime);
-      osc.stop(ctx.currentTime + 0.075);
-    } catch (e) {}
-  };
-
-  const playReceiveChime = () => {
-    if (!soundEnabled || isChatMuted) return;
-    try {
-      if (typeof window === 'undefined') return;
-      const AudioCtx = window.AudioContext || window.webkitAudioContext;
-      if (!AudioCtx) return;
-      const ctx = new AudioCtx();
-      // 8-bit 1-UP fanfare arpeggio: C5 (523Hz), E5 (659Hz), G5 (784Hz), C6 (1046Hz)
-      const notes = [523.25, 659.25, 783.99, 1046.50];
-      notes.forEach((freq, idx) => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        const noteStart = ctx.currentTime + idx * 0.055;
-        const noteDur = idx === notes.length - 1 ? 0.16 : 0.05;
-        osc.type = 'square';
-        osc.frequency.setValueAtTime(freq, noteStart);
-        gain.gain.setValueAtTime(0.14, noteStart);
-        gain.gain.exponentialRampToValueAtTime(0.001, noteStart + noteDur);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start(noteStart);
-        osc.stop(noteStart + noteDur);
-      });
-    } catch (e) {}
-  };
-
-  const playCoinClink = () => {
-    if (!soundEnabled || isChatMuted) return;
-    try {
-      if (typeof window === 'undefined') return;
-      const AudioCtx = window.AudioContext || window.webkitAudioContext;
-      if (!AudioCtx) return;
-      const ctx = new AudioCtx();
-      // Authentic 8-bit coin ding: B5 (987.77Hz) for 60ms then high E6 (1318.51Hz) for 300ms
-      const osc1 = ctx.createOscillator();
-      const gain1 = ctx.createGain();
-      osc1.type = 'square';
-      osc1.frequency.setValueAtTime(987.77, ctx.currentTime);
-      gain1.gain.setValueAtTime(0.18, ctx.currentTime);
-      gain1.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.06);
-      osc1.connect(gain1);
-      gain1.connect(ctx.destination);
-      osc1.start(ctx.currentTime);
-      osc1.stop(ctx.currentTime + 0.06);
-
-      const osc2 = ctx.createOscillator();
-      const gain2 = ctx.createGain();
-      osc2.type = 'square';
-      osc2.frequency.setValueAtTime(1318.51, ctx.currentTime + 0.06);
-      gain2.gain.setValueAtTime(0.2, ctx.currentTime + 0.06);
-      gain2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
-      osc2.connect(gain2);
-      gain2.connect(ctx.destination);
-      osc2.start(ctx.currentTime + 0.06);
-      osc2.stop(ctx.currentTime + 0.35);
-    } catch (e) {}
-  };
-
-  const playThemePreviewSound = () => {
-    if (!soundEnabled) return;
-    try {
-      if (typeof window === 'undefined') return;
-      const AudioCtx = window.AudioContext || window.webkitAudioContext;
-      if (!AudioCtx) return;
-      const ctx = new AudioCtx();
-      // 8-bit power-up stepped trill
-      [440, 554.37, 659.25, 880].forEach((freq, idx) => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        const startTime = ctx.currentTime + idx * 0.04;
-        osc.type = 'square';
-        osc.frequency.setValueAtTime(freq, startTime);
-        gain.gain.setValueAtTime(0.12, startTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.07);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start(startTime);
-        osc.stop(startTime + 0.07);
-      });
-    } catch (e) {}
-  };
-
-  // Backward-compatible alias for existing notification chime calls
-  const playNotificationSound = playReceiveChime;
-
-  // Arcade XP Progression & Coin Burst Audio-Visual Triggers
-  const addArcadeXp = (amount, reason = '') => {
-    setArcadeXp(prev => {
-      const next = prev + amount;
-      saveStoredXp(next);
-      const prevRank = getArcadeRank(prev);
-      const nextRank = getArcadeRank(next);
-      if (nextRank.level > prevRank.level) {
-        setLevelUpEvent({
-          id: Date.now(),
-          level: nextRank.level,
-          title: nextRank.title,
-          badge: nextRank.badge
-        });
-        playReceiveChime();
-      }
-      return next;
-    });
-  };
-
-  const triggerCoinBurst = (amount = '0.01', note = '') => {
-    setCoinBurstEvent({
-      id: Date.now(),
-      amount: amount || '0.01',
-      note
-    });
-    playCoinClink();
-  };
 
   const handleSelectTheme = (newTheme) => {
     setCoffeeTheme(newTheme);
@@ -4362,40 +4395,6 @@ export default function Home() {
     setIncomingCall(null);
   };
 
-  // Group Conversation Identifier
-  const isGroupConversation = (convo) => {
-    if (!convo) return false;
-
-    // 1. Explicit group flag (e.g. demo group, local group object)
-    if (convo.isGroup === true) return true;
-    if (convo.isGroup === false) return false;
-
-    // 2. Class check from @xmtp/browser-sdk
-    if (convo.constructor?.name === 'Group') return true;
-    if (convo.constructor?.name === 'Dm') return false;
-
-    // 3. Group-only methods in @xmtp/browser-sdk
-    if (typeof convo.addMembersByIdentifiers === 'function') return true;
-    if (typeof convo.updateName === 'function') return true;
-    if (typeof convo.updateImageUrl === 'function') return true;
-    if (typeof convo.updateDescription === 'function') return true;
-
-    // 4. DM-only methods in @xmtp/browser-sdk
-    if (typeof convo.peerInboxId === 'function') return false;
-    if (typeof convo.duplicateDms === 'function') return false;
-
-    // 5. Metadata checks
-    if (convo.metadata?.conversationType === 1 || convo.metadata?.conversationType === 'group') return true;
-    if (convo.metadata?.conversationType === 0 || convo.metadata?.conversationType === 'dm') return false;
-
-    // 6. Name / bot / address heuristics
-    if (Boolean(convo.groupName)) return true;
-    if (convo.isDemoBot && !convo.groupName) return false;
-    if (convo.peerAddress && !convo.groupName && !convo.name) return false;
-
-    return false;
-  };
-
   // Helpers
   // `locked: true` always shows cipher text scrambled, even if the chat is unlocked
   const getMessageSnippet = (msg, { convoId = activeConversation?.id, locked = false } = {}) => {
@@ -4781,16 +4780,14 @@ export default function Home() {
                 >
                   {isConnecting ? "Connecting..." : "Connect Wallet"}
                 </button>
-                {startDemoMode && (
-                  <button 
-                    type="button" 
-                    className="coffee-btn-secondary" 
-                    style={{ padding: '8px 12px', fontSize: '0.82rem' }}
-                    onClick={startDemoMode}
-                  >
-                    🧪 Demo
-                  </button>
-                )}
+                <button 
+                  type="button" 
+                  className="coffee-btn-secondary" 
+                  style={{ padding: '8px 12px', fontSize: '0.82rem' }}
+                  onClick={startDemoMode}
+                >
+                  🧪 Demo
+                </button>
               </div>
             </div>
           )}

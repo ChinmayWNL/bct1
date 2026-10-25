@@ -396,7 +396,7 @@ export default function EmojiPicker({ onSelectEmoji, onClose, className = '', st
           ))
         ) : (
           <div className="emoji-no-results">
-            No emojis found for "{searchQuery}"
+            No emojis found for &quot;{searchQuery}&quot;
           </div>
         )}
       </div>

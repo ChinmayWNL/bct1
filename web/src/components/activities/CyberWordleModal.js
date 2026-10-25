@@ -32,22 +32,22 @@ export default function CyberWordleModal({
   onAddXp,
   onPlayChime
 }) {
-  const [targetWord, setTargetWord] = useState('');
+  const [targetWord, setTargetWord] = useState(() => WORD_LIST[Math.floor(Math.random() * WORD_LIST.length)]);
   const [guesses, setGuesses] = useState([]);
   const [currentGuess, setCurrentGuess] = useState('');
   const [gameStatus, setGameStatus] = useState('in_progress'); // 'in_progress' | 'won' | 'lost'
   const [errorMessage, setErrorMessage] = useState('');
   const [isShaking, setIsShaking] = useState(false);
-  const [stats, setStats] = useState({ played: 0, won: 0, streak: 0, maxStreak: 0 });
-  const [copiedNotification, setCopiedNotification] = useState(false);
-
-  // Load stats from localStorage
-  useEffect(() => {
+  const [stats, setStats] = useState(() => {
+    if (typeof window === 'undefined') return { played: 0, won: 0, streak: 0, maxStreak: 0 };
     try {
       const saved = localStorage.getItem('blockchat_wordle_stats');
-      if (saved) setStats(JSON.parse(saved));
-    } catch {}
-  }, []);
+      return saved ? JSON.parse(saved) : { played: 0, won: 0, streak: 0, maxStreak: 0 };
+    } catch {
+      return { played: 0, won: 0, streak: 0, maxStreak: 0 };
+    }
+  });
+  const [copiedNotification, setCopiedNotification] = useState(false);
 
   const updateStats = useCallback((won) => {
     setStats(prev => {
@@ -74,12 +74,6 @@ export default function CyberWordleModal({
     setErrorMessage('');
     setIsShaking(false);
   }, []);
-
-  useEffect(() => {
-    if (isOpen && !targetWord) {
-      startNewGame();
-    }
-  }, [isOpen, targetWord, startNewGame]);
 
   // Evaluate letter matches: 'correct' (green), 'present' (yellow), 'absent' (gray)
   const getLetterStatuses = useCallback((guess, target) => {

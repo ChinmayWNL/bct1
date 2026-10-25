@@ -22,7 +22,15 @@ export default function CyberSnakeModal({
 }) {
   const canvasRef = useRef(null);
   const [score, setScore] = useState(0);
-  const [highScore, setHighScore] = useState(0);
+  const [highScore, setHighScore] = useState(() => {
+    if (typeof window === 'undefined') return 0;
+    try {
+      const saved = localStorage.getItem('blockchat_snake_highscore');
+      return saved ? parseInt(saved, 10) || 0 : 0;
+    } catch {
+      return 0;
+    }
+  });
   const [isGameOver, setIsGameOver] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [food, setFood] = useState({ x: 10, y: 10, type: FOOD_TYPES[0] });
@@ -39,14 +47,6 @@ export default function CyberSnakeModal({
   const gameLoopRef = useRef(null);
   const particlesRef = useRef([]);
   const touchStartRef = useRef({ x: 0, y: 0 });
-
-  // Load high score
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem('blockchat_snake_highscore');
-      if (saved) setHighScore(parseInt(saved, 10) || 0);
-    } catch (e) {}
-  }, []);
 
   // Web Audio Synth for retro sound effects with auto-resume
   const playRetroSound = useCallback((type) => {
@@ -184,93 +184,14 @@ export default function CyberSnakeModal({
   const currentSpeed = Math.max(65, 120 - Math.floor(score / 50) * 10);
   const speedMultiplier = (120 / currentSpeed).toFixed(1);
 
-  // Main Game Loop
-  useEffect(() => {
-    if (!isOpen || !isPlaying || isGameOver) return;
-
-    const interval = setInterval(() => {
-      dirRef.current = nextDirRef.current;
-      const snake = [...snakeRef.current];
-      const head = {
-        x: snake[0].x + dirRef.current.x,
-        y: snake[0].y + dirRef.current.y
-      };
-
-      // Wall Collision
-      if (head.x < 0 || head.x >= GRID_SIZE || head.y < 0 || head.y >= GRID_SIZE) {
-        handleGameOver();
-        return;
-      }
-
-      // Self Collision
-      if (snake.some(segment => segment.x === head.x && segment.y === head.y)) {
-        handleGameOver();
-        return;
-      }
-
-      snake.unshift(head);
-
-      // Check Food Collision
-      if (head.x === food.x && head.y === food.y) {
-        playRetroSound('eat');
-
-        // Combo multiplier if eaten within 3.5s
-        const now = Date.now();
-        const timeDiff = now - lastEatTimeRef.current;
-        let nextCombo = 1;
-        if (timeDiff < 3500) {
-          nextCombo = Math.min(4, combo + 1);
-        }
-        setCombo(nextCombo);
-        lastEatTimeRef.current = now;
-
-        const earnedPoints = food.type.points * nextCombo;
-
-        // Spawn explosion particles
-        for (let i = 0; i < 14; i++) {
-          const angle = Math.random() * Math.PI * 2;
-          const spd = Math.random() * 3.5 + 1;
-          particlesRef.current.push({
-            x: food.x * CELL_SIZE + CELL_SIZE / 2,
-            y: food.y * CELL_SIZE + CELL_SIZE / 2,
-            vx: Math.cos(angle) * spd,
-            vy: Math.sin(angle) * spd,
-            color: food.type.color,
-            size: Math.random() * 3 + 2,
-            life: 1.0,
-            decay: Math.random() * 0.06 + 0.04
-          });
-        }
-
-        setScore(prev => {
-          const next = prev + earnedPoints;
-          if (next > highScore) {
-            setHighScore(next);
-            try { localStorage.setItem('blockchat_snake_highscore', String(next)); } catch (e) {}
-          }
-          return next;
-        });
-        spawnFood(snake);
-      } else {
-        snake.pop();
-      }
-
-      snakeRef.current = snake;
-      drawCanvas();
-    }, currentSpeed);
-
-    gameLoopRef.current = interval;
-    return () => clearInterval(interval);
-  }, [isOpen, isPlaying, isGameOver, food, highScore, currentSpeed, combo, playRetroSound, spawnFood]);
-
-  const handleGameOver = () => {
+  const handleGameOver = useCallback(() => {
     playRetroSound('die');
     setIsGameOver(true);
     setIsPlaying(false);
     if (score > 50 && onAddXp) {
       onAddXp(Math.min(150, Math.floor(score / 2)), 'Cyber Snake Run');
     }
-  };
+  }, [playRetroSound, score, onAddXp]);
 
   // Canvas Renderer with glowing trail & particles
   const drawCanvas = useCallback(() => {
@@ -380,6 +301,85 @@ export default function CyberSnakeModal({
       ctx.restore();
     });
   }, [food]);
+
+  // Main Game Loop
+  useEffect(() => {
+    if (!isOpen || !isPlaying || isGameOver) return;
+
+    const interval = setInterval(() => {
+      dirRef.current = nextDirRef.current;
+      const snake = [...snakeRef.current];
+      const head = {
+        x: snake[0].x + dirRef.current.x,
+        y: snake[0].y + dirRef.current.y
+      };
+
+      // Wall Collision
+      if (head.x < 0 || head.x >= GRID_SIZE || head.y < 0 || head.y >= GRID_SIZE) {
+        handleGameOver();
+        return;
+      }
+
+      // Self Collision
+      if (snake.some(segment => segment.x === head.x && segment.y === head.y)) {
+        handleGameOver();
+        return;
+      }
+
+      snake.unshift(head);
+
+      // Check Food Collision
+      if (head.x === food.x && head.y === food.y) {
+        playRetroSound('eat');
+
+        // Combo multiplier if eaten within 3.5s
+        const now = Date.now();
+        const timeDiff = now - lastEatTimeRef.current;
+        let nextCombo = 1;
+        if (timeDiff < 3500) {
+          nextCombo = Math.min(4, combo + 1);
+        }
+        setCombo(nextCombo);
+        lastEatTimeRef.current = now;
+
+        const earnedPoints = food.type.points * nextCombo;
+
+        // Spawn explosion particles
+        for (let i = 0; i < 14; i++) {
+          const angle = Math.random() * Math.PI * 2;
+          const spd = Math.random() * 3.5 + 1;
+          particlesRef.current.push({
+            x: food.x * CELL_SIZE + CELL_SIZE / 2,
+            y: food.y * CELL_SIZE + CELL_SIZE / 2,
+            vx: Math.cos(angle) * spd,
+            vy: Math.sin(angle) * spd,
+            color: food.type.color,
+            size: Math.random() * 3 + 2,
+            life: 1.0,
+            decay: Math.random() * 0.06 + 0.04
+          });
+        }
+
+        setScore(prev => {
+          const next = prev + earnedPoints;
+          if (next > highScore) {
+            setHighScore(next);
+            try { localStorage.setItem('blockchat_snake_highscore', String(next)); } catch (e) {}
+          }
+          return next;
+        });
+        spawnFood(snake);
+      } else {
+        snake.pop();
+      }
+
+      snakeRef.current = snake;
+      drawCanvas();
+    }, currentSpeed);
+
+    gameLoopRef.current = interval;
+    return () => clearInterval(interval);
+  }, [isOpen, isPlaying, isGameOver, food, highScore, currentSpeed, combo, playRetroSound, spawnFood, handleGameOver, drawCanvas]);
 
   // Initial draw
   useEffect(() => {

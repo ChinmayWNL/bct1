@@ -3,6 +3,15 @@ import nextVitals from "eslint-config-next/core-web-vitals";
 
 const eslintConfig = defineConfig([
   ...nextVitals,
+  {
+    rules: {
+      "react-hooks/purity": "warn",
+      "react-hooks/set-state-in-effect": "warn",
+      "react-hooks/immutability": "error",
+      "react-hooks/refs": "warn",
+      "@next/next/no-img-element": "warn"
+    }
+  },
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:

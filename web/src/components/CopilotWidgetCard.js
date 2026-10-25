@@ -109,7 +109,7 @@ export default function CopilotWidgetCard({
           </div>
         </div>
         <div className="widget-footer-meta">
-          <span>UPDATED: {new Date(widgetData.timestamp || Date.now()).toLocaleTimeString()}</span>
+          <span>UPDATED: {widgetData.timestamp ? new Date(widgetData.timestamp).toLocaleTimeString() : 'RECENT'}</span>
           <span>COINGECKO FEED</span>
         </div>
       </div>

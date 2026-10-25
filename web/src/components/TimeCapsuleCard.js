@@ -56,28 +56,29 @@ export default function TimeCapsuleCard({
   onAddXp,
   onOpenLightbox
 }) {
-  const [now, setNow] = useState(Date.now());
+  const [now, setNow] = useState(0);
   const [hasOpenedLocally, setHasOpenedLocally] = useState(false);
   const [isOpening, setIsOpening] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
   useEffect(() => {
+    setNow(Date.now());
     const timer = setInterval(() => {
       setNow(Date.now());
     }, 1000);
     return () => clearInterval(timer);
   }, []);
 
-  const remainingMs = Math.max(0, (capsuleData.unlockTimestamp || 0) - now);
-  const isTimeElapsed = remainingMs === 0;
+  const remainingMs = Math.max(0, (capsuleData.unlockTimestamp || 0) - (now || 0));
+  const isTimeElapsed = now > 0 && remainingMs === 0;
   const isRevealed = hasOpenedLocally || Boolean(capsuleData.isOpened);
   const hasEth = capsuleData.ethAmount && parseFloat(capsuleData.ethAmount) > 0;
   const isUrgent = !isTimeElapsed && remainingMs <= 60000;
 
   // Calculate elapsed progress percentage
-  const createdAt = capsuleData.createdAt || capsuleData.timestamp || ((capsuleData.unlockTimestamp || Date.now()) - ((capsuleData.durationSeconds || 60) * 1000));
+  const createdAt = capsuleData.createdAt || capsuleData.timestamp || ((capsuleData.unlockTimestamp || 0) - ((capsuleData.durationSeconds || 60) * 1000));
   const totalDuration = Math.max(1000, (capsuleData.unlockTimestamp || 0) - createdAt);
-  const elapsed = Math.max(0, now - createdAt);
+  const elapsed = Math.max(0, (now || createdAt) - createdAt);
   const percentElapsed = Math.min(100, Math.max(0, Math.floor((elapsed / totalDuration) * 100)));
 
   // Parse rich payload (JSON vs legacy plaintext)
