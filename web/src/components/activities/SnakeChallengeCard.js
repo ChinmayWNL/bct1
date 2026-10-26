@@ -1,5 +1,5 @@
 'use client';
-import { PixelGamepad, PixelTrophy, PixelZap } from '../PixelIcons';
+import { PixelGamepad, PixelTrophy, PixelZap, PixelSnake, PixelShield, PixelSwords } from '../PixelIcons';
 
 export default function SnakeChallengeCard({
   cardData,
@@ -19,8 +19,8 @@ export default function SnakeChallengeCard({
   return (
     <div className={`snake-challenge-card ${isResolved ? 'resolved' : 'active'}`}>
       <div className="card-header font-arcade">
-        <div className="header-badge">
-          <span style={{ fontSize: '1rem' }}>🐍</span>
+        <div className="header-badge" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+          <PixelSnake size={16} color="#39ff14" />
           <span>CYBER SNAKE CHALLENGE</span>
         </div>
         <span className="bounty-pill">
@@ -37,28 +37,36 @@ export default function SnakeChallengeCard({
 
         {isResolved ? (
           <div className="challenge-result-banner font-arcade">
-            <div className="result-title">
-              <PixelTrophy size={16} color="var(--arcade-gold, #ffd166)" />
-              <span>
-                {opponentScore > targetScore
-                  ? `DEFENDER BEAT THE SCORE WITH ${opponentScore} PTS! 🏆`
-                  : `CHALLENGER DEFENDED WITH ${targetScore} PTS! 🛡️`}
-              </span>
+            <div className="result-title" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+              {opponentScore > targetScore ? (
+                <>
+                  <PixelTrophy size={16} color="var(--arcade-gold, #ffd166)" />
+                  <span>DEFENDER BEAT THE SCORE WITH {opponentScore} PTS!</span>
+                </>
+              ) : (
+                <>
+                  <PixelShield size={16} color="var(--arcade-neon-cyan, #00f0ff)" />
+                  <span>CHALLENGER DEFENDED WITH {targetScore} PTS!</span>
+                </>
+              )}
             </div>
           </div>
         ) : (
           <div className="challenge-action-area">
             {isChallenger ? (
-              <div className="waiting-text font-arcade">
-                <span>⚔️ Challenge broadcasted! Waiting for friend to beat {targetScore} pts...</span>
+              <div className="waiting-text font-arcade" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                <PixelSwords size={14} color="#ffd166" />
+                <span>Challenge broadcasted! Waiting for friend to beat {targetScore} pts...</span>
               </div>
             ) : (
               <button
                 type="button"
                 className="accept-challenge-btn font-arcade"
                 onClick={() => onAcceptAndPlay && onAcceptAndPlay(cardData.challengeId, targetScore)}
+                style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
               >
-                ACCEPT & PLAY SNAKE 🐍
+                <span>ACCEPT & PLAY SNAKE</span>
+                <PixelSnake size={16} color="#39ff14" />
               </button>
             )}
           </div>

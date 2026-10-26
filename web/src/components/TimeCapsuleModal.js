@@ -1,13 +1,13 @@
 'use client';
 import { useState, useRef } from 'react';
-import { PixelHourglass, PixelChest, PixelLock, PixelZap, PixelAlien, PixelCamera } from './PixelIcons';
+import { PixelHourglass, PixelChest, PixelLock, PixelZap, PixelAlien, PixelCamera, PixelClose, PixelEmoji, PixelWarning, renderPixelText } from './PixelIcons';
 
 const DURATION_PRESETS = [
   { label: '⚡ 30s (Test)', seconds: 30 },
   { label: '⏱️ 5 Mins', seconds: 300 },
   { label: '⏳ 1 Hour', seconds: 3600 },
-  { label: '🌅 24 Hours', seconds: 86400 },
-  { label: '📅 7 Days', seconds: 604800 }
+  { label: '⭐ 24 Hours', seconds: 86400 },
+  { label: '🔒 7 Days', seconds: 604800 }
 ];
 
 const VAULT_THEMES = [
@@ -30,7 +30,7 @@ const VAULT_THEMES = [
   {
     id: 'classified',
     label: 'Classified Dossier',
-    icon: '🕵️',
+    icon: '👁️',
     color: '#00f0ff',
     borderGlow: 'rgba(0, 240, 255, 0.45)',
     tag: 'TOP-SECRET ALPHA / LEAK'
@@ -38,7 +38,7 @@ const VAULT_THEMES = [
   {
     id: 'cosmic',
     label: 'Cosmic Memory',
-    icon: '🔮',
+    icon: '💎',
     color: '#b026ff',
     borderGlow: 'rgba(176, 38, 255, 0.45)',
     tag: 'ASTRAL TIME TRAVEL / LETTER'
@@ -194,10 +194,10 @@ export default function TimeCapsuleModal({
       >
         <div className="modal-header">
           <div className="brand-title" style={{ fontSize: '1rem', fontFamily: 'var(--font-arcade)', color: currentTheme.color, display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '1.25rem' }}>{currentTheme.icon}</span>
+            <PixelEmoji char={currentTheme.icon} size={22} />
             <span>SEAL TIMELOCKED CAPSULE</span>
           </div>
-          <button className="modal-close-btn" onClick={onClose}>✕</button>
+          <button className="modal-close-btn" onClick={onClose}><PixelClose size={16} /></button>
         </div>
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
@@ -218,7 +218,9 @@ export default function TimeCapsuleModal({
                     background: selectedTheme === t.id ? `color-mix(in srgb, ${t.color} 18%, #14101e)` : 'rgba(20, 16, 30, 0.85)'
                   }}
                 >
-                  <span style={{ fontSize: '1.15rem' }}>{t.icon}</span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center' }}>
+                    <PixelEmoji char={t.icon} size={22} />
+                  </span>
                   <div className="theme-pill-text">
                     <span className="theme-pill-name font-arcade" style={{ color: selectedTheme === t.id ? t.color : '#e2e8f0' }}>{t.label}</span>
                     <span className="theme-pill-tag">{t.tag}</span>
@@ -241,7 +243,7 @@ export default function TimeCapsuleModal({
                   onChange={(e) => setSelectedRecipient(e.target.value)}
                   style={{ fontFamily: 'var(--font-arcade)', fontSize: '0.75rem', cursor: 'pointer' }}
                 >
-                  <option value={walletAddress}>🎁 Myself (Future Self Note / Vault)</option>
+                  <option value={walletAddress}>Myself (Future Self Note / Vault)</option>
                   {groupMembers.map((m, idx) => {
                     const addr = m.accountIdentifiers?.[0]?.identifier || m.inboxId || '';
                     if (!addr || addr.toLowerCase() === (walletAddress || '').toLowerCase()) return null;
@@ -249,7 +251,7 @@ export default function TimeCapsuleModal({
                     const name = prof?.username ? `@${prof.username}` : `${addr.slice(0, 6)}…${addr.slice(-4)}`;
                     return (
                       <option key={addr || idx} value={addr}>
-                        👤 {name} ({addr.slice(0, 8)}…)
+                        {name} ({addr.slice(0, 8)}…)
                       </option>
                     );
                   })}
@@ -285,7 +287,7 @@ export default function TimeCapsuleModal({
                     borderColor: selectedDuration === p.seconds && !customMinutes && !customDateTime ? currentTheme.color : undefined
                   }}
                 >
-                  {p.label}
+                  {renderPixelText(p.label, 14)}
                 </button>
               ))}
             </div>
@@ -365,9 +367,10 @@ export default function TimeCapsuleModal({
                   type="button"
                   className="remove-photo-text-btn"
                   onClick={() => setPhotoData(null)}
-                  style={{ background: 'none', border: 'none', color: '#ff007f', fontSize: '0.72rem', cursor: 'pointer' }}
+                  style={{ background: 'none', border: 'none', color: '#ff007f', fontSize: '0.72rem', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
                 >
-                  ✕ Remove Photo
+                  <PixelClose size={12} color="#ff007f" />
+                  <span>Remove Photo</span>
                 </button>
               )}
             </div>
@@ -383,15 +386,19 @@ export default function TimeCapsuleModal({
             {photoData ? (
               <div className="capsule-modal-photo-preview">
                 <img src={photoData} alt="Memory Preview" />
-                <span className="photo-preview-badge font-arcade">📷 MEMORY PHOTO SEALED</span>
+                <span className="photo-preview-badge font-arcade" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                  <PixelCamera size={14} color="#ffd166" />
+                  <span>MEMORY PHOTO SEALED</span>
+                </span>
               </div>
             ) : (
               <button
                 type="button"
                 className="capsule-attach-photo-btn"
                 onClick={() => fileInputRef.current?.click()}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}
               >
-                <span>📷</span>
+                <PixelCamera size={16} color="#ffd166" />
                 <span>Attach Photo Memory (Sealed in Vault)</span>
               </button>
             )}
@@ -419,8 +426,9 @@ export default function TimeCapsuleModal({
           </div>
 
           {errorMsg && (
-            <div className="capsule-security-note error">
-              <span>⚠ {errorMsg}</span>
+            <div className="capsule-security-note error" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <PixelWarning size={14} color="#ff6b6b" />
+              <span>{errorMsg}</span>
             </div>
           )}
 
@@ -441,10 +449,25 @@ export default function TimeCapsuleModal({
                 fontFamily: 'var(--font-arcade)',
                 fontSize: '0.76rem',
                 borderColor: currentTheme.color,
-                boxShadow: `2px 2px 0 #000, 0 0 14px ${currentTheme.borderGlow}`
+                boxShadow: `2px 2px 0 #000, 0 0 14px ${currentTheme.borderGlow}`,
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center'
               }}
             >
-              {isSubmitting ? '⏳ CONFIRM IN WALLET...' : '🔒 SEAL ON-CHAIN & DISPATCH'}
+              <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                {isSubmitting ? (
+                  <>
+                    <PixelHourglass size={14} color={currentTheme.color} />
+                    <span>CONFIRM IN WALLET...</span>
+                  </>
+                ) : (
+                  <>
+                    <PixelLock size={14} color={currentTheme.color} />
+                    <span>SEAL ON-CHAIN & DISPATCH</span>
+                  </>
+                )}
+              </span>
             </button>
           </div>
         </form>

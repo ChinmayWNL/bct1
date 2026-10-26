@@ -8,7 +8,13 @@ import {
   PixelZap,
   PixelTrophy,
   PixelShield,
-  PixelStar
+  PixelStar,
+  PixelRedPacket,
+  PixelBarChart,
+  PixelTimer,
+  PixelDice,
+  PixelArcadeCabinet,
+  PixelClose
 } from './PixelIcons';
 
 export default function MobileArcadeHub({
@@ -46,7 +52,7 @@ export default function MobileArcadeHub({
       subtitle: 'Mini-games: Snake, Wordle, 21, Pictionary & Duels',
       icon: <PixelGamepad size={24} color="#ff007f" />,
       color: '#ff007f',
-      badge: 'GAMES 🎮',
+      badge: 'GAMES',
       onClick: () => {
         onClose();
         if (onOpenActivities) onOpenActivities();
@@ -81,7 +87,7 @@ export default function MobileArcadeHub({
       id: 'packet',
       title: 'Lucky Red Packet',
       subtitle: 'Drop claimable ETH packet in chat',
-      icon: <span style={{ fontSize: '1.4rem', lineHeight: 1 }}>🧧</span>,
+      icon: <PixelRedPacket size={24} color="#ff3366" />,
       color: '#ff3366',
       badge: isGroup ? 'GROUP' : 'GIFT',
       onClick: () => {
@@ -93,7 +99,7 @@ export default function MobileArcadeHub({
       id: 'poll',
       title: 'Create Ballot Poll',
       subtitle: 'On-chain multi-choice community poll',
-      icon: <span style={{ fontSize: '1.4rem', lineHeight: 1 }}>📊</span>,
+      icon: <PixelBarChart size={24} color="#39ff14" />,
       color: '#39ff14',
       badge: 'VOTE',
       onClick: () => {
@@ -117,7 +123,7 @@ export default function MobileArcadeHub({
       id: 'timer',
       title: 'Self-Destruct Timer',
       subtitle: disappearingTimer > 0 ? `Currently active: ${disappearingTimer === 60 ? '1m' : disappearingTimer === 86400 ? '24h' : '7d'}` : 'Messages expire automatically',
-      icon: <span style={{ fontSize: '1.4rem', lineHeight: 1 }}>⏱️</span>,
+      icon: <PixelTimer size={24} color="#ffd166" />,
       color: '#ffd166',
       badge: disappearingTimer > 0 ? 'ACTIVE' : 'OFF',
       onClick: () => {
@@ -131,7 +137,7 @@ export default function MobileArcadeHub({
       id: 'flip',
       title: 'Fair Coin & Dice',
       subtitle: 'Provably fair coin toss / tabletop dice',
-      icon: <PixelGamepad size={24} color="#00f0ff" />,
+      icon: <PixelDice size={24} color="#00f0ff" />,
       color: '#00f0ff',
       badge: 'RNG',
       onClick: () => {
@@ -152,13 +158,15 @@ export default function MobileArcadeHub({
         {/* Sheet Header */}
         <div className="mobile-arcade-hub-header">
           <div className="hub-title-box">
-            <span style={{ fontSize: '1.2rem' }}>🕹️</span>
+            <PixelArcadeCabinet size={26} color="#ff007f" />
             <div>
               <h3 className="font-arcade hub-title">ARCADE ACTIONS & WEB3 D-APPS</h3>
               <p className="hub-subtitle">1-Tap Web3 utilities & on-chain mini-games</p>
             </div>
           </div>
-          <button className="modal-close-btn" onClick={onClose}>✕</button>
+          <button className="modal-close-btn" onClick={onClose} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+            <PixelClose size={16} />
+          </button>
         </div>
 
         {/* Action Grid */}
@@ -212,7 +220,10 @@ export default function MobileArcadeHub({
 
         {/* Footer Quick Tip */}
         <div className="mobile-hub-footer-hint">
-          <span>💡 Tip: You can also type <code>/</code> in the chat bar to trigger copilot commands!</span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+            <PixelZap size={14} color="#ffd166" />
+            <span>Tip: You can also type <code>/</code> in the chat bar to trigger copilot commands!</span>
+          </span>
         </div>
       </div>
     </div>

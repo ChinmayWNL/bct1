@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { PixelAlien } from './PixelIcons';
+import { PixelAlien, PixelClose, PixelWarning, PixelSparkles, PixelPencil, PixelEye, PixelCheck, renderPixelText } from './PixelIcons';
 
 export default function GroupMembersModal({
   groupName,
@@ -134,10 +134,11 @@ export default function GroupMembersModal({
                     onClick={() => setIsEditingAvatar(prev => !prev)}
                     style={{
                       background: 'none', border: 'none', color: 'var(--arcade-neon-cyan, #00f0ff)',
-                      fontSize: '0.65rem', cursor: 'pointer', fontFamily: 'monospace', padding: 0
+                      fontSize: '0.65rem', cursor: 'pointer', fontFamily: 'monospace', padding: 0,
+                      display: 'inline-flex', alignItems: 'center', gap: '4px'
                     }}
                   >
-                    {isEditingAvatar ? '✕ Cancel' : '✎ Edit PFP'}
+                    {isEditingAvatar ? <><PixelClose size={10} /> Cancel</> : <><PixelPencil size={10} /> Edit PFP</>}
                   </button>
                 )}
               </div>
@@ -148,9 +149,9 @@ export default function GroupMembersModal({
             onClick={onClose}
             style={{
               background: 'none', border: 'none', color: '#8b9bb4', cursor: 'pointer',
-              fontSize: '1.2rem', lineHeight: 1, padding: '4px'
+              fontSize: '1.2rem', lineHeight: 1, padding: '4px', display: 'flex', alignItems: 'center'
             }}
-          >✕</button>
+          ><PixelClose size={16} /></button>
         </div>
 
         {/* Change Group Avatar Form */}
@@ -197,18 +198,20 @@ export default function GroupMembersModal({
           <div style={{
             background: 'rgba(255,0,85,0.12)', border: '1px solid #ff0055',
             color: '#ff5577', borderRadius: '8px', padding: '8px 12px',
-            fontSize: '0.72rem', marginBottom: '14px', fontFamily: 'monospace'
+            fontSize: '0.72rem', marginBottom: '14px', fontFamily: 'monospace',
+            display: 'flex', alignItems: 'center', gap: '6px'
           }}>
-            ⚠️ {error}
+            <PixelWarning size={14} color="#ff5577" /> <span>{error}</span>
           </div>
         )}
         {success && (
           <div style={{
             background: 'rgba(57,255,20,0.12)', border: '1px solid #39ff14',
             color: '#39ff14', borderRadius: '8px', padding: '8px 12px',
-            fontSize: '0.72rem', marginBottom: '14px', fontFamily: 'monospace'
+            fontSize: '0.72rem', marginBottom: '14px', fontFamily: 'monospace',
+            display: 'flex', alignItems: 'center', gap: '6px'
           }}>
-            ✨ {success}
+            <PixelSparkles size={14} color="#39ff14" /> <span>{success}</span>
           </div>
         )}
 
@@ -311,7 +314,7 @@ export default function GroupMembersModal({
                             onError={(e) => { e.currentTarget.style.display = 'none'; }}
                           />
                         ) : (
-                          <span style={{ fontSize: '11px' }}>👾</span>
+                          <span style={{ display: 'inline-flex', alignItems: 'center' }}><PixelAlien size={14} color="#00f0ff" /></span>
                         )}
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
@@ -322,7 +325,7 @@ export default function GroupMembersModal({
                           fontWeight: isMe ? '600' : 'normal',
                           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
                         }}>
-                          {memberName}
+                          {renderPixelText(memberName, 13)}
                         </span>
                         {memberProf?.username && addr && (
                           <span style={{ fontSize: '0.62rem', color: '#6e7681', fontFamily: 'monospace' }}>
@@ -352,10 +355,11 @@ export default function GroupMembersModal({
                         style={{
                           background: 'none', border: 'none',
                           color: copiedAddr === addr ? '#39ff14' : '#8b9bb4',
-                          cursor: 'pointer', fontSize: '0.72rem', padding: '2px 4px'
+                          cursor: 'pointer', fontSize: '0.72rem', padding: '2px 4px',
+                          display: 'inline-flex', alignItems: 'center'
                         }}
                       >
-                        {copiedAddr === addr ? '✓' : '📋'}
+                        {copiedAddr === addr ? <PixelCheck size={12} color="#39ff14" /> : <PixelEye size={12} />}
                       </button>
 
                       {onRemoveMember && !isMe && (
@@ -371,10 +375,11 @@ export default function GroupMembersModal({
                             cursor: isBeingRemoved ? 'wait' : 'pointer',
                             fontSize: '0.78rem',
                             padding: '2px 4px',
-                            opacity: isBeingRemoved ? 0.4 : 0.8
+                            opacity: isBeingRemoved ? 0.4 : 0.8,
+                            display: 'inline-flex', alignItems: 'center'
                           }}
                         >
-                          ✕
+                          <PixelClose size={12} />
                         </button>
                       )}
                     </div>

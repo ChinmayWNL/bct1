@@ -1664,8 +1664,23 @@
 }
 
 .activity-emoji-box {
-  font-size: 1.6rem;
-  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--act-accent, #00f0ff) 14%, rgba(13, 16, 27, 0.9));
+  border: 1px solid color-mix(in srgb, var(--act-accent, #00f0ff) 45%, transparent);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--act-accent, #00f0ff) 25%, transparent), inset 0 0 8px color-mix(in srgb, var(--act-accent, #00f0ff) 15%, transparent);
+  flex-shrink: 0;
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.2s ease;
+}
+
+.activity-card:hover .activity-emoji-box {
+  transform: scale(1.1) rotate(-3deg);
+  box-shadow: 0 0 20px color-mix(in srgb, var(--act-accent, #00f0ff) 45%, transparent), inset 0 0 10px color-mix(in srgb, var(--act-accent, #00f0ff) 25%, transparent);
+  border-color: var(--act-accent, #00f0ff);
 }
 
 .activity-badges {

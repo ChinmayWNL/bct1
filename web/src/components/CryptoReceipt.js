@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { PixelEye, PixelCheck } from './PixelIcons';
 
 export default function CryptoReceipt({ data = {}, isSent, networkName, chainId }) {
   const [copied, setCopied] = useState(false);
@@ -73,7 +74,9 @@ export default function CryptoReceipt({ data = {}, isSent, networkName, chainId 
         <div className="tx-hash-badge" onClick={handleCopyHash} title="Click to copy Transaction Hash">
           <span className="tx-hash-label">TX:</span>
           <span className="tx-hash-val">{shortHash}</span>
-          <span className="copy-icon-small">{copied ? '✓' : '📋'}</span>
+          <span className="copy-icon-small" style={{ display: 'inline-flex', alignItems: 'center', marginLeft: '4px' }}>
+            {copied ? <PixelCheck size={11} color="#39ff14" /> : <PixelEye size={11} color="#8b9bb4" />}
+          </span>
         </div>
         {txHash && !isDemoOrLocal && (
           <a 

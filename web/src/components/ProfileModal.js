@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { PixelSliders, PixelClose, PixelEmoji, PixelWarning, PixelZap, PixelLock, PixelCheck } from './PixelIcons';
 
 export default function ProfileModal({
   walletAddress,
@@ -66,10 +67,10 @@ export default function ProfileModal({
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-card" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <div className="brand-title" style={{ fontSize: '1.05rem', fontFamily: 'var(--font-arcade)' }}>
-            <span>🆔</span> PLAYER LOADOUT &amp; PROFILE
+          <div className="brand-title" style={{ fontSize: '1.05rem', fontFamily: 'var(--font-arcade)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span><PixelSliders size={18} color="var(--arcade-gold)" /></span> PLAYER LOADOUT &amp; PROFILE
           </div>
-          <button className="modal-close-btn" onClick={onClose}>✕</button>
+          <button className="modal-close-btn" onClick={onClose}><PixelClose size={16} /></button>
         </div>
 
         <form onSubmit={(e) => validateAndSubmit(e, 'local')}>
@@ -104,7 +105,7 @@ export default function ProfileModal({
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ fontSize: '1.4rem' }}>{arcadeRank.badge}</span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center' }}><PixelEmoji char={arcadeRank.badge} size={24} /></span>
                   <div>
                     <div style={{ fontFamily: 'var(--font-arcade)', fontSize: '0.72rem', color: 'var(--arcade-gold)' }}>
                       LVL {arcadeRank.level} {arcadeRank.title}
@@ -152,8 +153,9 @@ export default function ProfileModal({
               required
             />
             {userProfile.isRegistered && (
-              <small style={{ color: '#10b981', fontSize: '0.75rem', marginTop: '4px', display: 'block' }}>
-                ✓ Username permanently recorded on blockchain.
+              <small style={{ color: '#10b981', fontSize: '0.75rem', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <PixelCheck size={12} color="#39ff14" />
+                <span>Username permanently recorded on blockchain.</span>
               </small>
             )}
           </div>
@@ -173,8 +175,9 @@ export default function ProfileModal({
           </div>
 
           {validationError && (
-            <div className="crypto-error-banner" style={{ margin: '12px 0' }}>
-              ⚠️ {validationError}
+            <div className="crypto-error-banner" style={{ margin: '12px 0', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <PixelWarning size={14} color="#ffd166" />
+              <span>{validationError}</span>
             </div>
           )}
 
@@ -183,16 +186,22 @@ export default function ProfileModal({
               type="button" 
               className="modal-btn-primary"
               onClick={(e) => validateAndSubmit(e, 'local')}
+              style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
             >
-              ⚡ Save Profile (Instant & Free)
+              <PixelZap size={14} color="#ffd166" /> Save Profile (Instant & Free)
             </button>
             <button 
               type="button" 
               className="modal-btn-secondary"
               disabled={isSavingProfile}
               onClick={(e) => validateAndSubmit(e, 'contract')}
+              style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
             >
-              {isSavingProfile ? "Submitting Transaction..." : "⛓️ Register via Smart Contract (On-Chain)"}
+              {isSavingProfile ? "Submitting Transaction..." : (
+                <>
+                  <PixelLock size={14} color="#00f0ff" /> Register via Smart Contract (On-Chain)
+                </>
+              )}
             </button>
             <small style={{ color: '#64748b', fontSize: '0.72rem', textAlign: 'center' }}>
               On-chain registration calls UserRegistry smart contract (requires Sepolia or local Hardhat gas).
@@ -220,7 +229,10 @@ export default function ProfileModal({
                   }
                 }}
               >
-                🔌 Disconnect Wallet
+                <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                  <PixelZap size={14} color="#ff6b6b" />
+                  <span>Disconnect Wallet</span>
+                </span>
               </button>
             )}
           </div>

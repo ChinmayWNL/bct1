@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState, useMemo } from 'react';
+import { PixelCoin, PixelStar } from './PixelIcons';
 
 function generateParticles(eventId) {
   const seed = typeof eventId === 'number' ? eventId : 1337;
@@ -25,7 +26,7 @@ function generateParticles(eventId) {
       vy,
       rot,
       scale,
-      symbol: isStar ? '⭐' : '🪙',
+      type: isStar ? 'star' : 'coin',
       delay: rand() * 0.12
     });
   }
@@ -53,7 +54,11 @@ export default function PixelCoinBurst({ event, onComplete }) {
     <div className="pixel-coin-burst-overlay" aria-hidden="true">
       {/* 1. Central / Top Retro Marquee Banner */}
       <div className="pixel-coin-banner">
-        <div className="pixel-coin-banner-tag">★ COIN INSERTED // 1-UP! ★</div>
+        <div className="pixel-coin-banner-tag" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+          <PixelStar size={12} color="#ffd166" />
+          <span>COIN INSERTED // 1-UP!</span>
+          <PixelStar size={12} color="#ffd166" />
+        </div>
         <div className="pixel-coin-banner-amount">
           +{event.amount || '0.01'} ETH
         </div>
@@ -78,7 +83,11 @@ export default function PixelCoinBurst({ event, onComplete }) {
               animationDelay: `${p.delay}s`
             }}
           >
-            {p.symbol}
+            {p.type === 'star' ? (
+              <PixelStar size={Math.round(20 * p.scale)} color="#ffd166" />
+            ) : (
+              <PixelCoin size={Math.round(22 * p.scale)} color="#ffd166" />
+            )}
           </div>
         ))}
       </div>

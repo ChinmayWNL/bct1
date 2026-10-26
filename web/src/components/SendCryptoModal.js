@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { ethers } from 'ethers';
+import { PixelDollar, PixelZap, PixelClose, PixelWarning } from './PixelIcons';
 
 export default function SendCryptoModal({ 
   recipientAddress, 
@@ -139,7 +140,7 @@ export default function SendCryptoModal({
     onSuccess({
       type: 'crypto_request',
       amount: trimmedAmt,
-      note: note.trim() || 'Payment request ☕',
+      note: note.trim() || 'Payment request',
       status: 'pending',
       recipient: toAddr
     });
@@ -150,10 +151,10 @@ export default function SendCryptoModal({
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-card crypto-modal-card" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <div className="brand-title" style={{ fontSize: '1.2rem' }}>
-            <span>{mode === 'send' ? '💸' : '📥'}</span> {mode === 'send' ? 'Send ETH Tip' : 'Request ETH Payment'}
+          <div className="brand-title" style={{ fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span>{mode === 'send' ? <PixelDollar size={20} color="#39ff14" /> : <PixelZap size={20} color="#00f0ff" />}</span> {mode === 'send' ? 'Send ETH Tip' : 'Request ETH Payment'}
           </div>
-          <button className="modal-close-btn" onClick={onClose}>✕</button>
+          <button className="modal-close-btn" onClick={onClose}><PixelClose size={16} /></button>
         </div>
 
         {/* Mode Segmented Switcher */}
@@ -162,17 +163,17 @@ export default function SendCryptoModal({
             type="button"
             className={`wallpaper-btn ${mode === 'send' ? 'active' : ''}`}
             onClick={() => setMode('send')}
-            style={{ flex: 1, padding: '8px' }}
+            style={{ flex: 1, padding: '8px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
           >
-            💸 Send ETH
+            <PixelDollar size={14} color="#39ff14" /> Send ETH
           </button>
           <button
             type="button"
             className={`wallpaper-btn ${mode === 'request' ? 'active' : ''}`}
             onClick={() => setMode('request')}
-            style={{ flex: 1, padding: '8px' }}
+            style={{ flex: 1, padding: '8px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
           >
-            📥 Request ETH
+            <PixelZap size={14} color="#00f0ff" /> Request ETH
           </button>
         </div>
 
@@ -270,7 +271,7 @@ export default function SendCryptoModal({
             <input 
               type="text" 
               className="form-control" 
-              placeholder={mode === 'send' ? "e.g. Thanks for the quick feedback! ☕" : "e.g. Coffee split ☕ or gas fee refund"} 
+              placeholder={mode === 'send' ? "e.g. Thanks for the quick feedback!" : "e.g. Coffee split or gas fee refund"} 
               value={note}
               onChange={(e) => setNote(e.target.value)}
               maxLength={100}
@@ -278,8 +279,9 @@ export default function SendCryptoModal({
           </div>
 
           {errorMsg && (
-            <div className="crypto-error-banner">
-              ⚠️ {errorMsg}
+            <div className="crypto-error-banner" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <PixelWarning size={14} color="#ffd166" />
+              <span>{errorMsg}</span>
             </div>
           )}
 

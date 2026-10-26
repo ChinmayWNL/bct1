@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import QRCode from 'qrcode';
+import { PixelQr, PixelClose, PixelZap, PixelEye, PixelCheck } from './PixelIcons';
 
 export default function QRCodeModal({ address, username, onClose }) {
   const [copied, setCopied] = useState(false);
@@ -44,10 +45,10 @@ export default function QRCodeModal({ address, username, onClose }) {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-card qr-modal-card" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <div className="brand-title" style={{ fontSize: '1.15rem' }}>
-            <span>⚡</span> Wallet QR Code
+          <div className="brand-title" style={{ fontSize: '1.15rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <PixelQr size={18} color="#ffd166" /> <span>Wallet QR Code</span>
           </div>
-          <button className="modal-close-btn" onClick={onClose}>✕</button>
+          <button className="modal-close-btn" onClick={onClose}><PixelClose size={16} /></button>
         </div>
 
         <div className="qr-content-wrapper">
@@ -59,7 +60,7 @@ export default function QRCodeModal({ address, username, onClose }) {
               </div>
             )}
             <div className="qr-center-badge">
-              <span>⚡</span>
+              <PixelZap size={16} color="#ffd166" />
             </div>
           </div>
 
@@ -74,8 +75,9 @@ export default function QRCodeModal({ address, username, onClose }) {
             type="button" 
             className={`modal-btn-primary ${copied ? 'btn-copied' : ''}`}
             onClick={handleCopy}
+            style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
           >
-            {copied ? "✓ Copied to Clipboard!" : "📋 Copy Address"}
+            {copied ? <><PixelCheck size={14} color="#000" /> <span>Copied to Clipboard!</span></> : <><PixelEye size={14} /> <span>Copy Address</span></>}
           </button>
         </div>
       </div>

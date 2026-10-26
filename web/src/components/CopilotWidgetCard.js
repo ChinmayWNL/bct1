@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { PixelCoin, PixelDice, PixelZap, PixelAlien, PixelTerminal } from './PixelIcons';
+import { PixelCoin, PixelDice, PixelZap, PixelAlien, PixelTerminal, PixelGas, PixelBarChart, PixelSkull, PixelStar } from './PixelIcons';
 
 export default function CopilotWidgetCard({
   widgetData,
@@ -21,8 +21,8 @@ export default function CopilotWidgetCard({
           <span>PROVABLY FAIR COIN TOSS</span>
         </div>
         <div className="flip-center-display">
-          <div className="flip-coin-large">
-            {widgetData.result === 'HEADS' ? '🪙' : '⚡'}
+          <div className="flip-coin-large" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            {widgetData.result === 'HEADS' ? <PixelCoin size={36} color="var(--arcade-gold)" /> : <PixelZap size={36} color="#00f0ff" />}
           </div>
           <div className="flip-result-tag font-arcade">
             {widgetData.result}
@@ -49,10 +49,16 @@ export default function CopilotWidgetCard({
             {widgetData.result}
           </div>
           {widgetData.isCrit && (
-            <div className="roll-badge crit font-arcade">★ NATURAL 20 CRITICAL! ★</div>
+            <div className="roll-badge crit font-arcade" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+              <PixelStar size={12} color="#ffd166" />
+              <span>NATURAL 20 CRITICAL!</span>
+              <PixelStar size={12} color="#ffd166" />
+            </div>
           )}
           {widgetData.isFumble && (
-            <div className="roll-badge fumble font-arcade">💀 CRITICAL FUMBLE (1) 💀</div>
+            <div className="roll-badge fumble font-arcade" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+              <PixelSkull size={14} color="#ff3366" /> CRITICAL FUMBLE (1) <PixelSkull size={14} color="#ff3366" />
+            </div>
           )}
         </div>
         <div className="widget-footer-meta">
@@ -68,7 +74,7 @@ export default function CopilotWidgetCard({
     return (
       <div className="copilot-widget-card gas-card">
         <div className="widget-header">
-          <span>⛽</span>
+          <PixelGas size={16} color="#39ff14" />
           <span>MULTI-CHAIN GAS TRACKER</span>
         </div>
         <div className="gas-matrix-grid">
@@ -96,7 +102,7 @@ export default function CopilotWidgetCard({
     return (
       <div className="copilot-widget-card price-card">
         <div className="widget-header">
-          <span>📈</span>
+          <PixelBarChart size={16} color="#39ff14" />
           <span>{widgetData.symbol} / USD REAL-TIME TICKER</span>
         </div>
         <div className="price-display-row">
@@ -170,11 +176,15 @@ export default function CopilotWidgetCard({
             {isCorrectChoice ? (
               <>
                 <PixelZap size={14} color="var(--arcade-gold)" />
-                <span>★ CORRECT ANSWER! +50 ARCADE XP AWARDED! ★</span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                  <PixelStar size={12} color="#ffd166" />
+                  <span>CORRECT ANSWER! +50 ARCADE XP AWARDED!</span>
+                  <PixelStar size={12} color="#ffd166" />
+                </span>
               </>
             ) : (
               <>
-                <span>💀 INCORRECT!</span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}><PixelSkull size={14} color="#ff3366" /> INCORRECT!</span>
                 <span style={{ fontSize: '0.72rem', opacity: 0.9 }}>
                   Correct: {widgetData.options[widgetData.answerIndex]} ({widgetData.hint})
                 </span>

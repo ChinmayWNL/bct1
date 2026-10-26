@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { PixelCoin, PixelTrophy, PixelZap } from '../PixelIcons';
+import { PixelCoin, PixelTrophy, PixelZap, PixelCards, PixelRobot, PixelClose, PixelHandshake, PixelSkull, PixelStar, PixelPaper, PixelMessage, PixelSpade, PixelHeartSuit, PixelDiamondSuit, PixelClub } from '../PixelIcons';
 
 const SUITS = [
   { name: 'spades', symbol: '♠', color: '#00f0ff' },
@@ -143,11 +143,11 @@ export default function CyberBlackjackModal({
     if (pScore === 21) {
       if (dScore === 21) {
         setWinner('push');
-        setResultMessage('Both hold Natural 21! Stand-off Push 🤝');
+        setResultMessage('Both hold Natural 21! Stand-off Push');
         setGameState('resolved');
       } else {
         setWinner('blackjack');
-        setResultMessage('NATURAL BLACKJACK! PAYS 3:2! 🏆');
+        setResultMessage('NATURAL BLACKJACK! PAYS 3:2!');
         setGameState('resolved');
         playCardSound('win');
         if (onAddXp) onAddXp(Math.round(bet * 2.5), 'Cyber Blackjack Natural');
@@ -170,13 +170,13 @@ export default function CyberBlackjackModal({
     const score = calculateHandScore(newHand);
     if (score > 21) {
       setWinner('dealer');
-      setResultMessage(`Bust (${score})! Dealer claims the pot 💀`);
+      setResultMessage(`Bust (${score})! Dealer claims the pot`);
       setGameState('resolved');
       playCardSound('bust');
     } else if (newHand.length === 5 && score <= 21) {
       // 5-Card Charlie bonus
       setWinner('charlie');
-      setResultMessage('5-CARD CHARLIE! Instant Victory! 🌟');
+      setResultMessage('5-CARD CHARLIE! Instant Victory!');
       setGameState('resolved');
       playCardSound('win');
       if (onAddXp) onAddXp(activeWager * 2, '5-Card Charlie');
@@ -200,7 +200,7 @@ export default function CyberBlackjackModal({
     const score = calculateHandScore(newHand);
     if (score > 21) {
       setWinner('dealer');
-      setResultMessage(`Bust on Double Down (${score})! Dealer wins 💀`);
+      setResultMessage(`Bust on Double Down (${score})! Dealer wins`);
       setGameState('resolved');
       playCardSound('bust');
     } else {
@@ -234,23 +234,23 @@ export default function CyberBlackjackModal({
 
         if (finalDealerScore > 21) {
           setWinner('player');
-          setResultMessage(`Dealer busts (${finalDealerScore})! YOU WIN! +${currentWager} XP 🏆`);
+          setResultMessage(`Dealer busts (${finalDealerScore})! YOU WIN! +${currentWager} XP`);
           playCardSound('win');
           if (onAddXp) onAddXp(currentWager, 'Blackjack Win');
           if (onPlayChime) onPlayChime();
         } else if (pScore > finalDealerScore) {
           setWinner('player');
-          setResultMessage(`Victory! Your ${pScore} beats Dealer's ${finalDealerScore}! +${currentWager} XP 🏆`);
+          setResultMessage(`Victory! Your ${pScore} beats Dealer's ${finalDealerScore}! +${currentWager} XP`);
           playCardSound('win');
           if (onAddXp) onAddXp(currentWager, 'Blackjack Win');
           if (onPlayChime) onPlayChime();
         } else if (finalDealerScore > pScore) {
           setWinner('dealer');
-          setResultMessage(`Dealer wins with ${finalDealerScore} vs your ${pScore} 💀`);
+          setResultMessage(`Dealer wins with ${finalDealerScore} vs your ${pScore}`);
           playCardSound('bust');
         } else {
           setWinner('push');
-          setResultMessage(`Tied at ${pScore}! Stand-off Push 🤝`);
+          setResultMessage(`Tied at ${pScore}! Stand-off Push`);
         }
         setGameState('resolved');
       }
@@ -273,7 +273,7 @@ export default function CyberBlackjackModal({
 
   const handleShareToChat = () => {
     if (onShareToChat) {
-      const text = `🃏 CYBER 21 RESULT: ${winner === 'player' || winner === 'blackjack' || winner === 'charlie' ? 'VICTORY 🏆' : 'ROUND PLAYED'}\nPlayer: ${playerScore} pts | Dealer: ${calculateHandScore(dealerHand)} pts | Wager: ${activeWager} XP\n${resultMessage}`;
+      const text = `CYBER 21 RESULT: ${winner === 'player' || winner === 'blackjack' || winner === 'charlie' ? 'VICTORY' : 'ROUND PLAYED'}\nPlayer: ${playerScore} pts | Dealer: ${calculateHandScore(dealerHand)} pts | Wager: ${activeWager} XP\n${resultMessage}`;
       onShareToChat(text);
       onClose();
     }
@@ -294,15 +294,16 @@ export default function CyberBlackjackModal({
         <div className="activities-header">
           <div className="activities-title-group">
             <div className="activities-icon-badge" style={{ background: 'rgba(255, 209, 102, 0.15)', borderColor: '#ffd166' }}>
-              <span style={{ fontSize: '1.2rem' }}>🃏</span>
+              <PixelCards size={22} color="#ffd166" />
             </div>
             <div>
               <div className="activities-main-title font-arcade">CYBER 21 (BLACKJACK)</div>
               <div className="activities-subtitle">Hit, Stand or Double Down • Beat BlockBot AI to stack chips!</div>
             </div>
           </div>
-          <button type="button" className="activities-close-btn font-arcade" onClick={onClose} aria-label="Close Cyber 21">
-            ✕ ESC
+          <button type="button" className="activities-close-btn font-arcade" onClick={onClose} aria-label="Close Cyber 21" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+            <PixelClose size={12} />
+            <span>ESC</span>
           </button>
         </div>
 
@@ -321,13 +322,20 @@ export default function CyberBlackjackModal({
                   <div key={card.id || idx} className={`blackjack-card ${isHidden ? 'hidden' : 'dealt'}`}>
                     {isHidden ? (
                       <div className="card-back font-arcade">
-                        <span className="back-emblem">🤖</span>
+                        <span className="back-emblem" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <PixelRobot size={22} color="#00f0ff" />
+                        </span>
                         <span className="back-text">CYBER 21</span>
                       </div>
                     ) : (
                       <div className="card-face" style={{ color: card.suit.color }}>
                         <div className="card-corner top font-arcade">{card.value}</div>
-                        <div className="card-suit">{card.suit.symbol}</div>
+                        <div className="card-suit" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                          {card.suit.name === 'spades' && <PixelSpade size={22} color={card.suit.color} />}
+                          {card.suit.name === 'hearts' && <PixelHeartSuit size={22} color={card.suit.color} />}
+                          {card.suit.name === 'diamonds' && <PixelDiamondSuit size={22} color={card.suit.color} />}
+                          {card.suit.name === 'clubs' && <PixelClub size={22} color={card.suit.color} />}
+                        </div>
                         <div className="card-corner bottom font-arcade">{card.value}</div>
                       </div>
                     )}
@@ -358,7 +366,12 @@ export default function CyberBlackjackModal({
                 <div key={card.id || idx} className="blackjack-card dealt">
                   <div className="card-face" style={{ color: card.suit.color }}>
                     <div className="card-corner top font-arcade">{card.value}</div>
-                    <div className="card-suit">{card.suit.symbol}</div>
+                    <div className="card-suit" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                      {card.suit.name === 'spades' && <PixelSpade size={22} color={card.suit.color} />}
+                      {card.suit.name === 'hearts' && <PixelHeartSuit size={22} color={card.suit.color} />}
+                      {card.suit.name === 'diamonds' && <PixelDiamondSuit size={22} color={card.suit.color} />}
+                      {card.suit.name === 'clubs' && <PixelClub size={22} color={card.suit.color} />}
+                    </div>
                     <div className="card-corner bottom font-arcade">{card.value}</div>
                   </div>
                 </div>
@@ -413,8 +426,10 @@ export default function CyberBlackjackModal({
                     type="button"
                     className="share-btn font-arcade"
                     onClick={handleShareToChat}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                   >
-                    BRAG IN CHAT 💬
+                    <PixelMessage size={14} color="#ffd166" />
+                    <span>BRAG IN CHAT</span>
                   </button>
                 )}
               </div>
@@ -426,16 +441,20 @@ export default function CyberBlackjackModal({
                 className="action-btn hit font-arcade"
                 disabled={gameState !== 'playing'}
                 onClick={handleHit}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
               >
-                HIT 🃏
+                <PixelCards size={14} color="#00f0ff" />
+                <span>HIT</span>
               </button>
               <button
                 type="button"
                 className="action-btn stand font-arcade"
                 disabled={gameState !== 'playing'}
                 onClick={handleStand}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
               >
-                STAND ✋
+                <PixelPaper size={14} color="#ffd166" />
+                <span>STAND</span>
               </button>
               {playerHand.length === 2 && (
                 <button
@@ -444,8 +463,10 @@ export default function CyberBlackjackModal({
                   disabled={gameState !== 'playing'}
                   onClick={handleDoubleDown}
                   title="Double Wager, Get 1 Card, and Stand"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                 >
-                  DOUBLE 2x ⚡
+                  <PixelZap size={14} color="#ff007f" />
+                  <span>DOUBLE 2x</span>
                 </button>
               )}
             </div>

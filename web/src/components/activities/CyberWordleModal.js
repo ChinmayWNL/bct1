@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { PixelTrophy, PixelZap } from '../PixelIcons';
+import { PixelTrophy, PixelZap, PixelWordleGrid, PixelClose, PixelFire, PixelMessage, PixelEye, PixelCheck, PixelDice, PixelWarning, PixelStar } from '../PixelIcons';
 
 const WORD_LIST = [
   'BLOCK', 'CHAIN', 'CRYPT', 'SMART', 'TOKEN',
@@ -244,7 +244,7 @@ export default function CyberWordleModal({
       }).join('');
     });
 
-    return `🟩 CYBER WORDLE ${gameStatus === 'won' ? `${guesses.length}/6` : 'X/6'}\n${rows.join('\n')}\nTerm: ${gameStatus === 'won' ? 'SOLVED! 🏆' : targetWord}`;
+    return `CYBER WORDLE ${gameStatus === 'won' ? `${guesses.length}/6` : 'X/6'}\n${rows.join('\n')}\nTerm: ${gameStatus === 'won' ? 'SOLVED!' : targetWord}`;
   };
 
   const handleShareResult = () => {
@@ -276,15 +276,16 @@ export default function CyberWordleModal({
         <div className="activities-header">
           <div className="activities-title-group">
             <div className="activities-icon-badge" style={{ background: 'rgba(0, 240, 255, 0.15)', borderColor: '#00f0ff' }}>
-              <span style={{ fontSize: '1.2rem' }}>🟩</span>
+              <PixelWordleGrid size={22} color="#00f0ff" />
             </div>
             <div>
               <div className="activities-main-title font-arcade">CYBER WORDLE</div>
               <div className="activities-subtitle">Decipher the 5-letter Web3 term in 6 tries</div>
             </div>
           </div>
-          <button type="button" className="activities-close-btn font-arcade" onClick={onClose} aria-label="Close Wordle">
-            ✕ ESC
+          <button type="button" className="activities-close-btn font-arcade" onClick={onClose} aria-label="Close Wordle" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+            <PixelClose size={12} />
+            <span>ESC</span>
           </button>
         </div>
 
@@ -300,7 +301,10 @@ export default function CyberWordleModal({
           </div>
           <div className="stat-pill">
             <span className="stat-label">STREAK</span>
-            <span className="stat-num glow-gold">{stats.streak} 🔥</span>
+            <span className="stat-num glow-gold" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+              <span>{stats.streak}</span>
+              <PixelFire size={14} color="#ffd166" />
+            </span>
           </div>
           <div className="stat-pill">
             <span className="stat-label">BEST</span>
@@ -356,12 +360,15 @@ export default function CyberWordleModal({
         {gameStatus !== 'in_progress' && (
           <div className="wordle-result-banner font-arcade">
             {gameStatus === 'won' ? (
-              <div className="win-message">
-                ★ ACCESS GRANTED! Solved in {guesses.length}/6 ★
+              <div className="win-message" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                <PixelStar size={14} color="#ffd166" />
+                <span>ACCESS GRANTED! Solved in {guesses.length}/6</span>
+                <PixelStar size={14} color="#ffd166" />
               </div>
             ) : (
-              <div className="loss-message">
-                ⚠ CIPHER LOCKED! Secret word was: <strong>{targetWord}</strong>
+              <div className="loss-message" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                <PixelWarning size={14} color="#ff6b6b" />
+                <span>CIPHER LOCKED! Secret word was: <strong>{targetWord}</strong></span>
               </div>
             )}
 
@@ -370,22 +377,37 @@ export default function CyberWordleModal({
                 type="button" 
                 className="wordle-share-btn font-arcade"
                 onClick={handleShareResult}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
               >
-                SHARE TO CHAT 💬
+                <PixelMessage size={14} color="#00f0ff" />
+                <span>SHARE TO CHAT</span>
               </button>
               <button 
                 type="button" 
                 className="wordle-copy-btn font-arcade"
                 onClick={handleCopyGrid}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
               >
-                {copiedNotification ? 'COPIED! ✓' : 'COPY GRID 📋'}
+                {copiedNotification ? (
+                  <>
+                    <PixelCheck size={14} color="#39ff14" />
+                    <span>COPIED!</span>
+                  </>
+                ) : (
+                  <>
+                    <PixelEye size={14} color="#ffd166" />
+                    <span>COPY GRID</span>
+                  </>
+                )}
               </button>
               <button 
                 type="button" 
                 className="wordle-replay-btn font-arcade"
                 onClick={startNewGame}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
               >
-                NEXT CIPHER 🔄
+                <PixelDice size={14} color="#ffd166" />
+                <span>NEXT CIPHER</span>
               </button>
             </div>
           </div>

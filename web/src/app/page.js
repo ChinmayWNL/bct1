@@ -82,7 +82,22 @@ import {
   PixelDice,
   PixelChest,
   PixelTerminal,
-  PixelAlien
+  PixelAlien,
+  PixelEmoji,
+  renderPixelText,
+  PixelStar,
+  PixelPlus,
+  PixelClose,
+  PixelZap,
+  PixelDollar,
+  PixelEye,
+  PixelPencil,
+  PixelUnlock,
+  PixelKey,
+  PixelPotion,
+  PixelWarning,
+  PixelTimer,
+  PixelCheck
 } from '@/components/PixelIcons';
 import { renderWhatsAppMarkdown } from '@/utils/whatsappMarkdown';
 import {
@@ -1113,7 +1128,7 @@ export default function Home() {
       const contract = new ethers.Contract(escrowAddr, ARCADE_DUEL_ESCROW_ABI, signer);
       const tx = await contract.claimTimeout(onChainDuelId);
       await tx.wait();
-      alert("🏆 Forfeiture claimed on-chain! Full wager pot has been paid to your wallet.");
+      alert("Forfeiture claimed on-chain! Full wager pot has been paid to your wallet.");
       setMessages(prev => prev.map(m => {
         const d = parseMessageData(m);
         if (d.type === 'arcade_duel' && d.duelId === duelId) {
@@ -1532,6 +1547,11 @@ export default function Home() {
     }
     try {
       if (!signer || !provider) throw new Error('Connect a wallet to create an on-chain poll.');
+      const addr = getPollRegistryAddress(chainId);
+      const code = await provider.getCode(addr);
+      if (!code || code === '0x') {
+        throw new Error('PollRegistry contract is not deployed on this network. Run: npx hardhat run scripts/deploy.js --network localhost');
+      }
       const contract = getPollContract(chainId, signer);
       const latest = await provider.getBlock('latest');
       const closesAt = Number(latest.timestamp) + 24 * 3600;
@@ -4510,7 +4530,7 @@ export default function Home() {
               onClick={() => setShowProfileModal(true)}
               title={`Arcade Rank: LVL ${arcadeRank.level} ${arcadeRank.title} (${arcadeRank.currentXp}/${arcadeRank.nextRankMin} XP)`}
             >
-              <span>{arcadeRank.badge}</span>
+              <PixelEmoji char={arcadeRank.badge} size={16} />
               <span>LVL {arcadeRank.level}</span>
             </div>
           )}
@@ -4587,7 +4607,7 @@ export default function Home() {
         {/* WhatsApp Search Bar & Filter Tabs */}
         <div className="whatsapp-search-container">
           <div className="whatsapp-search-pill" onClick={() => searchInputRef.current?.focus()}>
-            <span className="whatsapp-search-icon">🔍</span>
+            <span className="whatsapp-search-icon"><PixelSearch size={14} color="#a0aec0" /></span>
             <input 
               ref={searchInputRef}
               type="text" 
@@ -4602,7 +4622,7 @@ export default function Home() {
                 className="whatsapp-search-clear"
                 onClick={() => setSearchQuery('')}
               >
-                ✕
+                <PixelClose size={12} />
               </button>
             )}
           </div>
@@ -4709,7 +4729,7 @@ export default function Home() {
                 <div className="whatsapp-card-content">
                   <div className="whatsapp-card-row-top">
                     <span className="whatsapp-card-title">
-                      {displayName}
+                      {renderPixelText(displayName, 14)}
                       {isGroup ? (
                         <span className="whatsapp-group-tag">GROUP</span>
                       ) : isBot ? (
@@ -4725,12 +4745,15 @@ export default function Home() {
                     <p className="whatsapp-card-snippet">
                       {draftText && !isSelected ? (
                         <span className="whatsapp-snippet-draft">
-                          Draft: {cipherSettings[convo.id]?.keyHash && !cipherKeys[convo.id] ? '🔒 hidden' : draftText}
+                          Draft: {cipherSettings[convo.id]?.keyHash && !cipherKeys[convo.id] ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}><PixelLock size={11} color="#00f0ff" /> hidden</span> : draftText}
                         </span>
                       ) : (
                         <>
-                          <span className="whatsapp-snippet-ticks">✓✓</span>
-                          <span>{convo.latestMessage ? getMessageSnippet(convo.latestMessage, { convoId: convo.id }) : 'Direct message'}</span>
+                          <span className="whatsapp-snippet-ticks" style={{ display: 'inline-flex', alignItems: 'center', marginRight: '3px' }}>
+                            <PixelCheck size={10} color="#00f0ff" />
+                            <PixelCheck size={10} color="#00f0ff" style={{ marginLeft: '-5px' }} />
+                          </span>
+                          <span>{convo.latestMessage ? renderPixelText(getMessageSnippet(convo.latestMessage, { convoId: convo.id }), 13) : 'Direct message'}</span>
                         </>
                       )}
                     </p>
@@ -4743,8 +4766,9 @@ export default function Home() {
                         className={`whatsapp-pin-btn ${isPinned ? 'pinned' : ''}`}
                         title={isPinned ? "Unpin chat" : "Pin chat"}
                         onClick={(e) => togglePinConversation(e, convo.id)}
+                        style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
                       >
-                        📌
+                        <PixelPin size={12} color={isPinned ? "var(--arcade-gold)" : "var(--coffee-text-dim)"} />
                       </button>
                     </div>
                   </div>
@@ -4759,10 +4783,10 @@ export default function Home() {
               <button 
                 type="button" 
                 className="coffee-btn-secondary"
-                style={{ marginTop: '10px', fontSize: '0.82rem', padding: '6px 14px' }}
+                style={{ marginTop: '10px', fontSize: '0.82rem', padding: '6px 14px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                 onClick={startBlockBotChat}
               >
-                🤖 Chat with BlockBot AI
+                <PixelRobot size={15} color="#00f0ff" /> Chat with BlockBot AI
               </button>
             </div>
           )}
@@ -4780,14 +4804,16 @@ export default function Home() {
                 >
                   {isConnecting ? "Connecting..." : "Connect Wallet"}
                 </button>
-                <button 
-                  type="button" 
-                  className="coffee-btn-secondary" 
-                  style={{ padding: '8px 12px', fontSize: '0.82rem' }}
-                  onClick={startDemoMode}
-                >
-                  🧪 Demo
-                </button>
+                {startDemoMode && (
+                  <button 
+                    type="button" 
+                    className="coffee-btn-secondary" 
+                    style={{ padding: '8px 12px', fontSize: '0.82rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                    onClick={startDemoMode}
+                  >
+                    <PixelPotion size={14} color="#39ff14" /> Demo
+                  </button>
+                )}
               </div>
             </div>
           )}
@@ -4860,7 +4886,7 @@ export default function Home() {
 
                         <div className="whatsapp-header-meta">
                           <h3 className="whatsapp-header-name">
-                            <span>{displayName}</span>
+                            <span>{renderPixelText(displayName, 15)}</span>
                             {isGroup ? (
                               <span className="whatsapp-group-tag">GROUP</span>
                             ) : isBot ? (
@@ -4915,13 +4941,13 @@ export default function Home() {
                               <span className="status-indicator"></span> 
                               <span>online • E2EE</span>
                               {activeCipherSetting?.keyHash && (
-                                <span className={`cipher-chip ${isCipherLocked ? 'locked' : 'unlocked'}`}>
-                                  {isCipherLocked ? '🔒 CIPHER' : '🔓 CIPHER'}
+                                <span className={`cipher-chip ${isCipherLocked ? 'locked' : 'unlocked'}`} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                  {isCipherLocked ? <><PixelLock size={12} color="#ff007f" /> CIPHER</> : <><PixelUnlock size={12} color="#39ff14" /> CIPHER</>}
                                 </span>
                               )}
                               {disappearingTimer > 0 && (
-                                <span className="disappearing-chip">
-                                  ⏱️ {disappearingTimer === 60 ? '1m' : disappearingTimer === 86400 ? '24h' : '7d'}
+                                <span className="disappearing-chip" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                  <PixelTimer size={12} color="#ffd166" /> {disappearingTimer === 60 ? '1m' : disappearingTimer === 86400 ? '24h' : '7d'}
                                 </span>
                               )}
                             </p>
@@ -5075,16 +5101,18 @@ export default function Home() {
                       type="button" 
                       className="safety-btn-action"
                       onClick={() => setShowContactDrawer(true)}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}
                     >
-                      📇 Set Nickname
+                      <PixelPencil size={13} color="#00f0ff" /> Set Nickname
                     </button>
                     <button 
                       type="button" 
                       className="safety-btn-dismiss"
                       onClick={() => handleDismissSafetyBanner(peerAddr)}
                       title="Dismiss warning"
+                      style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
                     >
-                      ✕
+                      <PixelClose size={12} />
                     </button>
                   </div>
                 </div>
@@ -5102,8 +5130,8 @@ export default function Home() {
                   </div>
                 </div>
                 <div className="safety-banner-actions">
-                  <button type="button" className="safety-btn-action" onClick={() => setShowCipherModal(true)}>
-                    🔐 Enter Key
+                  <button type="button" className="safety-btn-action" onClick={() => setShowCipherModal(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                    <PixelKey size={14} color="#ffd166" /> Enter Key
                   </button>
                 </div>
               </div>
@@ -5112,7 +5140,7 @@ export default function Home() {
             {/* In-Chat Search Bar */}
             {showInChatSearch && (
               <div className="whatsapp-inchat-search">
-                <span className="search-icon">🔍</span>
+                <span className="search-icon"><PixelSearch size={14} color="#a0aec0" /></span>
                 <input 
                   type="text" 
                   className="whatsapp-inchat-input" 
@@ -5126,7 +5154,7 @@ export default function Home() {
                     {visibleMessages.length} {visibleMessages.length === 1 ? 'match' : 'matches'}
                   </span>
                 )}
-                <button className="banner-close-btn" onClick={() => { setShowInChatSearch(false); setInChatSearchQuery(''); }}>✕</button>
+                <button className="banner-close-btn" onClick={() => { setShowInChatSearch(false); setInChatSearchQuery(''); }}><PixelClose size={12} /></button>
               </div>
             )}
 
@@ -5171,8 +5199,9 @@ export default function Home() {
                             className={`bubble-action-btn ${isStarred ? 'active-star' : ''}`}
                             title={isStarred ? "Unstar" : "Star"}
                             onClick={() => toggleStarMessage(msg.id)}
+                            style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
                           >
-                            ⭐
+                            <PixelStar size={13} color={isStarred ? "#ffd166" : "currentColor"} />
                           </button>
                           {msgData.type === 'text' && (
                             <button 
@@ -5184,8 +5213,9 @@ export default function Home() {
                                   navigator.clipboard.writeText(renderedText);
                                 }
                               }}
+                              style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
                             >
-                              📋
+                              <PixelEye size={12} />
                             </button>
                           )}
                           {isSent && msgData.type === 'text' && !isCipherLocked && (
@@ -5194,8 +5224,9 @@ export default function Home() {
                               className="bubble-action-btn" 
                               title="Edit"
                               onClick={() => handleStartEdit(msg)}
+                              style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
                             >
-                              ✏️
+                              <PixelPencil size={12} color="#ffd166" />
                             </button>
                           )}
                           {isSent && (
@@ -5204,8 +5235,9 @@ export default function Home() {
                               className="bubble-action-btn delete-btn" 
                               title="Delete"
                               onClick={() => handleDeleteMessage(msg)}
+                              style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
                             >
-                              🗑️
+                              <PixelTrash size={12} color="#ff3366" />
                             </button>
                           )}
                         </div>
@@ -5221,8 +5253,8 @@ export default function Home() {
 
                       {/* Deleted State */}
                       {isDeleted ? (
-                        <div className="whatsapp-deleted-text">
-                          🚫 <em>This message was deleted</em>
+                        <div className="whatsapp-deleted-text" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                          <PixelWarning size={14} color="#a0aec0" /> <em>This message was deleted</em>
                         </div>
                       ) : (
                         <>
@@ -5232,7 +5264,7 @@ export default function Home() {
                               msg.senderInboxId === 'knight-inbox' ? 'peer-knight' :
                               msg.senderInboxId === 'cypher-inbox' ? 'peer-cypher' : 'peer-bot'
                             }`}>
-                              {msg.senderName || (msg.senderInboxId === 'knight-inbox' ? 'PixelKnight 🛡️' : msg.senderInboxId === 'cypher-inbox' ? 'CypherPunk #42' : (msg.senderInboxId ? `${msg.senderInboxId.slice(0, 6)}…` : 'Member'))}
+                              {renderPixelText(msg.senderName || (msg.senderInboxId === 'knight-inbox' ? 'PixelKnight 🛡️' : msg.senderInboxId === 'cypher-inbox' ? 'CypherPunk #42' : (msg.senderInboxId ? `${msg.senderInboxId.slice(0, 6)}…` : 'Member')), 13)}
                             </span>
                           )}
 
@@ -5250,16 +5282,24 @@ export default function Home() {
                           {msgData.type === 'crypto_request' && (
                             <div className="crypto-request-card">
                               <div className="crypto-request-header">
-                                <span className="crypto-request-tag">📥 ETH Invoice</span>
+                                <span className="crypto-request-tag" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                  <PixelZap size={13} color="#00f0ff" /> ETH Invoice
+                                </span>
                                 {(() => {
                                   const inv = msgData.onChainInvoiceId ? invoiceStatus[msgData.onChainInvoiceId] : null;
+                                  const isPaid = inv ? inv.paidCount >= inv.maxPayers : msgData.status === 'paid';
                                   const label = inv
                                     ? (inv.cancelled ? 'CANCELLED'
-                                      : inv.paidCount >= inv.maxPayers ? 'PAID ✓'
+                                      : isPaid ? 'PAID'
                                       : inv.maxPayers > 1 ? `${inv.paidCount}/${inv.maxPayers} PAID` : 'PENDING')
-                                    : (msgData.status === 'paid' ? 'PAID ✓' : 'PENDING');
-                                  const cls = label === 'PAID ✓' ? 'paid' : (msgData.status || 'pending');
-                                  return <span className={`crypto-request-status ${cls}`}>{label}</span>;
+                                    : (msgData.status === 'paid' ? 'PAID' : 'PENDING');
+                                  const cls = isPaid ? 'paid' : (inv?.cancelled ? 'cancelled' : (msgData.status || 'pending'));
+                                  return (
+                                    <span className={`crypto-request-status ${cls}`} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                      {isPaid && <PixelCheck size={11} color="#39ff14" />}
+                                      <span>{label}</span>
+                                    </span>
+                                  );
                                 })()}
                               </div>
                               <div className="crypto-request-amount">
@@ -5277,12 +5317,15 @@ export default function Home() {
                                   const isFull = inv ? inv.paidCount >= inv.maxPayers : msgData.status === 'paid';
                                   const isCancelled = !!inv?.cancelled;
                                   if (isCancelled) {
-                                    return <div className="crypto-paid-label"><span>✕ Cancelled by requester</span></div>;
+                                    return <div className="crypto-paid-label"><span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><PixelClose size={12} color="#ff3366" /> Cancelled by requester</span></div>;
                                   }
                                   if (isFull || inv?.paidByMe) {
-                                    return (
-                                      <div className="crypto-paid-label">
-                                        <span>{isFull ? '✓ Settled on-chain' : '✓ You paid your share'}</span>
+                                      return (
+                                        <div className="crypto-paid-label">
+                                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                            <PixelCheck size={12} color="#39ff14" />
+                                            <span>{isFull ? 'Settled on-chain' : 'You paid your share'}</span>
+                                          </span>
                                         {msgData.paidTxHash && (
                                           <span style={{ fontFamily: 'monospace', fontSize: '0.72rem' }}>
                                             ({formatAddress(msgData.paidTxHash)})
@@ -5297,8 +5340,9 @@ export default function Home() {
                                         type="button"
                                         className="crypto-request-pay-btn"
                                         onClick={() => handleCancelOnChainInvoice(msgData)}
+                                        style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}
                                       >
-                                        ✕ Cancel Invoice
+                                        <PixelClose size={12} color="#ff3366" /> Cancel Invoice
                                       </button>
                                     ) : null;
                                   }
@@ -5307,8 +5351,9 @@ export default function Home() {
                                       type="button"
                                       className="crypto-request-pay-btn"
                                       onClick={() => handlePayRequest(msgData)}
+                                      style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}
                                     >
-                                      ⚡ Pay {msgData.amount} ETH Now
+                                      <PixelZap size={14} color="#ffd166" /> Pay {msgData.amount} ETH Now
                                     </button>
                                   );
                                 })()}
@@ -5322,7 +5367,9 @@ export default function Home() {
                           {/* Voice Note Audio */}
                           {msgData.type === 'audio' && (
                             isCipherLocked ? (
-                              <div className="whatsapp-cipher-hidden-media">🔒 Voice note ({msgData.duration || 0}s) hidden</div>
+                              <div className="whatsapp-cipher-hidden-media" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                <PixelLock size={14} color="#00f0ff" /> Voice note ({msgData.duration || 0}s) hidden
+                              </div>
                             ) : (
                               <VoiceNotePlayer audioUrl={msgData.audioUrl} duration={msgData.duration} />
                             )
@@ -5458,14 +5505,18 @@ export default function Home() {
 
                           {/* Bubble Footer: Time & Double Ticks */}
                           <div className="whatsapp-bubble-meta">
-                            {isStarred && <span className="whatsapp-starred-icon">⭐</span>}
+                            {isStarred && <span className="whatsapp-starred-icon"><PixelStar size={12} color="#ffd166" /></span>}
                             {isCipherMsg && (
                               <span className="whatsapp-cipher-tag" title={activeCipherKey ? 'Playfair encrypted (unlocked)' : 'Playfair encrypted'}>
-                                {activeCipherKey ? '🔓' : '🔒'}
+                                {activeCipherKey ? <PixelUnlock size={12} color="#39ff14" /> : <PixelLock size={12} color="#00f0ff" />}
                               </span>
                             )}
-                            <span className="whatsapp-time">{msg.sentAt ? formatMessageTime(msg.sentAt) : ''}</span>
-                            {isSent && <span className="whatsapp-checks">✓✓</span>}
+                            {isSent && (
+                              <span className="whatsapp-checks" style={{ display: 'inline-flex', alignItems: 'center', marginLeft: '4px' }}>
+                                <PixelCheck size={10} color="#00f0ff" />
+                                <PixelCheck size={10} color="#00f0ff" style={{ marginLeft: '-5px' }} />
+                              </span>
+                            )}
                           </div>
                         </>
                       )}
@@ -5481,8 +5532,9 @@ export default function Home() {
                                 handleAddReaction(msg.id, emoji);
                                 playSendPop();
                               }}
+                              style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
                             >
-                              {emoji}
+                              <PixelEmoji char={emoji} size={18} />
                             </span>
                           ))}
                           <button
@@ -5493,8 +5545,9 @@ export default function Home() {
                               setShowReactionModal(showReactionModal === msg.id ? null : msg.id);
                               setActiveReactionPicker(null);
                             }}
+                            style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
                           >
-                            ➕
+                            <PixelPlus size={14} color="#ffd166" />
                           </button>
                         </div>
                       )}
@@ -5522,9 +5575,9 @@ export default function Home() {
                             className="whatsapp-reaction-pill"
                             onClick={() => handleAddReaction(msg.id, r)}
                             title="Click to toggle reaction"
-                            style={{ cursor: 'pointer' }}
+                            style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center' }}
                           >
-                            {r}
+                            <PixelEmoji char={r} size={14} />
                           </div>
                         ))}
                       </div>
@@ -5541,10 +5594,12 @@ export default function Home() {
               {editingMessage && (
                 <div className="whatsapp-banner editing">
                   <div>
-                    <span style={{ fontWeight: 600 }}>✏️ Editing message: </span>
+                    <span style={{ fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                      <PixelPencil size={13} color="#ffd166" /> Editing message: 
+                    </span>
                     <span>{editingMessage.originalText}</span>
                   </div>
-                  <button className="banner-close-btn" onClick={handleCancelEdit}>✕</button>
+                  <button className="banner-close-btn" onClick={handleCancelEdit}><PixelClose size={12} /></button>
                 </div>
               )}
 
@@ -5555,7 +5610,7 @@ export default function Home() {
                     <span style={{ fontWeight: 600 }}>Replying to: </span>
                     <span>{getMessageSnippet(replyingTo)}</span>
                   </div>
-                  <button className="banner-close-btn" onClick={() => setReplyingTo(null)}>✕</button>
+                  <button className="banner-close-btn" onClick={() => setReplyingTo(null)}><PixelClose size={12} /></button>
                 </div>
               )}
 
@@ -5564,7 +5619,7 @@ export default function Home() {
                 <div className="whatsapp-banner media">
                   <div className="whatsapp-media-thumb">
                     <img src={selectedImage.dataUrl} alt="Preview" />
-                    <button className="remove-media-btn" onClick={() => setSelectedImage(null)}>✕</button>
+                    <button className="remove-media-btn" onClick={() => setSelectedImage(null)}><PixelClose size={12} /></button>
                   </div>
                   <span>Image ready to send</span>
                 </div>
@@ -5592,8 +5647,8 @@ export default function Home() {
                 {isCipherLocked ? (
                   <div className="whatsapp-cipher-locked-bar">
                     <span><PixelLock size={16} color="#ff007f" /> Chat is cipher-locked</span>
-                    <button type="button" className="coffee-btn-primary" onClick={() => setShowCipherModal(true)}>
-                      🔐 Enter Key
+                    <button type="button" className="coffee-btn-primary" onClick={() => setShowCipherModal(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                      <PixelKey size={14} color="#ffd166" /> Enter Key
                     </button>
                   </div>
                 ) : isRecording ? (
@@ -5706,7 +5761,7 @@ export default function Home() {
                         editingMessage 
                           ? "> Edit message buffer..." 
                           : isEncryptingOutgoing
-                            ? "> 🔐 Playfair-encrypted message..."
+                            ? "> [CIPHER] Playfair-encrypted message..."
                             : selectedImage 
                             ? "> Add photo caption..." 
                             : "> Type a message or / for copilot commands (*bold*, _italic_, `code`)..."
@@ -5732,7 +5787,7 @@ export default function Home() {
                       title={editingMessage ? "Save Edit" : "Send Message"}
                     >
                       {editingMessage ? (
-                        <span>✓</span>
+                        <PixelCheck size={18} color="#000000" />
                       ) : (
                         <PixelSend size={18} color="#000000" />
                       )}

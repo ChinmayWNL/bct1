@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { COPILOT_COMMANDS } from '@/utils/copilotEngine';
-import { PixelTerminal } from './PixelIcons';
+import { PixelTerminal, PixelEmoji } from './PixelIcons';
 
 export default function CopilotPalette({
   filterQuery = '',
@@ -64,7 +64,7 @@ export default function CopilotPalette({
             onClick={() => onSelectCommand(cmd)}
             onMouseEnter={() => setSelectedIndex(idx)}
           >
-            <div className="copilot-item-icon">{cmd.icon}</div>
+            <div className="copilot-item-icon"><PixelEmoji char={cmd.icon} size={18} /></div>
             <div className="copilot-item-info">
               <div className="copilot-item-syntax font-arcade">
                 <span>{cmd.cmd}</span>

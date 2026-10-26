@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
+import { PixelMic, PixelMute, PixelVideo, PixelClose, PixelPhone } from './PixelIcons';
 
 const ICE_SERVERS = {
   iceServers: [
@@ -563,8 +564,9 @@ export default function CallModal({
             className={`call-ctrl-btn ${isMuted ? 'active-mute' : ''}`}
             onClick={toggleMute}
             title={isMuted ? "Unmute Microphone" : "Mute Microphone"}
+            style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
           >
-            {isMuted ? '🔇' : '🎙️'}
+            {isMuted ? <PixelMute size={22} color="#f87171" /> : <PixelMic size={22} color="#fff" />}
           </button>
 
           {callType === 'video' && (
@@ -573,8 +575,9 @@ export default function CallModal({
               className={`call-ctrl-btn ${!isVideoEnabled ? 'active-mute' : ''}`}
               onClick={toggleVideo}
               title={isVideoEnabled ? "Turn off camera" : "Turn on camera"}
+              style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
             >
-              {isVideoEnabled ? '📹' : '🚫'}
+              {isVideoEnabled ? <PixelVideo size={22} color="#fff" /> : <PixelClose size={22} color="#f87171" />}
             </button>
           )}
 
@@ -583,8 +586,9 @@ export default function CallModal({
             className="call-ctrl-btn call-hangup-btn"
             onClick={handleHangUp}
             title="End Call"
+            style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
           >
-            📞
+            <PixelPhone size={22} color="#fff" />
           </button>
         </div>
       </div>

@@ -1,16 +1,16 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { PixelGamepad, PixelTrophy, PixelZap } from '../PixelIcons';
+import { PixelGamepad, PixelTrophy, PixelZap, PixelSnake, PixelClose, PixelSkull, PixelDice, PixelSwords } from '../PixelIcons';
 
 const GRID_SIZE = 20;
 const CANVAS_SIZE = 360;
 const CELL_SIZE = CANVAS_SIZE / GRID_SIZE; // 18px
 
 const FOOD_TYPES = [
-  { id: 'eth', name: 'ETH Orb', points: 25, color: '#00f0ff', emoji: '💎' },
-  { id: 'coin', name: 'Gold Coin', points: 15, color: '#ffd166', emoji: '🪙' },
-  { id: 'cyber', name: 'Cyber Core', points: 35, color: '#ff007f', emoji: '⚡' },
-  { id: 'berry', name: 'Byte Berry', points: 10, color: '#39ff14', emoji: '🟢' }
+  { id: 'eth', name: 'ETH Orb', points: 25, color: '#00f0ff' },
+  { id: 'coin', name: 'Gold Coin', points: 15, color: '#ffd166' },
+  { id: 'cyber', name: 'Cyber Core', points: 35, color: '#ff007f' },
+  { id: 'berry', name: 'Byte Berry', points: 10, color: '#39ff14' }
 ];
 
 export default function CyberSnakeModal({
@@ -421,15 +421,16 @@ export default function CyberSnakeModal({
         <div className="activities-header">
           <div className="activities-title-group">
             <div className="activities-icon-badge" style={{ background: 'rgba(57, 255, 20, 0.15)', borderColor: '#39ff14' }}>
-              <span style={{ fontSize: '1.2rem' }}>🐍</span>
+              <PixelSnake size={22} color="#39ff14" />
             </div>
             <div>
               <div className="activities-main-title font-arcade">CYBER SNAKE ARCADE</div>
               <div className="activities-subtitle">Eat crypto tokens, dodge walls • Swipe or D-Pad to steer!</div>
             </div>
           </div>
-          <button type="button" className="activities-close-btn font-arcade" onClick={onClose} aria-label="Close Snake">
-            ✕ ESC
+          <button type="button" className="activities-close-btn font-arcade" onClick={onClose} aria-label="Close Snake" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+            <PixelClose size={12} />
+            <span>ESC</span>
           </button>
         </div>
 
@@ -441,7 +442,10 @@ export default function CyberSnakeModal({
           </div>
           {combo > 1 && (
             <div className="score-item combo-item">
-              <span className="value combo-badge">⚡ {combo}x COMBO</span>
+              <span className="value combo-badge" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                <PixelZap size={12} color="#00f0ff" />
+                <span>{combo}x COMBO</span>
+              </span>
             </div>
           )}
           <div className="score-item">
@@ -486,23 +490,30 @@ export default function CyberSnakeModal({
 
           {isGameOver && (
             <div className="snake-overlay-card game-over">
-              <div className="game-over-title font-arcade">SYSTEM CRASH! 💀</div>
+              <div className="game-over-title font-arcade" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                <span>SYSTEM CRASH!</span>
+                <PixelSkull size={20} color="#ff007f" />
+              </div>
               <div className="game-over-score font-arcade">FINAL SCORE: {score}</div>
               <div className="snake-btn-row">
                 <button 
                   type="button" 
                   className="snake-start-btn font-arcade"
                   onClick={startGame}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                 >
-                  PLAY AGAIN 🔄
+                  <span>PLAY AGAIN</span>
+                  <PixelDice size={14} color="#ffd166" />
                 </button>
                 {score > 0 && (
                   <button 
                     type="button" 
                     className="snake-challenge-btn font-arcade"
                     onClick={handlePostChallenge}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                   >
-                    POST CHALLENGE TO CHAT ⚔️
+                    <span>POST CHALLENGE TO CHAT</span>
+                    <PixelSwords size={14} color="#00f0ff" />
                   </button>
                 )}
               </div>
@@ -531,7 +542,9 @@ export default function CyberSnakeModal({
             >
               ◀
             </button>
-            <div className="dpad-center">🎮</div>
+            <div className="dpad-center" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <PixelGamepad size={16} color="#8b9bb4" />
+            </div>
             <button
               type="button"
               className="dpad-btn right"

@@ -1,6 +1,21 @@
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 import VoiceNotePlayer from '@/components/VoiceNotePlayer';
+import {
+  PixelClose,
+  PixelEye,
+  PixelQr,
+  PixelChest,
+  PixelTimer,
+  PixelBell,
+  PixelStar,
+  PixelPalette,
+  PixelLock,
+  PixelTerminal,
+  PixelTrash,
+  PixelCheck,
+  renderPixelText
+} from '@/components/PixelIcons';
 
 export default function ContactInfoDrawer({
   peerAddress,
@@ -105,7 +120,7 @@ export default function ContactInfoDrawer({
         vn.push({ id: msg.id, duration: data.duration, audioUrl: data.audioUrl });
       }
       if (starredMessages[msg.id]) {
-        star.push({ id: msg.id, text: revealText(data.text) || revealText(data.note) || (data.type === 'media' ? '📷 Photo' : '🎤 Voice Note') });
+        star.push({ id: msg.id, text: revealText(data.text) || revealText(data.note) || (data.type === 'media' ? 'Photo Attachment' : 'Voice Note') });
       }
     });
 
@@ -117,7 +132,7 @@ export default function ContactInfoDrawer({
       <div className="contact-drawer-panel" onClick={(e) => e.stopPropagation()}>
         <div className="drawer-header">
           <h3>Contact Info</h3>
-          <button className="drawer-close-btn" onClick={onClose}>✕</button>
+          <button className="drawer-close-btn" onClick={onClose}><PixelClose size={16} /></button>
         </div>
 
         <div className="drawer-body">
@@ -130,14 +145,14 @@ export default function ContactInfoDrawer({
                 <span>{displayName.substring(displayName.startsWith('@') ? 1 : 0, displayName.startsWith('@') ? 3 : 2).toUpperCase()}</span>
               )}
             </div>
-            <h2 className="drawer-name">{displayName}</h2>
+            <h2 className="drawer-name">{renderPixelText(displayName, 18)}</h2>
             <div className="drawer-address-row">
               <span className="drawer-address-text">{peerAddress}</span>
-              <button className="mini-copy-btn" onClick={handleCopy}>
-                {copied ? '✓ Copied' : '📋'}
+              <button className="mini-copy-btn" onClick={handleCopy} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                {copied ? <><PixelCheck size={12} color="#39ff14" /> <span>Copied</span></> : <PixelEye size={13} />}
               </button>
-              <button className="mini-qr-btn" onClick={onOpenQR}>
-                🏁 QR
+              <button className="mini-qr-btn" onClick={onOpenQR} style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                <PixelQr size={13} /> QR
               </button>
             </div>
 
@@ -167,8 +182,9 @@ export default function ContactInfoDrawer({
                     }
                   }}
                   title="Save Nickname"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}
                 >
-                  {isSavedNickname ? '✓ Saved' : '💾 Save'}
+                  {isSavedNickname ? <><PixelCheck size={12} color="#39ff14" /> <span>Saved</span></> : <><PixelChest size={12} /> Save</>}
                 </button>
               </div>
             </div>
@@ -176,8 +192,8 @@ export default function ContactInfoDrawer({
 
           {/* WhatsApp Settings: Disappearing Messages */}
           <div className="drawer-section">
-            <div className="drawer-section-title">
-              <span>⏱️ Disappearing Messages</span>
+            <div className="drawer-section-title" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <PixelTimer size={14} color="#ffd166" /> <span>Disappearing Messages</span>
             </div>
             <div className="disappearing-options">
               {[
@@ -206,7 +222,9 @@ export default function ContactInfoDrawer({
           {/* Mute Notifications Toggle */}
           <div className="drawer-toggle-row">
             <div>
-              <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>🔔 Mute Notifications</div>
+              <div style={{ fontWeight: 600, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <PixelBell size={16} color="#ffd166" /> Mute Notifications
+              </div>
               <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Silence notification sounds for this chat</div>
             </div>
             <label className="switch-toggle">
@@ -221,22 +239,23 @@ export default function ContactInfoDrawer({
 
           {/* Starred Messages Section */}
           <div className="drawer-section">
-            <div className="drawer-section-title">
-              <span>⭐ Starred Messages ({starredList.length})</span>
+            <div className="drawer-section-title" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <PixelStar size={14} color="#ffd166" /> <span>Starred Messages ({starredList.length})</span>
             </div>
             {starredList.length > 0 ? (
               <div className="starred-list-scroll">
                 {starredList.map(item => (
                   <div key={item.id} className="starred-item-card">
-                    <span className="star-icon">⭐</span>
-                    <span className="starred-item-text" style={{ flex: 1 }}>{item.text}</span>
+                    <PixelStar size={14} color="#ffd166" />
+                    <span className="starred-item-text" style={{ flex: 1 }}>{renderPixelText(item.text, 13)}</span>
                     <button 
                       type="button" 
                       className="mini-copy-btn" 
                       onClick={(e) => { e.stopPropagation(); onUnstarMessage && onUnstarMessage(item.id); }}
                       title="Unstar message"
+                      style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
                     >
-                      ✕
+                      <PixelClose size={12} />
                     </button>
                   </div>
                 ))}
@@ -248,8 +267,8 @@ export default function ContactInfoDrawer({
 
           {/* Media & Audio Gallery */}
           <div className="drawer-section">
-            <div className="drawer-section-title">
-              <span>📁 Media & Audio ({photos.length + voiceNotes.length})</span>
+            <div className="drawer-section-title" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <PixelPalette size={14} color="#00f0ff" /> <span>Media & Audio ({photos.length + voiceNotes.length})</span>
             </div>
             <div className="media-tabs-nav">
               <button 
@@ -290,7 +309,9 @@ export default function ContactInfoDrawer({
                 {voiceNotes.map((vn, i) => (
                   <div key={vn.id || i} className="voice-gallery-item" style={{ padding: '6px', background: 'rgba(255,255,255,0.03)', borderRadius: '10px' }}>
                     {isCipherLocked ? (
-                      <div className="whatsapp-cipher-hidden-media">🔒 Voice note ({vn.duration || 0}s) hidden</div>
+                      <div className="whatsapp-cipher-hidden-media" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                        <PixelLock size={14} color="#00f0ff" /> Voice note ({vn.duration || 0}s) hidden
+                      </div>
                     ) : (
                       <VoiceNotePlayer audioUrl={vn.audioUrl} duration={vn.duration} />
                     )}
@@ -309,14 +330,15 @@ export default function ContactInfoDrawer({
               style={{ width: '100%', padding: '10px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
               onClick={handleExportChat}
             >
-              📥 Export Chat History (.txt)
+              <PixelTerminal size={14} color="#39ff14" /> Export Chat History (.txt)
             </button>
             <button 
               type="button" 
               className="drawer-danger-btn"
               onClick={onClearChat}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
             >
-              🗑️ Clear Message History
+              <PixelTrash size={14} color="#ff3366" /> Clear Message History
             </button>
           </div>
         </div>

@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useRef } from 'react';
+import { PixelVideo, PixelPhone, PixelClose } from './PixelIcons';
 
 export default function IncomingCallModal({
   callType, // 'voice' | 'video'
@@ -84,8 +85,9 @@ export default function IncomingCallModal({
           </div>
           <h2 className="call-peer-name">{displayName}</h2>
           <div className="call-status-badge">
-            <span className="ringing-text" style={{ color: '#38bdf8' }}>
-              Incoming {callType === 'video' ? '📹 Video Call' : '📞 Voice Call'}...
+            <span className="ringing-text" style={{ color: '#38bdf8', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+              {callType === 'video' ? <PixelVideo size={16} color="#38bdf8" /> : <PixelPhone size={16} color="#38bdf8" />}
+              <span>Incoming {callType === 'video' ? 'Video Call' : 'Voice Call'}...</span>
             </span>
           </div>
         </div>
@@ -97,9 +99,9 @@ export default function IncomingCallModal({
             className="call-ctrl-btn call-hangup-btn"
             onClick={onDecline}
             title="Decline Call"
-            style={{ width: '64px', height: '64px', fontSize: '1.6rem' }}
+            style={{ width: '64px', height: '64px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
           >
-            ✕
+            <PixelClose size={28} color="#fff" />
           </button>
 
           <button 
@@ -110,14 +112,16 @@ export default function IncomingCallModal({
             style={{
               width: '64px',
               height: '64px',
-              fontSize: '1.6rem',
               background: '#10b981',
               borderColor: '#10b981',
               color: '#fff',
-              boxShadow: '0 0 25px rgba(16, 185, 129, 0.6)'
+              boxShadow: '0 0 25px rgba(16, 185, 129, 0.6)',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center'
             }}
           >
-            📞
+            <PixelPhone size={28} color="#fff" />
           </button>
         </div>
       </div>

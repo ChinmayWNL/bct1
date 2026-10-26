@@ -1,5 +1,6 @@
 'use client';
 import { tallyPoll } from '@/utils/interactions';
+import { PixelBarChart, PixelCheck } from './PixelIcons';
 
 export default function PollCard({ pollData, votes = {}, myKey, onVote, chain, isSent, onClose }) {
   if (!pollData) return null;
@@ -25,7 +26,7 @@ export default function PollCard({ pollData, votes = {}, myKey, onVote, chain, i
   return (
     <div className="feature-card poll-card">
       <div className="feature-card-header">
-        <span>📊</span>
+        <PixelBarChart size={18} color="#00f0ff" />
         <span>{onChain ? 'ON-CHAIN POLL' : 'ARCADE POLL'}</span>
         <span className="feature-card-tag">
           {closed ? 'CLOSED · ' : ''}{total} VOTE{total === 1 ? '' : 'S'}
@@ -48,7 +49,7 @@ export default function PollCard({ pollData, votes = {}, myKey, onVote, chain, i
               <span className="poll-option-label">
                 <span className="poll-letter">{String.fromCharCode(65 + i)}</span>
                 <span className="poll-text">{opt}</span>
-                {mine && <span className="poll-check">✔</span>}
+                {mine && <span className="poll-check"><PixelCheck size={14} color="#39ff14" /></span>}
               </span>
               <span className="poll-pct">{pct}% · {counts[i]}</span>
             </button>

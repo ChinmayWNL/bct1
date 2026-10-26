@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { PixelHourglass, PixelChest, PixelLock, PixelZap } from './PixelIcons';
+import { PixelHourglass, PixelChest, PixelLock, PixelZap, PixelEmoji, PixelUnlock, PixelEye, PixelWarning, PixelCamera, PixelGem, PixelCheck, PixelStar } from './PixelIcons';
 
 function formatCountdown(ms) {
   if (ms <= 0) return '00:00:00';
@@ -36,13 +36,13 @@ const THEME_CONFIGS = {
   classified: {
     color: '#00f0ff',
     borderGlow: 'rgba(0, 240, 255, 0.45)',
-    icon: '🕵️',
+    icon: '👁️',
     tag: 'CLASSIFIED DOSSIER'
   },
   cosmic: {
     color: '#b026ff',
     borderGlow: 'rgba(176, 38, 255, 0.45)',
-    icon: '🔮',
+    icon: '💎',
     tag: 'COSMIC MEMORY BOX'
   }
 };
@@ -131,10 +131,12 @@ export default function TimeCapsuleCard({
       {/* Header Row */}
       <div className="capsule-header-row">
         <div className="capsule-title-badge">
-          <span style={{ fontSize: '1.05rem', lineHeight: 1 }}>{themeConfig.icon}</span>
+          <span style={{ display: 'inline-flex', alignItems: 'center' }}><PixelEmoji char={themeConfig.icon} size={18} /></span>
           <span style={{ color: themeConfig.color }}>{themeConfig.tag}</span>
           {capsuleData.isOnChain && (
-            <span className="duel-onchain-badge">⛓️ VAULT #{capsuleData.onChainCapsuleId}</span>
+            <span className="duel-onchain-badge" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+              <PixelLock size={12} color="#00f0ff" /> VAULT #{capsuleData.onChainCapsuleId}
+            </span>
           )}
           {hasEth && (
             <span className="duel-onchain-badge" style={{ color: '#ffd166', borderColor: '#ffd166' }}>
@@ -142,8 +144,17 @@ export default function TimeCapsuleCard({
             </span>
           )}
         </div>
-        <span className={`capsule-status-pill ${isRevealed ? 'opened' : isTimeElapsed ? 'ready' : 'sealed'}`}>
-          {isRevealed ? 'UNSEALED ✓' : isTimeElapsed ? 'READY TO OPEN' : 'LOCKED'}
+        <span className={`capsule-status-pill ${isRevealed ? 'opened' : isTimeElapsed ? 'ready' : 'sealed'}`} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+          {isRevealed ? (
+            <>
+              <PixelCheck size={11} color="#39ff14" />
+              <span>UNSEALED</span>
+            </>
+          ) : isTimeElapsed ? (
+            'READY TO OPEN'
+          ) : (
+            'LOCKED'
+          )}
         </span>
       </div>
 
@@ -165,8 +176,16 @@ export default function TimeCapsuleCard({
         {/* State 1: Locked & Counting Down */}
         {!isTimeElapsed && !isRevealed && (
           <div className="capsule-countdown-box">
-            <div className="countdown-label">
-              {isUrgent ? '⚡ UNLOCK IMMINENT ⚡' : 'TIME UNTIL RETRIEVAL'}
+            <div className="countdown-label" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+              {isUrgent ? (
+                <>
+                  <PixelZap size={12} color="#ff007f" />
+                  <span>UNLOCK IMMINENT</span>
+                  <PixelZap size={12} color="#ff007f" />
+                </>
+              ) : (
+                'TIME UNTIL RETRIEVAL'
+              )}
             </div>
             
             <div className={`countdown-digits font-arcade ${isUrgent ? 'urgent-text' : ''}`} style={{ color: isUrgent ? '#ff007f' : themeConfig.color }}>
@@ -198,8 +217,10 @@ export default function TimeCapsuleCard({
         {/* State 2: Time Elapsed, Ready to Open */}
         {isTimeElapsed && !isRevealed && (
           <div className="capsule-ready-box">
-            <div className="ready-text font-arcade" style={{ color: themeConfig.color }}>
-              ★ TIMELOCK HAS EXPIRED! ★
+            <div className="ready-text font-arcade" style={{ color: themeConfig.color, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+              <PixelStar size={12} color={themeConfig.color} />
+              <span>TIMELOCK HAS EXPIRED!</span>
+              <PixelStar size={12} color={themeConfig.color} />
             </div>
 
             {isRecipient ? (
@@ -210,10 +231,14 @@ export default function TimeCapsuleCard({
                 disabled={isOpening}
                 style={{
                   borderColor: themeConfig.color,
-                  boxShadow: `0 0 16px ${themeConfig.borderGlow}, 3px 3px 0 #000`
+                  boxShadow: `0 0 16px ${themeConfig.borderGlow}, 3px 3px 0 #000`,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px'
                 }}
               >
-                <span>🔓</span> 
+                <PixelUnlock size={16} color="#39ff14" />
                 {isOpening 
                   ? 'CONFIRM IN WALLET...' 
                   : hasEth 
@@ -230,15 +255,17 @@ export default function TimeCapsuleCard({
                   className="capsule-open-btn secondary"
                   onClick={handleOpenClick}
                   disabled={isOpening}
+                  style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
                 >
-                  <span>👁️</span> {isOpening ? 'READING CONTRACT...' : 'VIEW PAYLOAD (AS SENDER)'}
+                  <PixelEye size={16} color="#00f0ff" /> {isOpening ? 'READING CONTRACT...' : 'VIEW PAYLOAD (AS SENDER)'}
                 </button>
               </div>
             )}
 
             {errorMsg && (
               <div className="countdown-subtext error-text" style={{ color: 'var(--arcade-neon-magenta, #ff007f)', marginTop: '8px' }}>
-                <span>⚠ {errorMsg}</span>
+                <PixelWarning size={14} color="var(--arcade-neon-magenta, #ff007f)" />
+                <span>{errorMsg}</span>
               </div>
             )}
           </div>
@@ -266,13 +293,15 @@ export default function TimeCapsuleCard({
                   onClick={() => onOpenLightbox && onOpenLightbox(parsedPayload.media)}
                   title="Click to expand"
                 />
-                <span className="photo-revealed-caption font-arcade">📷 UNSEALED PHOTO MEMORY</span>
+                <span className="photo-revealed-caption font-arcade" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', justifyContent: 'center' }}>
+                  <PixelCamera size={14} color="#00f0ff" /> UNSEALED PHOTO MEMORY
+                </span>
               </div>
             )}
 
             {hasEth && (
-              <div className="capsule-eth-claimed-banner font-arcade">
-                <span>💎 {capsuleData.ethAmount} ETH CLAIMED TO WALLET</span>
+              <div className="capsule-eth-claimed-banner font-arcade" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                <PixelGem size={14} color="#00f0ff" /> <span>{capsuleData.ethAmount} ETH CLAIMED TO WALLET</span>
               </div>
             )}
 
@@ -288,7 +317,7 @@ export default function TimeCapsuleCard({
         <span>ID: {capsuleData.capsuleId ? capsuleData.capsuleId.substring(0, 14) : 'capsule'}</span>
         <span>
           {isRevealed 
-            ? '🔓 UNSEALED' 
+            ? 'UNSEALED' 
             : `TARGET: ${new Date(capsuleData.unlockTimestamp).toLocaleTimeString()}`}
         </span>
       </div>

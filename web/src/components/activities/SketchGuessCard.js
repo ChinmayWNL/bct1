@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { PixelTrophy } from '../PixelIcons';
+import { PixelTrophy, PixelPalette, PixelLock, PixelSparkles, PixelWarning } from '../PixelIcons';
 
 export default function SketchGuessCard({
   cardData,
@@ -29,7 +29,7 @@ export default function SketchGuessCard({
 
     const normalizedGuess = guessInput.toUpperCase().trim();
     if (normalizedGuess === secretWord) {
-      setFeedback('🎉 CORRECT! WORD SOLVED!');
+      setFeedback('CORRECT! WORD SOLVED!');
       setIsWrong(false);
       if (onSolve) {
         onSolve(cardData.sketchId, currentAddress || 'You');
@@ -42,7 +42,7 @@ export default function SketchGuessCard({
       }
     } else {
       setIsWrong(true);
-      setFeedback('❌ WRONG GUESS! TRY AGAIN');
+      setFeedback('WRONG GUESS! TRY AGAIN');
       setTimeout(() => {
         setIsWrong(false);
         setFeedback('');
@@ -55,7 +55,10 @@ export default function SketchGuessCard({
     <div className={`sketch-guess-card ${isSolved ? 'solved' : 'active'}`}>
       {/* Top Bar */}
       <div className="sketch-card-header font-arcade">
-        <span className="badge">🎨 PIXEL PICTIONARY</span>
+        <span className="badge" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+          <PixelPalette size={14} color="#ff007f" />
+          <span>PIXEL PICTIONARY</span>
+        </span>
         <span className="hint-pill">HINT: {hint}</span>
       </div>
 
@@ -87,7 +90,10 @@ export default function SketchGuessCard({
         <div className="sketch-guess-area">
           {isCreator ? (
             <div className="creator-notice font-arcade">
-              <span>🔒 You drew this masterpiece! Secret word: <strong>{secretWord}</strong></span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                <PixelLock size={12} color="#ffd166" />
+                <span>You drew this masterpiece! Secret word: <strong>{secretWord}</strong></span>
+              </span>
               <div style={{ fontSize: '0.65rem', color: 'var(--coffee-text-dim)', marginTop: '4px' }}>
                 Waiting for someone in chat to guess it...
               </div>
@@ -109,8 +115,9 @@ export default function SketchGuessCard({
           )}
 
           {feedback && (
-            <div className={`guess-feedback font-arcade ${isWrong ? 'error' : 'success'}`}>
-              {feedback}
+            <div className={`guess-feedback font-arcade ${isWrong ? 'error' : 'success'}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+              {isWrong ? <PixelWarning size={14} color="#ff6b6b" /> : <PixelSparkles size={14} color="#39ff14" />}
+              <span>{feedback}</span>
             </div>
           )}
         </div>

@@ -1,4 +1,5 @@
 'use client';
+import { renderPixelText } from '@/components/PixelIcons';
 
 /**
  * Parses and renders WhatsApp-style markdown formatted text in React:
@@ -67,7 +68,7 @@ function parseInlineStyles(line) {
 
   while ((m = tokenRegex.exec(line)) !== null) {
     if (m.index > lastIdx) {
-      tokens.push(line.substring(lastIdx, m.index));
+      tokens.push(renderPixelText(line.substring(lastIdx, m.index)));
     }
 
     const val = m[0];
@@ -93,30 +94,30 @@ function parseInlineStyles(line) {
     } else if (val.startsWith('*') && val.endsWith('*') && val.length > 2) {
       tokens.push(
         <strong key={m.index} className="wa-bold">
-          {val.slice(1, -1)}
+          {renderPixelText(val.slice(1, -1))}
         </strong>
       );
     } else if (val.startsWith('_') && val.endsWith('_') && val.length > 2) {
       tokens.push(
         <em key={m.index} className="wa-italic">
-          {val.slice(1, -1)}
+          {renderPixelText(val.slice(1, -1))}
         </em>
       );
     } else if (val.startsWith('~') && val.endsWith('~') && val.length > 2) {
       tokens.push(
         <del key={m.index} className="wa-strike">
-          {val.slice(1, -1)}
+          {renderPixelText(val.slice(1, -1))}
         </del>
       );
     } else {
-      tokens.push(val);
+      tokens.push(renderPixelText(val));
     }
 
     lastIdx = m.index + val.length;
   }
 
   if (lastIdx < line.length) {
-    tokens.push(line.substring(lastIdx));
+    tokens.push(renderPixelText(line.substring(lastIdx)));
   }
 
   return tokens;

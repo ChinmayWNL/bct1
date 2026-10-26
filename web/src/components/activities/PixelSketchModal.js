@@ -1,6 +1,6 @@
 'use client';
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { PixelGamepad, PixelTrophy } from '../PixelIcons';
+import { PixelGamepad, PixelTrophy, PixelPalette, PixelClose, PixelDice, PixelPencil, PixelSparkles, PixelTrash, PixelCheck, PixelRocket } from '../PixelIcons';
 
 const PALETTE = [
   { name: 'Cyan', color: '#00f0ff' },
@@ -172,15 +172,16 @@ export default function PixelSketchModal({
         <div className="activities-header">
           <div className="activities-title-group">
             <div className="activities-icon-badge" style={{ background: 'rgba(255, 0, 127, 0.15)', borderColor: '#ff007f' }}>
-              <span style={{ fontSize: '1.2rem' }}>🎨</span>
+              <PixelPalette size={22} color="#ff007f" />
             </div>
             <div>
               <div className="activities-main-title font-arcade">PIXEL PICTIONARY</div>
               <div className="activities-subtitle">Draw on 16x16 canvas. Friends in chat guess the secret word!</div>
             </div>
           </div>
-          <button type="button" className="activities-close-btn font-arcade" onClick={onClose} aria-label="Close Pictionary">
-            ✕ ESC
+          <button type="button" className="activities-close-btn font-arcade" onClick={onClose} aria-label="Close Pictionary" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+            <PixelClose size={12} />
+            <span>ESC</span>
           </button>
         </div>
 
@@ -193,8 +194,10 @@ export default function PixelSketchModal({
             className="shuffle-prompt-btn font-arcade"
             onClick={shufflePrompt}
             title="Get another word to draw"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
           >
-            🎲 NEW WORD
+            <PixelDice size={14} color="#ffd166" />
+            <span>NEW WORD</span>
           </button>
         </div>
 
@@ -206,32 +209,40 @@ export default function PixelSketchModal({
               className={`tool-btn ${activeTool === 'pen' ? 'active' : ''}`}
               onClick={() => setActiveTool('pen')}
               title="Single Pixel Pen"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}
             >
-              ✏️ 1x1
+              <PixelPencil size={12} />
+              <span>1x1</span>
             </button>
             <button
               type="button"
               className={`tool-btn ${activeTool === 'brush' ? 'active' : ''}`}
               onClick={() => setActiveTool('brush')}
               title="2x2 Thick Brush"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}
             >
-              🖌️ 2x2
+              <PixelPencil size={14} />
+              <span>2x2</span>
             </button>
             <button
               type="button"
               className={`tool-btn ${activeTool === 'bucket' ? 'active' : ''}`}
               onClick={() => setActiveTool('bucket')}
               title="Flood Fill Bucket"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}
             >
-              🪣 FILL
+              <PixelPalette size={13} />
+              <span>FILL</span>
             </button>
             <button
               type="button"
               className={`tool-btn ${activeTool === 'eraser' ? 'active' : ''}`}
               onClick={() => setActiveTool('eraser')}
               title="Eraser"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}
             >
-              🧹 ERASE
+              <PixelSparkles size={13} />
+              <span>ERASE</span>
             </button>
           </div>
           <div className="tool-btn-group">
@@ -242,15 +253,17 @@ export default function PixelSketchModal({
               disabled={historyIdx < 0}
               title="Undo Last Stroke"
             >
-              ↩ UNDO
+              UNDO
             </button>
             <button 
               type="button" 
               className="tool-btn clear-btn"
               onClick={clearCanvas}
               title="Reset Grid"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}
             >
-              🗑️ CLEAR
+              <PixelTrash size={13} color="#ff5533" />
+              <span>CLEAR</span>
             </button>
           </div>
         </div>
@@ -289,7 +302,9 @@ export default function PixelSketchModal({
                 }}
               >
                 {selectedColor === p.color && activeTool !== 'eraser' && (
-                  <span className="swatch-check">✓</span>
+                  <span className="swatch-check" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <PixelCheck size={10} color="#000" />
+                  </span>
                 )}
               </button>
             ))}
@@ -302,8 +317,10 @@ export default function PixelSketchModal({
             type="button" 
             className="sketch-send-btn font-arcade"
             onClick={handleSend}
+            style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
           >
-            DISPATCH TO CHAT TO GUESS! 🚀
+            <span>DISPATCH TO CHAT TO GUESS!</span>
+            <PixelRocket size={16} color="#ffd166" />
           </button>
         </div>
       </div>

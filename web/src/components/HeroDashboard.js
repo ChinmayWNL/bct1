@@ -6,7 +6,9 @@ import {
   PixelCoin,
   PixelSliders,
   PixelLock,
-  PixelAlien
+  PixelAlien,
+  PixelEmoji,
+  PixelStar
 } from './PixelIcons';
 
 export default function HeroDashboard({
@@ -41,9 +43,15 @@ export default function HeroDashboard({
         
         <h1 className="whatsapp-welcome-title">BLOCKCHAT // ARCADE</h1>
         <p className="whatsapp-welcome-subtitle">
-          ★ 1P VS 2P DECENTRALIZED WEB3 MESSAGING ★ ENCRYPTED VIA XMTP ★
+          <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', flexWrap: 'wrap' }}>
+            <PixelStar size={11} color="var(--arcade-gold)" />
+            <span>1P VS 2P DECENTRALIZED WEB3 MESSAGING</span>
+            <PixelStar size={11} color="var(--arcade-gold)" />
+            <span>ENCRYPTED VIA XMTP</span>
+            <PixelStar size={11} color="var(--arcade-gold)" />
+          </span>
           <br />
-          <span style={{ fontSize: '0.85em', opacity: 0.85 }}>
+          <span style={{ fontSize: '0.85em', opacity: 0.85, marginTop: '4px', display: 'inline-block' }}>
             VOICE CALLS • 8-BIT SOUNDS • ETH TRANSFERS • PEER-TO-PEER ENCRYPTION
           </span>
         </p>
@@ -75,7 +83,7 @@ export default function HeroDashboard({
               <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid var(--coffee-border)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div className="arcade-rank-pill">
-                    <span>{arcadeRank.badge}</span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center' }}><PixelEmoji char={arcadeRank.badge} size={18} /></span>
                     <span className="rank-title">LVL {arcadeRank.level} {arcadeRank.title}</span>
                   </div>
                   <span style={{ fontFamily: 'var(--font-arcade)', fontSize: '0.62rem', color: 'var(--arcade-gold)' }}>
@@ -129,8 +137,10 @@ export default function HeroDashboard({
                 </button>
               )}
             </div>
-            <p className="coffee-cta-note">
-              ★ INSERT 1 COIN TO INITIALIZE ENCRYPTED PEER-TO-PEER SESSION ★
+            <p className="coffee-cta-note" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+              <PixelStar size={11} color="var(--arcade-gold)" />
+              <span>INSERT 1 COIN TO INITIALIZE ENCRYPTED PEER-TO-PEER SESSION</span>
+              <PixelStar size={11} color="var(--arcade-gold)" />
             </p>
           </div>
         )}

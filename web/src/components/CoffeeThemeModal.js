@@ -1,4 +1,19 @@
 'use client';
+import {
+  PixelArcadeCabinet,
+  PixelClose,
+  PixelVolume,
+  PixelMute,
+  PixelZap,
+  PixelStar,
+  PixelCoin,
+  PixelTerminal,
+  PixelAlien,
+  PixelCoffee,
+  PixelEye,
+  PixelSparkles,
+  renderPixelText
+} from './PixelIcons';
 
 export default function CoffeeThemeModal({
   currentTheme,
@@ -19,28 +34,32 @@ export default function CoffeeThemeModal({
       name: '8-Bit Pixel Cabinet',
       desc: 'Chunky pixel borders, CRT scanlines, marquee glow & coin-slot gold accents',
       swatches: ['#0a0b10', '#151926', '#ffd166', '#39ff14'],
-      badge: '🕹️ 1UP (Default)'
+      badge: '1UP (Default)',
+      icon: <PixelArcadeCabinet size={14} color="#ffd166" />
     },
     {
       id: 'gameboy',
       name: 'GameBoy 1989 Phosphor',
       desc: 'Original dot-matrix 4-shade monochrome green LCD with handheld nostalgia',
       swatches: ['#0f240f', '#1f4a1f', '#8bac0f', '#9bbc0f'],
-      badge: '📟 1989'
+      badge: '1989',
+      icon: <PixelTerminal size={14} color="#8bac0f" />
     },
     {
       id: 'cyberpunk',
       name: 'Cyberpunk 1984 Neon',
       desc: 'Outrun synthwave neon cyan, laser magenta & dark purple scanlines',
       swatches: ['#0b0217', '#220e40', '#00f0ff', '#ff007f'],
-      badge: '👾 Neon'
+      badge: 'Neon',
+      icon: <PixelAlien size={14} color="#00f0ff" />
     },
     {
       id: 'espresso',
       name: '8-Bit Coffee Shop',
       desc: 'Warm roasted mocha beans, pixel crema & espresso golden checkmarks',
       swatches: ['#120d0a', '#241b17', '#4a3022', '#c89666'],
-      badge: '☕ Roast'
+      badge: 'Roast',
+      icon: <PixelCoffee size={14} color="#c89666" />
     }
   ];
 
@@ -48,10 +67,10 @@ export default function CoffeeThemeModal({
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-card theme-modal-card" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <div className="brand-title" style={{ fontSize: '1.05rem', fontFamily: 'var(--font-arcade)' }}>
-            <span>🕹️</span> ARCADE CABINET STUDIO
+          <div className="brand-title" style={{ fontSize: '1.05rem', fontFamily: 'var(--font-arcade)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <PixelArcadeCabinet size={20} color="var(--arcade-gold)" /> ARCADE CABINET STUDIO
           </div>
-          <button className="modal-close-btn" onClick={onClose}>✕</button>
+          <button className="modal-close-btn" onClick={onClose}><PixelClose size={16} /></button>
         </div>
 
         {/* 1. Cabinet Colorway Selection */}
@@ -66,8 +85,12 @@ export default function CoffeeThemeModal({
               onClick={() => onSelectTheme(t.id)}
             >
               <div className="theme-card-info">
-                <div className="theme-card-title">
-                  <span>{t.badge}</span> {t.name}
+                <div className="theme-card-title" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                    {t.icon}
+                    <span>{t.badge}</span>
+                  </span>
+                  <span>{t.name}</span>
                 </div>
                 <div className="theme-card-desc">{t.desc}</div>
               </div>
@@ -90,17 +113,19 @@ export default function CoffeeThemeModal({
         </div>
         <div className="wallpaper-opacity-row">
           {[
-            { id: 'subtle', label: '🌫️ Subtle Scanlines' },
-            { id: 'balanced', label: '🕹️ Balanced (Standard)' },
-            { id: 'rich', label: '✨ High-Contrast CRT' }
+            { id: 'subtle', label: 'Subtle Scanlines', icon: <PixelEye size={14} color="#8b9bb4" /> },
+            { id: 'balanced', label: 'Balanced (Standard)', icon: <PixelArcadeCabinet size={14} color="#ffd166" /> },
+            { id: 'rich', label: 'High-Contrast CRT', icon: <PixelSparkles size={14} color="#00f0ff" /> }
           ].map((op) => (
             <button
               key={op.id}
               type="button"
               className={`wallpaper-btn ${wallpaperOpacity === op.id ? 'active' : ''}`}
               onClick={() => onSelectWallpaperOpacity(op.id)}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
             >
-              {op.label}
+              {op.icon}
+              <span>{op.label}</span>
             </button>
           ))}
         </div>
@@ -110,7 +135,15 @@ export default function CoffeeThemeModal({
           <div className="sound-toggle-header">
             <div>
               <div style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--coffee-text-primary)', fontFamily: 'var(--font-arcade)' }}>
-                {soundEnabled ? '🔊 8-BIT SFX: ACTIVE' : '🔇 8-BIT SFX: MUTED'}
+                {soundEnabled ? (
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                    <PixelVolume size={16} color="#39ff14" /> 8-BIT SFX: ACTIVE
+                  </span>
+                ) : (
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                    <PixelMute size={16} color="#8b9bb4" /> 8-BIT SFX: MUTED
+                  </span>
+                )}
               </div>
               <div style={{ fontSize: '0.75rem', color: 'var(--coffee-text-muted)', marginTop: '2px' }}>
                 Synthesized laser blasts, 1-UP fanfare &amp; coin insert audio
@@ -135,15 +168,17 @@ export default function CoffeeThemeModal({
                 type="button"
                 className="sound-sample-btn"
                 onClick={onPlaySendPop}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
               >
-                <span>🔫</span> Laser Blast
+                <PixelZap size={14} color="#00f0ff" /> Laser Blast
               </button>
               <button
                 type="button"
                 className="sound-sample-btn"
                 onClick={onPlayReceiveChime}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
               >
-                <span>⭐</span> 1-UP Chime
+                <PixelStar size={14} color="#ffd166" /> 1-UP Chime
               </button>
               <button
                 type="button"
@@ -152,8 +187,9 @@ export default function CoffeeThemeModal({
                   onPlayCoinClink();
                   if (onTestCoinBurst) onTestCoinBurst();
                 }}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
               >
-                <span>🪙</span> Coin Burst FX
+                <PixelCoin size={14} color="#ffd166" /> Coin Burst FX
               </button>
             </div>
           </div>

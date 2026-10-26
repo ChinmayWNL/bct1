@@ -1,6 +1,6 @@
 'use client';
 import { useState, useRef, useEffect, useMemo } from 'react';
-import { PixelSearch } from './PixelIcons';
+import { PixelSearch, PixelEmoji, PixelClose } from './PixelIcons';
 
 const EMOJI_CATEGORIES = {
   pixel: {
@@ -354,7 +354,7 @@ export default function EmojiPicker({ onSelectEmoji, onClose, className = '', st
             className="emoji-search-clear"
             onClick={() => setSearchQuery('')}
           >
-            ✕
+            <PixelClose size={12} />
           </button>
         )}
       </div>
@@ -370,7 +370,7 @@ export default function EmojiPicker({ onSelectEmoji, onClose, className = '', st
               onClick={() => setActiveCategory(key)}
               title={cat.name}
             >
-              <span className="cat-icon">{cat.icon}</span>
+              <span className="cat-icon" style={{ display: 'inline-flex', alignItems: 'center' }}><PixelEmoji char={cat.icon} size={16} /></span>
               <span className="cat-name">{cat.name}</span>
             </button>
           ))}
@@ -391,7 +391,7 @@ export default function EmojiPicker({ onSelectEmoji, onClose, className = '', st
                 if (onClose) onClose();
               }}
             >
-              {emojiObj.char}
+              <PixelEmoji char={emojiObj.char} size={22} />
             </button>
           ))
         ) : (

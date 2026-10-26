@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { PixelAlien } from './PixelIcons';
+import { PixelAlien, PixelClose, PixelWarning, PixelRocket, PixelHourglass } from './PixelIcons';
 
 export default function CreateGroupModal({ onClose, onCreate, walletAddress }) {
   const [groupName, setGroupName] = useState('');
@@ -86,9 +86,11 @@ export default function CreateGroupModal({ onClose, onCreate, walletAddress }) {
             onClick={onClose}
             style={{
               background: 'none', border: 'none', color: '#8b9bb4', cursor: 'pointer',
-              fontSize: '1.2rem', lineHeight: 1, padding: '4px'
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '4px'
             }}
-          >✕</button>
+          >
+            <PixelClose size={14} color="#8b9bb4" />
+          </button>
         </div>
 
         {/* Group Name */}
@@ -99,7 +101,7 @@ export default function CreateGroupModal({ onClose, onCreate, walletAddress }) {
           type="text"
           value={groupName}
           onChange={e => setGroupName(e.target.value)}
-          placeholder="e.g. Crypto Squad 🚀"
+          placeholder="e.g. Crypto Squad"
           maxLength={64}
           style={{
             width: '100%', boxSizing: 'border-box',

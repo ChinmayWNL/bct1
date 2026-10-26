@@ -4,7 +4,10 @@ import {
   PixelLock,
   PixelAlien,
   PixelUser,
-  PixelTrash
+  PixelTrash,
+  PixelClose,
+  PixelTimer,
+  PixelTerminal
 } from './PixelIcons';
 
 export default function MobileHeaderMenu({
@@ -42,7 +45,9 @@ export default function MobileHeaderMenu({
               {peerName || (peerAddress ? `${peerAddress.slice(0, 8)}…` : 'Active Chat')}
             </p>
           </div>
-          <button className="modal-close-btn" onClick={onClose}>✕</button>
+          <button className="modal-close-btn" onClick={onClose} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+            <PixelClose size={16} />
+          </button>
         </div>
 
         <div className="mobile-header-menu-list">
@@ -114,7 +119,7 @@ export default function MobileHeaderMenu({
           {/* 4. Disappearing Messages */}
           <div className="mobile-menu-item timer-selector-item">
             <div className="menu-item-icon">
-              <span style={{ fontSize: '1.2rem', lineHeight: 1 }}>⏱️</span>
+              <PixelTimer size={18} color="#ffd166" />
             </div>
             <div className="menu-item-text" style={{ flex: 1 }}>
               <span className="menu-item-title font-arcade">Disappearing Messages</span>
@@ -147,7 +152,7 @@ export default function MobileHeaderMenu({
               onExportChat();
             }}
           >
-            <div className="menu-item-icon"><span style={{ fontSize: '1.1rem' }}>📜</span></div>
+            <div className="menu-item-icon"><PixelTerminal size={18} color="#00f0ff" /></div>
             <div className="menu-item-text">
               <span className="menu-item-title font-arcade">Export Chat Transcript</span>
               <span className="menu-item-desc">Download encrypted chat log to device</span>

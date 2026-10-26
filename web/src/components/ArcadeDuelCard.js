@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { PixelSwords, PixelCoin, PixelTrophy, PixelZap } from './PixelIcons';
+import { PixelSwords, PixelCoin, PixelTrophy, PixelZap, PixelLock, PixelEmoji, PixelHandshake, PixelSkull, PixelHourglass, PixelTimer, PixelTerminal, PixelStar } from './PixelIcons';
 
 export const MOVES = [
   { id: 'rock', label: 'ROCK', icon: '✊', beats: 'scissors' },
@@ -171,8 +171,9 @@ export default function ArcadeDuelCard({
           <PixelSwords size={16} color="var(--arcade-neon-magenta, #ff007f)" />
           <span>CYPHER RPS DUEL</span>
           {duelData.isOnChain && (
-            <span className="duel-onchain-badge">
-              ⛓️ ESCROW #{duelData.onChainDuelId || '1'}
+            <span className="duel-onchain-badge" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+              <PixelLock size={11} color="var(--arcade-neon-cyan, #00f0ff)" />
+              <span>ESCROW #{duelData.onChainDuelId || '1'}</span>
             </span>
           )}
         </div>
@@ -197,9 +198,9 @@ export default function ArcadeDuelCard({
           <span className="player-tag">1P</span>
           <span className="player-name">{challengerName}</span>
           {isResolved && duelData.challengerChoice ? (
-            <span className="revealed-move-icon">{challengerMoveIcon}</span>
+            <span className="revealed-move-icon"><PixelEmoji char={challengerMoveIcon} size={18} /></span>
           ) : duelData.challengerChoice ? (
-            <span className="revealed-move-icon" title="Secret Hand Locked">🔒</span>
+            <span className="revealed-move-icon" title="Secret Hand Locked"><PixelLock size={14} color="#ffd166" /></span>
           ) : null}
         </div>
 
@@ -209,9 +210,9 @@ export default function ArcadeDuelCard({
           <span className="player-tag">2P</span>
           <span className="player-name">{opponentName}</span>
           {isResolved && duelData.opponentChoice ? (
-            <span className="revealed-move-icon">{opponentMoveIcon}</span>
+            <span className="revealed-move-icon"><PixelEmoji char={opponentMoveIcon} size={18} /></span>
           ) : duelData.opponentChoice ? (
-            <span className="revealed-move-icon" title="Hand Locked">🔒</span>
+            <span className="revealed-move-icon" title="Hand Locked"><PixelLock size={14} color="#ffd166" /></span>
           ) : null}
         </div>
       </div>
@@ -223,7 +224,11 @@ export default function ArcadeDuelCard({
           <div className="duel-action-prompt">
             {isChallenger ? (
               <>
-                <div className="prompt-label">★ STEP 1: CHOOSE YOUR HAND TO THROW ★</div>
+                <div className="prompt-label" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                  <PixelStar size={12} color="#ffd166" />
+                  <span>STEP 1: CHOOSE YOUR HAND TO THROW</span>
+                  <PixelStar size={12} color="#ffd166" />
+                </div>
                 <div className="duel-buttons-row">
                   {MOVES.map((m) => (
                     <button
@@ -233,7 +238,7 @@ export default function ArcadeDuelCard({
                       disabled={isSubmitting}
                       onClick={() => handleChallengerPick(m.id)}
                     >
-                      <span className="move-emoji">{m.icon}</span>
+                      <span className="move-emoji"><PixelEmoji char={m.icon} size={24} /></span>
                       <span className="move-name">{m.label}</span>
                     </button>
                   ))}
@@ -245,7 +250,10 @@ export default function ArcadeDuelCard({
             ) : (
               <div className="duel-waiting-message">
                 <div className="pulse-spinner"></div>
-                <span>Player 1 is selecting their move... ⏳</span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                  <span>Player 1 is selecting their move...</span>
+                  <PixelHourglass size={12} color="#ffd166" />
+                </span>
               </div>
             )}
           </div>
@@ -256,7 +264,11 @@ export default function ArcadeDuelCard({
           <div className="duel-state-waiting">
             {isOpponent ? (
               <div className="duel-action-prompt">
-                <div className="prompt-label">★ STEP 2: CHOOSE YOUR HAND TO DEFEND ★</div>
+                <div className="prompt-label" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                  <PixelStar size={12} color="#ffd166" />
+                  <span>STEP 2: CHOOSE YOUR HAND TO DEFEND</span>
+                  <PixelStar size={12} color="#ffd166" />
+                </div>
                 <div className="duel-buttons-row">
                   {MOVES.map((m) => (
                     <button
@@ -266,7 +278,7 @@ export default function ArcadeDuelCard({
                       disabled={isSubmitting}
                       onClick={() => handleOpponentPick(m.id)}
                     >
-                      <span className="move-emoji">{m.icon}</span>
+                      <span className="move-emoji"><PixelEmoji char={m.icon} size={24} /></span>
                       <span className="move-name">{m.label}</span>
                     </button>
                   ))}
@@ -295,8 +307,10 @@ export default function ArcadeDuelCard({
                 type="button"
                 className="duel-timeout-btn font-arcade"
                 onClick={() => onClaimTimeout(duelData.duelId, duelData.onChainDuelId)}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
               >
-                ⏰ CLAIM FORFEITURE (IF TIMED OUT)
+                <PixelTimer size={12} color="#ffd166" />
+                <span>CLAIM FORFEITURE (IF TIMED OUT)</span>
               </button>
             )}
           </div>
@@ -306,11 +320,12 @@ export default function ArcadeDuelCard({
         {isResolved && (
           <div className="duel-resolved-banner">
             {computedWinner === 'draw' ? (
-              <div className="duel-result-tag draw">
-                <span>🤝</span> DRAW! STALEMATE (+25 XP)
+              <div className="duel-result-tag draw" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                <PixelHandshake size={16} color="#ffd166" />
+                <span>DRAW! STALEMATE (+25 XP)</span>
               </div>
             ) : (
-              <div className={`duel-result-tag ${isUserWinner ? 'victory' : 'defeat'}`}>
+              <div className={`duel-result-tag ${isUserWinner ? 'victory' : 'defeat'}`} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                 {isUserWinner ? (
                   <>
                     <PixelTrophy size={16} color="var(--arcade-gold, #ffd166)" />
@@ -318,26 +333,34 @@ export default function ArcadeDuelCard({
                   </>
                 ) : (
                   <>
-                    <span>💀</span>
+                    <PixelSkull size={16} color="#ff007f" />
                     <span>DEFEAT (+25 XP CONSOLATION)</span>
                   </>
                 )}
               </div>
             )}
 
-            <div className="duel-summary-text">
-              <span>{challengerName}: <strong>{challengerMoveId ? challengerMoveId.toUpperCase() : 'LOCKED'}</strong> {challengerMoveIcon}</span>
+            <div className="duel-summary-text" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                {challengerName}: <strong>{challengerMoveId ? challengerMoveId.toUpperCase() : 'LOCKED'}</strong>
+                <PixelEmoji char={challengerMoveIcon} size={14} />
+              </span>
               <span> vs </span>
-              <span>{opponentName}: <strong>{opponentMoveId ? opponentMoveId.toUpperCase() : 'LOCKED'}</strong> {opponentMoveIcon}</span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                {opponentName}: <strong>{opponentMoveId ? opponentMoveId.toUpperCase() : 'LOCKED'}</strong>
+                <PixelEmoji char={opponentMoveIcon} size={14} />
+              </span>
             </div>
 
             {narrativeText ? (
-              <div style={{ fontSize: '0.72rem', color: 'var(--arcade-neon-green)', fontWeight: 600, marginBottom: '8px' }}>
-                ★ {narrativeText}
+              <div style={{ fontSize: '0.72rem', color: 'var(--arcade-neon-green)', fontWeight: 600, marginBottom: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}>
+                <PixelStar size={11} color="var(--arcade-neon-green)" />
+                <span>{narrativeText}</span>
               </div>
             ) : (
-              <div style={{ fontSize: '0.72rem', color: 'var(--arcade-neon-cyan)', fontWeight: 600, marginBottom: '8px' }}>
-                ★ Round concluded provably fair!
+              <div style={{ fontSize: '0.72rem', color: 'var(--arcade-neon-cyan)', fontWeight: 600, marginBottom: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}>
+                <PixelStar size={11} color="var(--arcade-neon-cyan)" />
+                <span>Round concluded provably fair!</span>
               </div>
             )}
 
@@ -346,8 +369,10 @@ export default function ArcadeDuelCard({
                 type="button"
                 className="duel-rematch-btn"
                 onClick={onStartNewDuel}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
               >
-                <span>⚔️</span> PLAY REMATCH
+                <PixelSwords size={14} color="#ffd166" />
+                <span>PLAY REMATCH</span>
               </button>
             )}
           </div>
@@ -357,13 +382,15 @@ export default function ArcadeDuelCard({
       {(duelData.createTxHash || duelData.settleTxHash) && (
         <div className="duel-tx-row" style={{ padding: '0 8px 6px' }}>
           {duelData.createTxHash && (
-            <span className="duel-tx-link">
-              📜 Escrow Lock: {duelData.createTxHash.slice(0, 12)}...
+            <span className="duel-tx-link" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+              <PixelTerminal size={12} color="#00f0ff" />
+              <span>Escrow Lock: {duelData.createTxHash.slice(0, 12)}...</span>
             </span>
           )}
           {duelData.settleTxHash && (
-            <span className="duel-tx-link settle">
-              🏆 On-Chain Payout: {duelData.settleTxHash.slice(0, 12)}...
+            <span className="duel-tx-link settle" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+              <PixelTrophy size={12} color="#ffd166" />
+              <span>On-Chain Payout: {duelData.settleTxHash.slice(0, 12)}...</span>
             </span>
           )}
         </div>
@@ -371,7 +398,7 @@ export default function ArcadeDuelCard({
 
       <div className="duel-footer-hash">
         <span>COMMIT: {duelData.commitHash ? `${duelData.commitHash.substring(0, 14)}...` : '0xkeccak256'}</span>
-        <span>{duelData.isOnChain ? '⛓️ VERIFIED ON-CHAIN' : 'PROVABLY FAIR'}</span>
+        <span>{duelData.isOnChain ? 'VERIFIED ON-CHAIN' : 'PROVABLY FAIR'}</span>
       </div>
     </div>
   );

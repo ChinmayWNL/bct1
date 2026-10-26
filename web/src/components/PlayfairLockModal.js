@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { keySquareRows, countKeyLetters, encryptPlayfair, decryptPlayfair, getPlayfairCipherText } from '@/utils/playfairCipher';
+import { PixelLock, PixelUnlock, PixelKey, PixelClose, PixelEye } from './PixelIcons';
 
 // Modes:
 //  'setup'    – no key for this chat yet: choose a secret key (enables cipher + unlocks).
@@ -67,10 +68,10 @@ export default function PlayfairLockModal({
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-card playfair-modal-card" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <div className="brand-title" style={{ fontSize: '1.05rem' }}>
-            <span>{mode === 'unlocked' ? '🔓' : '🔐'}</span> {title}
+          <div className="brand-title" style={{ fontSize: '1.05rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span>{mode === 'unlocked' ? <PixelUnlock size={18} color="#39ff14" /> : <PixelKey size={18} color="#ffd166" />}</span> {title}
           </div>
-          <button className="modal-close-btn" onClick={onClose}>✕</button>
+          <button className="modal-close-btn" onClick={onClose}><PixelClose size={16} /></button>
         </div>
 
         {mode === 'setup' && !sampleEnvelope && (
@@ -110,8 +111,8 @@ export default function PlayfairLockModal({
                   autoFocus
                   autoComplete="off"
                 />
-                <button type="button" className="playfair-eye-btn" onClick={() => setShowKey(!showKey)} title={showKey ? 'Hide key' : 'Show key'}>
-                  {showKey ? '🙈' : '👁️'}
+                <button type="button" className="playfair-eye-btn" onClick={() => setShowKey(!showKey)} title={showKey ? 'Hide key' : 'Show key'} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <PixelEye size={14} color={showKey ? '#a0aec0' : '#00f0ff'} />
                 </button>
               </div>
             </div>
@@ -136,8 +137,8 @@ export default function PlayfairLockModal({
               </div>
             )}
             {error && <div className="playfair-error">{error}</div>}
-            <button type="submit" className="modal-btn-primary" disabled={busy}>
-              {busy ? 'Checking...' : mode === 'setup' ? '🔐 Enable Cipher' : '🔓 Unlock'}
+            <button type="submit" className="modal-btn-primary" disabled={busy} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+              {busy ? 'Checking...' : mode === 'setup' ? <><PixelKey size={14} color="#ffd166" /> Enable Cipher</> : <><PixelUnlock size={14} color="#39ff14" /> Unlock</>}
             </button>
           </form>
         )}
@@ -169,8 +170,8 @@ export default function PlayfairLockModal({
               />
               <span>Encrypt messages I send in this chat</span>
             </label>
-            <button type="button" className="modal-btn-primary" onClick={onLock}>
-              🔒 Lock Chat Now
+            <button type="button" className="modal-btn-primary" onClick={onLock} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+              <PixelLock size={14} color="#ff007f" /> Lock Chat Now
             </button>
             <button
               type="button"

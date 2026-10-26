@@ -1,6 +1,6 @@
 'use client';
 import { useState, useCallback } from 'react';
-import { PixelGamepad, PixelTrophy, PixelZap } from './PixelIcons';
+import { PixelGamepad, PixelTrophy, PixelZap, PixelTicTacToe, PixelHandshake, PixelSkull, PixelHourglass, PixelSwords, PixelClose, PixelCircle, PixelStar } from './PixelIcons';
 
 const WINNING_COMBOS = [
   [0, 1, 2], [3, 4, 5], [6, 7, 8], // Rows
@@ -127,8 +127,8 @@ export default function TicTacToeCard({
     <div className={`tictactoe-card ${isResolved ? 'resolved' : 'active'}`}>
       {/* Top Header */}
       <div className="ttt-header font-arcade">
-        <div className="title-badge">
-          <span>❌⭕</span>
+        <div className="title-badge" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+          <PixelTicTacToe size={18} color="#00f0ff" />
           <span>CYBER TIC-TAC-TOE</span>
         </div>
         <span className="xp-pill">
@@ -141,22 +141,28 @@ export default function TicTacToeCard({
       <div className="ttt-status-row font-arcade">
         {isResolved ? (
           winnerSymbol === 'draw' ? (
-            <span className="outcome draw">🤝 STALEMATE DRAW (+25 XP)</span>
+            <span className="outcome draw" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+              <PixelHandshake size={14} color="#00f0ff" /> STALEMATE DRAW (+25 XP)
+            </span>
           ) : isUserWinner ? (
-            <span className="outcome victory">
+            <span className="outcome victory" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
               <PixelTrophy size={14} color="#ffd166" />
               <span>VICTORY! YOU TOOK THE LINE (+100 XP)</span>
             </span>
           ) : (
-            <span className="outcome defeat">💀 ROUND CONCLUDED (WINNER: {winnerSymbol})</span>
+            <span className="outcome defeat" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+              <PixelSkull size={14} color="#ff3366" /> ROUND CONCLUDED (WINNER: {winnerSymbol})
+            </span>
           )
         ) : isMyTurn ? (
-          <span className="turn-indicator your-turn">
-            ★ YOUR TURN ({mySymbol}) - TAP AN EMPTY TILE ★
+          <span className="turn-indicator your-turn" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+            <PixelStar size={12} color="#ffd166" />
+            <span>YOUR TURN ({mySymbol === 'X' ? <PixelClose size={13} color="#00f0ff" style={{ verticalAlign: 'middle' }} /> : <PixelCircle size={13} color="#ff007f" style={{ verticalAlign: 'middle' }} />}) - TAP AN EMPTY TILE</span>
+            <PixelStar size={12} color="#ffd166" />
           </span>
         ) : (
-          <span className="turn-indicator wait">
-            ⏳ WAITING FOR OPPONENT ({turn})...
+          <span className="turn-indicator wait" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+            <PixelHourglass size={14} color="#ffd166" /> WAITING FOR OPPONENT ({turn})...
           </span>
         )}
       </div>
@@ -180,11 +186,11 @@ export default function TicTacToeCard({
               onMouseLeave={() => setHoveredIdx(null)}
               aria-label={`Cell ${idx + 1}`}
             >
-              {cell === 'X' && <span className="cell-x">✕</span>}
-              {cell === 'O' && <span className="cell-o">◯</span>}
+              {cell === 'X' && <span className="cell-x" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}><PixelClose size={26} color="#00f0ff" /></span>}
+              {cell === 'O' && <span className="cell-o" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}><PixelCircle size={26} color="#ff007f" /></span>}
               {!cell && isHovered && (
-                <span className={`cell-ghost ${mySymbol === 'X' ? 'cell-x' : 'cell-o'}`}>
-                  {mySymbol === 'X' ? '✕' : '◯'}
+                <span className={`cell-ghost ${mySymbol === 'X' ? 'cell-x' : 'cell-o'}`} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', opacity: 0.5 }}>
+                  {mySymbol === 'X' ? <PixelClose size={26} color="#00f0ff" /> : <PixelCircle size={26} color="#ff007f" />}
                 </span>
               )}
             </button>
@@ -194,10 +200,18 @@ export default function TicTacToeCard({
 
       {/* Footer & Rematch */}
       <div className="ttt-footer">
-        <div className="players-info font-arcade">
-          <span className={mySymbol === 'X' ? 'active-player' : ''}>1P: ✕ (Challenger)</span>
+        <div className="players-info font-arcade" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+          <span className={mySymbol === 'X' ? 'active-player' : ''} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+            <span>1P:</span>
+            <PixelClose size={12} color="#00f0ff" />
+            <span>(Challenger)</span>
+          </span>
           <span>vs</span>
-          <span className={mySymbol === 'O' ? 'active-player' : ''}>2P: ◯ (Opponent)</span>
+          <span className={mySymbol === 'O' ? 'active-player' : ''} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+            <span>2P:</span>
+            <PixelCircle size={12} color="#ff007f" />
+            <span>(Opponent)</span>
+          </span>
         </div>
 
         {isResolved && onStartRematch && (
@@ -205,8 +219,9 @@ export default function TicTacToeCard({
             type="button"
             className="ttt-rematch-btn font-arcade"
             onClick={onStartRematch}
+            style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
           >
-            ⚔️ PLAY REMATCH
+            <PixelSwords size={14} color="#ff3366" /> PLAY REMATCH
           </button>
         )}
       </div>

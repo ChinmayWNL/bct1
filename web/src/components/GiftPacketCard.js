@@ -1,5 +1,6 @@
 'use client';
 import { giftClaimList } from '@/utils/interactions';
+import { PixelRedPacket, PixelStar } from './PixelIcons';
 
 const shortAddr = (a) => `${String(a).slice(0, 6)}…${String(a).slice(-4)}`;
 
@@ -16,7 +17,13 @@ function OnChainGiftCard({ giftData, isSent, onClaim, chain, onRefund }) {
 
   let action;
   if (chain?.mine) {
-    action = <div className="gift-result">★ YOU WON +{chain.mine} ETH ★</div>;
+    action = (
+      <div className="gift-result" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+        <PixelStar size={12} color="#ffd166" />
+        <span>YOU WON +{chain.mine} ETH</span>
+        <PixelStar size={12} color="#ffd166" />
+      </div>
+    );
   } else if (isSent) {
     if (expired && !refunded && !empty && remaining > 0) {
       action = (
@@ -44,7 +51,7 @@ function OnChainGiftCard({ giftData, isSent, onClaim, chain, onRefund }) {
   return (
     <div className={`feature-card gift-card ${empty || expired ? 'empty' : ''}`}>
       <div className="feature-card-header">
-        <span>🧧</span>
+        <PixelRedPacket size={18} color="#ff3366" />
         <span>ETH GIFT PACKET</span>
         <span className="feature-card-tag">{claimedCount}/{slots} CLAIMED</span>
       </div>
@@ -83,7 +90,7 @@ export default function GiftPacketCard({ giftData, votes = {}, myKey, isSent, on
   return (
     <div className={`feature-card gift-card ${empty ? 'empty' : ''}`}>
       <div className="feature-card-header">
-        <span>🧧</span>
+        <PixelRedPacket size={18} color="#ff3366" />
         <span>XP GIFT PACKET</span>
         <span className="feature-card-tag">{claims.length}/{slots} CLAIMED</span>
       </div>
@@ -91,7 +98,11 @@ export default function GiftPacketCard({ giftData, votes = {}, myKey, isSent, on
       <div className="gift-message">{giftData.message || 'Good luck, player!'}</div>
 
       {mine ? (
-        <div className="gift-result">★ YOU WON +{mine.prize} XP ★</div>
+        <div className="gift-result" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+          <PixelStar size={12} color="#ffd166" />
+          <span>YOU WON +{mine.prize} XP</span>
+          <PixelStar size={12} color="#ffd166" />
+        </div>
       ) : isSent ? (
         <div className="gift-result muted">YOUR PACKET IS OPEN FOR CLAIMS</div>
       ) : empty ? (
